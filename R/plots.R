@@ -127,8 +127,9 @@ pca_plots_enhanced <- function(pca_output = NULL,
                                color_variable = "Treatment",
                                shape_variable = "Genotype",
                                secondary_shape_variable = "Timepoint",
+                               pannels_var = NULL,
                                components = c(1, 2),
-                               gray_color_value = NULL,
+                               gray_color_value = NULL,  # NEW: Specify which color_variable value to make gray
                                save_plots = TRUE,
                                plot_width = 12,
                                plot_height = 10,
@@ -137,43 +138,11 @@ pca_plots_enhanced <- function(pca_output = NULL,
   
   if (verbose) cat("=== ENHANCED PCA PLOTTING ===\n")
   
-  # ============================================================================
-  # INPUT VALIDATION AND DEPENDENCIES
-  # ============================================================================
-  
-  # Check required packages
-  required_packages <- c("dplyr", "ggplot2", "scales", "rlang", "stringr")
-  missing_packages <- required_packages[!sapply(required_packages, requireNamespace, quietly = TRUE)]
-  
-  if (length(missing_packages) > 0) {
-    stop("Missing required packages: ", paste(missing_packages, collapse = ", "), 
-         "\nPlease install with: install.packages(c(", 
-         paste(paste0("'", missing_packages, "'"), collapse = ", "), "))")
-  }
-  
-  # Load required libraries
-  if (!requireNamespace("dplyr", quietly = TRUE)) stop("dplyr package is required")
-  if (!requireNamespace("ggplot2", quietly = TRUE)) stop("ggplot2 package is required")
-  if (!requireNamespace("scales", quietly = TRUE)) stop("scales package is required")
-  if (!requireNamespace("rlang", quietly = TRUE)) stop("rlang package is required")
-  if (!requireNamespace("stringr", quietly = TRUE)) stop("stringr package is required")
-  
-  # Validate input parameters
-  if (!is.numeric(components) || length(components) != 2) {
-    stop("components must be a numeric vector of length 2")
-  }
-  
-  if (!is.logical(save_plots) || length(save_plots) != 1) {
-    stop("save_plots must be a single logical value")
-  }
-  
-  if (!is.numeric(plot_width) || !is.numeric(plot_height) || !is.numeric(dpi)) {
-    stop("plot_width, plot_height, and dpi must be numeric")
-  }
-  
-  if (plot_width <= 0 || plot_height <= 0 || dpi <= 0) {
-    stop("plot_width, plot_height, and dpi must be positive")
-  }
+  library(dplyr)
+  library(ggplot2)
+  library(scales)
+  library(rlang)
+  library(stringr)  # Add this library for str_to_title()
   
   # ============================================================================
   # FLEXIBLE INPUT HANDLING
@@ -182,14 +151,6 @@ pca_plots_enhanced <- function(pca_output = NULL,
   # Option 1: Use complete pca_output object (from pca_analysis_enhanced)
   if (!is.null(pca_output)) {
     if (verbose) cat("Using complete PCA output object...\n")
-    
-    if (!is.list(pca_output)) {
-      stop("pca_output must be a list object")
-    }
-    
-    if (!"plot_data" %in% names(pca_output) || !"pca_result" %in% names(pca_output)) {
-      stop("pca_output must contain 'plot_data' and 'pca_result' elements")
-    }
     
     plot_data <- pca_output$plot_data
     pca_result <- pca_output$pca_result
@@ -200,8 +161,8 @@ pca_plots_enhanced <- function(pca_output = NULL,
     }
     
     # Extract output directory from processing source info
-    if (is.null(output_dir) && !is.null(pca_output$processing_source) && 
-        pca_output$processing_source == "processing_result") {
+    if (is.null(output_dir) && !is.null(pca_output$processing_source) && pca_output$processing_source == "processing_result") {
+      # Will try to get from processing_result or use current directory
       output_dir <- getwd()
     }
   }
@@ -210,24 +171,13 @@ pca_plots_enhanced <- function(pca_output = NULL,
   else if (!is.null(processing_result)) {
     if (verbose) cat("Extracting PCA data from processing result...\n")
     
-    if (!is.list(processing_result)) {
-      stop("processing_result must be a list object")
-    }
-    
     if (is.null(plot_data) || is.null(pca_result)) {
       stop("When using processing_result, you must also run PCA first and provide plot_data and pca_result")
     }
     
-    if (is.null(output_dir) && "output_path" %in% names(processing_result)) {
-      output_dir <- dirname(processing_result$output_path)
-    }
-    if (is.null(experiment_name) && "experiment_name" %in% names(processing_result)) {
-      experiment_name <- processing_result$experiment_name
-    }
-    if (is.null(grouping_variables) && "processing_params" %in% names(processing_result) &&
-        "grouping_variables" %in% names(processing_result$processing_params)) {
-      grouping_variables <- processing_result$processing_params$grouping_variables
-    }
+    if (is.null(output_dir)) output_dir <- dirname(processing_result$output_path)
+    if (is.null(experiment_name)) experiment_name <- processing_result$experiment_name
+    if (is.null(grouping_variables)) grouping_variables <- processing_result$processing_params$grouping_variables
   }
   
   # Option 3: Manual specification (backwards compatibility)
@@ -236,19 +186,6 @@ pca_plots_enhanced <- function(pca_output = NULL,
       stop("Must provide either pca_output, or both plot_data and pca_result")
     }
     if (verbose) cat("Using manually provided plot_data and pca_result...\n")
-  }
-  
-  # Validate plot_data and pca_result
-  if (!is.data.frame(plot_data)) {
-    stop("plot_data must be a data.frame")
-  }
-  
-  if (nrow(plot_data) == 0) {
-    stop("plot_data cannot be empty")
-  }
-  
-  if (!is.list(pca_result) || !"sdev" %in% names(pca_result)) {
-    stop("pca_result must be a list with 'sdev' element (e.g., from prcomp())")
   }
   
   # Set defaults
@@ -323,7 +260,7 @@ pca_plots_enhanced <- function(pca_output = NULL,
     if (verbose) cat("Using requested secondary shape variable:", secondary_shape_variable, "\n")
   }
   
-  # Get PC column names and validate they exist
+  # Get PC column names
   pc_cols <- paste0("PC", components)
   if (!all(pc_cols %in% available_columns)) {
     missing_pcs <- pc_cols[!pc_cols %in% available_columns]
@@ -332,12 +269,6 @@ pca_plots_enhanced <- function(pca_output = NULL,
   
   pc1_col <- pc_cols[1]
   pc2_col <- pc_cols[2]
-  
-  # Validate that PCA components exist in pca_result
-  if (max(components) > length(pca_result$sdev)) {
-    stop("Requested components exceed available components in pca_result. ",
-         "Available: ", length(pca_result$sdev), ", Requested: ", max(components))
-  }
   
   # ============================================================================
   # CALCULATE VARIANCE EXPLAINED
@@ -351,7 +282,7 @@ pca_plots_enhanced <- function(pca_output = NULL,
   # CREATE COLOR AND SHAPE PALETTES WITH GRAY OPTION
   # ============================================================================
   
-  # Enhanced scientific color palette - carefully curated for publications
+  # Enhanced scientific color palette
   scientific_colors <- c(
     "#E31A1C", "#1F78B4", "#33A02C", "#FF7F00", "#6A3D9A",  # Strong primary colors
     "#FB9A99", "#A6CEE3", "#B2DF8A", "#FDBF6F", "#CAB2D6",  # Lighter versions
@@ -362,45 +293,39 @@ pca_plots_enhanced <- function(pca_output = NULL,
   # Create color mapping for primary color variable with gray option
   if (!is.null(color_variable)) {
     unique_color_vals <- sort(unique(plot_data[[color_variable]]))
-    unique_color_vals <- unique_color_vals[!is.na(unique_color_vals)]  # Remove NA values
     n_colors <- length(unique_color_vals)
     
-    if (n_colors == 0) {
-      warning("No valid values found for color variable: ", color_variable)
-      color_variable <- NULL
-    } else {
-      # Validate gray_color_value if provided
-      if (!is.null(gray_color_value)) {
-        if (!gray_color_value %in% unique_color_vals) {
-          warning("Specified gray_color_value '", gray_color_value, "' not found in ", color_variable, 
-                  ". Available values: ", paste(unique_color_vals, collapse = ", "))
-          gray_color_value <- NULL
-        }
+    # Validate gray_color_value if provided
+    if (!is.null(gray_color_value)) {
+      if (!gray_color_value %in% unique_color_vals) {
+        warning("Specified gray_color_value '", gray_color_value, "' not found in ", color_variable, 
+                ". Available values: ", paste(unique_color_vals, collapse = ", "))
+        gray_color_value <- NULL
       }
+    }
+    
+    # Create color palette
+    if (!is.null(gray_color_value)) {
+      # Create palette with specified value as gray
+      color_palette <- scientific_colors[1:min(n_colors, length(scientific_colors))]
+      names(color_palette) <- unique_color_vals
       
-      # Create color palette
-      if (!is.null(gray_color_value)) {
-        # Create palette with specified value as gray
-        color_palette <- scientific_colors[1:min(n_colors, length(scientific_colors))]
-        names(color_palette) <- unique_color_vals
-        
-        # Set the specified value to gray
-        color_palette[gray_color_value] <- "gray50"  # Medium gray
-        
-        if (verbose) {
-          cat("Color mapping (", color_variable, ") with gray option:\n")
-          for (i in seq_along(color_palette)) {
-            gray_indicator <- if(names(color_palette)[i] == gray_color_value) " (GRAY)" else ""
-            cat("  ", names(color_palette)[i], ": ", color_palette[i], gray_indicator, "\n", sep = "")
-          }
+      # Set the specified value to gray
+      color_palette[gray_color_value] <- "gray50"  # Medium gray
+      
+      if (verbose) {
+        cat("Color mapping (", color_variable, ") with gray option:\n")
+        for (i in seq_along(color_palette)) {
+          gray_indicator <- if(names(color_palette)[i] == gray_color_value) " (GRAY)" else ""
+          cat("  ", names(color_palette)[i], ": ", color_palette[i], gray_indicator, "\n", sep = "")
         }
-      } else {
-        # Standard color palette without gray
-        color_palette <- scientific_colors[1:min(n_colors, length(scientific_colors))]
-        names(color_palette) <- unique_color_vals
-        
-        if (verbose) cat("Color mapping (", color_variable, "):", paste(names(color_palette), collapse = ", "), "\n")
       }
+    } else {
+      # Standard color palette without gray
+      color_palette <- scientific_colors[1:min(n_colors, length(scientific_colors))]
+      names(color_palette) <- unique_color_vals
+      
+      if (verbose) cat("Color mapping (", color_variable, "):", paste(names(color_palette), collapse = ", "), "\n")
     }
   }
   
@@ -409,43 +334,32 @@ pca_plots_enhanced <- function(pca_output = NULL,
   
   if (!is.null(shape_variable)) {
     unique_shape_vals <- sort(unique(plot_data[[shape_variable]]))
-    unique_shape_vals <- unique_shape_vals[!is.na(unique_shape_vals)]  # Remove NA values
+    n_shapes <- length(unique_shape_vals)
+    shape_palette <- basic_shapes[1:min(n_shapes, length(basic_shapes))]
+    names(shape_palette) <- unique_shape_vals
     
-    if (length(unique_shape_vals) == 0) {
-      warning("No valid values found for shape variable: ", shape_variable)
-      shape_variable <- NULL
-    } else {
-      n_shapes <- length(unique_shape_vals)
-      shape_palette <- basic_shapes[1:min(n_shapes, length(basic_shapes))]
-      names(shape_palette) <- unique_shape_vals
-      
-      if (verbose) cat("Shape mapping (", shape_variable, "):", paste(names(shape_palette), "=", shape_palette, collapse = ", "), "\n")
-    }
+    if (verbose) cat("Shape mapping (", shape_variable, "):", paste(names(shape_palette), "=", shape_palette, collapse = ", "), "\n")
   }
   
   # Special handling for timepoint ordering if it's used
-  if (!is.null(secondary_shape_variable) && secondary_shape_variable == "Timepoint" &&
-      "Timepoint" %in% names(plot_data)) {
+  if (!is.null(secondary_shape_variable) && secondary_shape_variable == "Timepoint") {
     standard_timepoints <- c("baseline", "0min", "15min", "30min", "45min", "1h", "1h15", "1h30", "1h45", "2h", "2h30", "3h")
     present_timepoints <- standard_timepoints[standard_timepoints %in% unique(plot_data$Timepoint)]
     
     if (length(present_timepoints) == 0) {
       present_timepoints <- sort(unique(plot_data$Timepoint))
-      present_timepoints <- present_timepoints[!is.na(present_timepoints)]
     }
     
-    if (length(present_timepoints) > 0) {
-      plot_data$Timepoint <- factor(plot_data$Timepoint, levels = present_timepoints, ordered = TRUE)
-      
-      # Progressive shapes for timepoints
-      progressive_shapes <- c(16, 17, 15, 18, 19, 25, 8, 0, 1, 2, 5, 6)
-      timepoint_shape_palette <- progressive_shapes[1:length(present_timepoints)]
-      names(timepoint_shape_palette) <- present_timepoints
-      
-      # Make the last timepoint distinctive
-      if (length(timepoint_shape_palette) > 1) {
-        timepoint_shape_palette[length(timepoint_shape_palette)] <- 8
-      }
+    plot_data$Timepoint <- factor(plot_data$Timepoint, levels = present_timepoints, ordered = TRUE)
+    
+    # Progressive shapes for timepoints
+    progressive_shapes <- c(16, 17, 15, 18, 19, 25, 8, 0, 1, 2, 5, 6)
+    timepoint_shape_palette <- progressive_shapes[1:length(present_timepoints)]
+    names(timepoint_shape_palette) <- present_timepoints
+    
+    # Make the last timepoint distinctive
+    if (length(timepoint_shape_palette) > 1) {
+      timepoint_shape_palette[length(timepoint_shape_palette)] <- 8
     }
   }
   
@@ -454,26 +368,26 @@ pca_plots_enhanced <- function(pca_output = NULL,
   # ============================================================================
   
   enhanced_theme <- function() {
-    ggplot2::theme_minimal() +
-      ggplot2::theme(
-        plot.title = ggplot2::element_text(size = 14, face = "bold", hjust = 0.5),
-        plot.subtitle = ggplot2::element_text(size = 12, hjust = 0.5, color = "gray30"),
-        axis.title = ggplot2::element_text(size = 12, face = "bold"),
-        axis.text = ggplot2::element_text(size = 10),
-        legend.title = ggplot2::element_text(size = 11, face = "bold"),
-        legend.text = ggplot2::element_text(size = 10),
-        panel.grid.minor = ggplot2::element_blank(),
-        panel.grid.major = ggplot2::element_line(color = "grey90", size = 0.3),
+    theme_minimal() +
+      theme(
+        plot.title = element_text(size = 14, face = "bold", hjust = 0.5),
+        plot.subtitle = element_text(size = 12, hjust = 0.5, color = "gray30"),
+        axis.title = element_text(size = 12, face = "bold"),
+        axis.text = element_text(size = 10),
+        legend.title = element_text(size = 11, face = "bold"),
+        legend.text = element_text(size = 10),
+        panel.grid.minor = element_blank(),
+        panel.grid.major = element_line(color = "grey90", size = 0.3),
         aspect.ratio = 1,
-        panel.background = ggplot2::element_rect(fill = "white", color = "black", size = 0.8),
-        plot.background = ggplot2::element_rect(fill = "white", color = NA),
-        legend.background = ggplot2::element_rect(fill = "white", color = NA),
-        legend.key = ggplot2::element_rect(fill = "white", color = NA),
-        legend.box.background = ggplot2::element_rect(fill = "white", color = "gray80", size = 0.5),
-        axis.line = ggplot2::element_blank(),
-        axis.ticks = ggplot2::element_line(color = "black", size = 0.5),
-        axis.ticks.length = ggplot2::unit(0.15, "cm"),
-        plot.margin = ggplot2::margin(20, 20, 20, 20)
+        panel.background = element_rect(fill = "white", color = "black", size = 0.8),
+        plot.background = element_rect(fill = "white", color = NA),
+        legend.background = element_rect(fill = "white", color = NA),
+        legend.key = element_rect(fill = "white", color = NA),
+        legend.box.background = element_rect(fill = "white", color = "gray80", size = 0.5),
+        axis.line = element_blank(),
+        axis.ticks = element_line(color = "black", size = 0.5),
+        axis.ticks.length = unit(0.15, "cm"),
+        plot.margin = margin(20, 20, 20, 20)
       )
   }
   
@@ -482,6 +396,9 @@ pca_plots_enhanced <- function(pca_output = NULL,
   # ============================================================================
   
   plots_list <- list()
+  
+  # Base aesthetic mapping
+  base_aes <- aes_string(x = pc1_col, y = pc2_col)
   
   # --- PLOT 1: Color + Shape (Primary combination) ---
   if (!is.null(color_variable) && !is.null(shape_variable)) {
@@ -492,24 +409,24 @@ pca_plots_enhanced <- function(pca_output = NULL,
       plot_subtitle <- paste0(plot_subtitle, " | ", gray_color_value, " in gray")
     }
     
-    p1 <- ggplot2::ggplot(plot_data, ggplot2::aes_string(x = pc1_col, y = pc2_col, 
-                                                         color = color_variable, shape = shape_variable)) +
-      ggplot2::geom_point(size = 3.5, alpha = 0.8, stroke = 0.5) +
-      ggplot2::scale_color_manual(values = color_palette, name = stringr::str_to_title(color_variable)) +
-      ggplot2::scale_shape_manual(values = shape_palette, name = stringr::str_to_title(shape_variable)) +
-      ggplot2::labs(
-        title = paste0("PCA Analysis: ", stringr::str_to_title(color_variable), " × ", stringr::str_to_title(shape_variable)),
+    p1 <- ggplot(plot_data, aes_string(x = pc1_col, y = pc2_col, 
+                                       color = color_variable, shape = shape_variable)) +
+      geom_point(size = 3.5, alpha = 0.8, stroke = 0.5) +
+      scale_color_manual(values = color_palette, name = str_to_title(color_variable)) +
+      scale_shape_manual(values = shape_palette, name = str_to_title(shape_variable)) +
+      labs(
+        title = paste0("PCA Analysis: ", str_to_title(color_variable), " × ", str_to_title(shape_variable)),
         subtitle = plot_subtitle,
         x = paste0("PC", components[1], " (", pc1_var, "% variance)"),
         y = paste0("PC", components[2], " (", pc2_var, "% variance)")
       ) +
       enhanced_theme() +
-      ggplot2::coord_fixed() +
-      ggplot2::guides(
-        color = ggplot2::guide_legend(override.aes = list(size = 4), title.position = "top", title.hjust = 0.5),
-        shape = ggplot2::guide_legend(override.aes = list(size = 4), title.position = "top", title.hjust = 0.5)
+      coord_fixed() +
+      guides(
+        color = guide_legend(override.aes = list(size = 4), title.position = "top", title.hjust = 0.5),
+        shape = guide_legend(override.aes = list(size = 4), title.position = "top", title.hjust = 0.5)
       ) +
-      ggplot2::theme(legend.box = "vertical", legend.position = "right")
+      theme(legend.box = "vertical", legend.position = "right")
     
     plots_list[["primary_combination"]] <- p1
     print(p1)
@@ -524,7 +441,6 @@ pca_plots_enhanced <- function(pca_output = NULL,
       sec_shape_palette <- timepoint_shape_palette
     } else {
       unique_sec_vals <- sort(unique(plot_data[[secondary_shape_variable]]))
-      unique_sec_vals <- unique_sec_vals[!is.na(unique_sec_vals)]
       sec_shape_palette <- basic_shapes[1:length(unique_sec_vals)]
       names(sec_shape_palette) <- unique_sec_vals
     }
@@ -534,24 +450,24 @@ pca_plots_enhanced <- function(pca_output = NULL,
       plot_subtitle <- paste0(plot_subtitle, " | ", gray_color_value, " in gray")
     }
     
-    p2 <- ggplot2::ggplot(plot_data, ggplot2::aes_string(x = pc1_col, y = pc2_col, 
-                                                         color = color_variable, shape = secondary_shape_variable)) +
-      ggplot2::geom_point(size = 3.5, alpha = 0.8, stroke = 0.5) +
-      ggplot2::scale_color_manual(values = color_palette, name = stringr::str_to_title(color_variable)) +
-      ggplot2::scale_shape_manual(values = sec_shape_palette, name = stringr::str_to_title(secondary_shape_variable)) +
-      ggplot2::labs(
-        title = paste0("PCA Analysis: ", stringr::str_to_title(color_variable), " × ", stringr::str_to_title(secondary_shape_variable)),
+    p2 <- ggplot(plot_data, aes_string(x = pc1_col, y = pc2_col, 
+                                       color = color_variable, shape = secondary_shape_variable)) +
+      geom_point(size = 3.5, alpha = 0.8, stroke = 0.5) +
+      scale_color_manual(values = color_palette, name = str_to_title(color_variable)) +
+      scale_shape_manual(values = sec_shape_palette, name = str_to_title(secondary_shape_variable)) +
+      labs(
+        title = paste0("PCA Analysis: ", str_to_title(color_variable), " × ", str_to_title(secondary_shape_variable)),
         subtitle = plot_subtitle,
         x = paste0("PC", components[1], " (", pc1_var, "% variance)"),
         y = paste0("PC", components[2], " (", pc2_var, "% variance)")
       ) +
       enhanced_theme() +
-      ggplot2::coord_fixed() +
-      ggplot2::guides(
-        color = ggplot2::guide_legend(override.aes = list(size = 4), title.position = "top", title.hjust = 0.5),
-        shape = ggplot2::guide_legend(override.aes = list(size = 4), title.position = "top", title.hjust = 0.5)
+      coord_fixed() +
+      guides(
+        color = guide_legend(override.aes = list(size = 4), title.position = "top", title.hjust = 0.5),
+        shape = guide_legend(override.aes = list(size = 4), title.position = "top", title.hjust = 0.5)
       ) +
-      ggplot2::theme(legend.box = "vertical", legend.position = "right")
+      theme(legend.box = "vertical", legend.position = "right")
     
     plots_list[["secondary_combination"]] <- p2
     print(p2)
@@ -566,25 +482,25 @@ pca_plots_enhanced <- function(pca_output = NULL,
       plot_subtitle <- paste0(plot_subtitle, " | ", gray_color_value, " in gray")
     }
     
-    p3 <- ggplot2::ggplot(plot_data, ggplot2::aes_string(x = pc1_col, y = pc2_col, color = color_variable)) +
-      ggplot2::geom_point(size = 4, alpha = 0.8) +
-      ggplot2::scale_color_manual(values = color_palette, name = stringr::str_to_title(color_variable)) +
-      ggplot2::labs(
-        title = paste0("PCA Analysis: ", stringr::str_to_title(color_variable)),
+    p3 <- ggplot(plot_data, aes_string(x = pc1_col, y = pc2_col, color = color_variable)) +
+      geom_point(size = 4, alpha = 0.8) +
+      scale_color_manual(values = color_palette, name = str_to_title(color_variable)) +
+      labs(
+        title = paste0("PCA Analysis: ", str_to_title(color_variable)),
         subtitle = plot_subtitle,
         x = paste0("PC", components[1], " (", pc1_var, "% variance)"),
         y = paste0("PC", components[2], " (", pc2_var, "% variance)")
       ) +
       enhanced_theme() +
-      ggplot2::coord_fixed() +
-      ggplot2::guides(color = ggplot2::guide_legend(override.aes = list(size = 4), title.position = "top", title.hjust = 0.5)) +
-      ggplot2::theme(legend.position = "right")
+      coord_fixed() +
+      guides(color = guide_legend(override.aes = list(size = 4), title.position = "top", title.hjust = 0.5)) +
+      theme(legend.position = "right")
     
     plots_list[["color_only"]] <- p3
     print(p3)
   }
   
-  # --- PLOT 4: Color with Ellipses ---
+  # --- PLOT 4: Color with Ellipses (NEW) ---
   if (!is.null(color_variable)) {
     if (verbose) cat("Creating Plot 4: Color =", color_variable, " with ellipses\n")
     
@@ -593,27 +509,27 @@ pca_plots_enhanced <- function(pca_output = NULL,
       plot_subtitle <- paste0(plot_subtitle, " | ", gray_color_value, " in gray")
     }
     
-    p4 <- ggplot2::ggplot(plot_data, ggplot2::aes_string(x = pc1_col, y = pc2_col, color = color_variable)) +
-      ggplot2::stat_ellipse(type = "norm", level = 0.95, size = 1.2, alpha = 0.8) +  # Add confidence ellipses
-      ggplot2::geom_point(size = 2, alpha = 0.8) +  # Half the size of original dots (4 -> 2)
-      ggplot2::scale_color_manual(values = color_palette, name = stringr::str_to_title(color_variable)) +
-      ggplot2::labs(
-        title = paste0("PCA Analysis: ", stringr::str_to_title(color_variable), " with Ellipses"),
+    p4 <- ggplot(plot_data, aes_string(x = pc1_col, y = pc2_col, color = color_variable)) +
+      stat_ellipse(type = "norm", level = 0.95, size = 1.2, alpha = 0.8) +  # Add confidence ellipses
+      geom_point(size = 2, alpha = 0.8) +  # Half the size of original dots (4 -> 2)
+      scale_color_manual(values = color_palette, name = str_to_title(color_variable)) +
+      labs(
+        title = paste0("PCA Analysis: ", str_to_title(color_variable), " with Ellipses"),
         subtitle = plot_subtitle,
         x = paste0("PC", components[1], " (", pc1_var, "% variance)"),
         y = paste0("PC", components[2], " (", pc2_var, "% variance)")
       ) +
       enhanced_theme() +
-      ggplot2::coord_fixed() +
-      ggplot2::guides(color = ggplot2::guide_legend(override.aes = list(size = 4), title.position = "top", title.hjust = 0.5)) +
-      ggplot2::theme(legend.position = "right")
+      coord_fixed() +
+      guides(color = guide_legend(override.aes = list(size = 4), title.position = "top", title.hjust = 0.5)) +
+      theme(legend.position = "right")
     
     plots_list[["color_with_ellipses"]] <- p4
     print(p4)
   }
   
-  # --- PLOT 5: Faceted by third variable ---
-  if (length(valid_grouping_vars) >= 3) {
+  # --- PLOT 5: Faceted by third variable (FIXED) ---
+  if (!is.null(pannels_var)) {
     third_var <- valid_grouping_vars[3]
     if (verbose) cat("Creating Plot 5: Faceted by", third_var, "\n")
     
@@ -622,23 +538,23 @@ pca_plots_enhanced <- function(pca_output = NULL,
       plot_subtitle <- paste0(plot_subtitle, " | ", gray_color_value, " in gray")
     }
     
-    p5 <- ggplot2::ggplot(plot_data, ggplot2::aes_string(x = pc1_col, y = pc2_col, color = color_variable)) +
-      ggplot2::geom_point(size = 3, alpha = 0.8) +
-      ggplot2::scale_color_manual(values = color_palette, name = stringr::str_to_title(color_variable)) +
-      ggplot2::facet_wrap(as.formula(paste("~", third_var))) +
-      ggplot2::labs(
-        title = paste0("PCA Analysis: ", stringr::str_to_title(color_variable), " by ", stringr::str_to_title(third_var)),
+    p5 <- ggplot(plot_data, aes_string(x = pc1_col, y = pc2_col, color = color_variable)) +
+      geom_point(size = 3, alpha = 0.8) +
+      scale_color_manual(values = color_palette, name = str_to_title(color_variable)) +
+      facet_wrap(as.formula(paste("~", third_var))) +  # REMOVED scales = "free"
+      labs(
+        title = paste0("PCA Analysis: ", str_to_title(color_variable), " by ", str_to_title(third_var)),
         subtitle = plot_subtitle,
         x = paste0("PC", components[1], " (", pc1_var, "% variance)"),
         y = paste0("PC", components[2], " (", pc2_var, "% variance)")
       ) +
       enhanced_theme() +
-      ggplot2::coord_fixed() +
-      ggplot2::guides(color = ggplot2::guide_legend(override.aes = list(size = 4))) +
-      ggplot2::theme(
+      coord_fixed() +  # This now works because scales are not free
+      guides(color = guide_legend(override.aes = list(size = 4))) +
+      theme(
         legend.position = "bottom",
-        strip.background = ggplot2::element_rect(fill = "gray90", color = "black"),
-        strip.text = ggplot2::element_text(face = "bold")
+        strip.background = element_rect(fill = "gray90", color = "black"),
+        strip.text = element_text(face = "bold")
       )
     
     plots_list[["faceted"]] <- p5
@@ -666,8 +582,8 @@ pca_plots_enhanced <- function(pca_output = NULL,
       filename <- paste0(experiment_name, "_PCA_", plot_name, "_PC", components[1], "-", components[2], gray_suffix, ".png")
       filepath <- file.path(output_dir, filename)
       
-      ggplot2::ggsave(filepath, plot = plots_list[[plot_name]], 
-                      width = plot_width, height = plot_height, dpi = dpi)
+      ggsave(filepath, plot = plots_list[[plot_name]], 
+             width = plot_width, height = plot_height, dpi = dpi)
       
       saved_files <- c(saved_files, filename)
     }
@@ -707,8 +623,7 @@ pca_plots_enhanced <- function(pca_output = NULL,
     
     for (var in valid_grouping_vars) {
       unique_vals <- unique(plot_data[[var]])
-      unique_vals <- unique_vals[!is.na(unique_vals)]
-      cat("  ", stringr::str_to_title(var), ":", length(unique_vals), "levels -", 
+      cat("  ", str_to_title(var), ":", length(unique_vals), "levels -", 
           paste(sort(unique_vals), collapse = ", "), "\n")
     }
     
@@ -741,7 +656,7 @@ pca_plots_enhanced <- function(pca_output = NULL,
       experiment_name = experiment_name,
       output_dir = output_dir,
       valid_grouping_vars = valid_grouping_vars,
-      gray_color_value = gray_color_value
+      gray_color_value = gray_color_value  # NEW: Include in config
     ),
     saved_files = if(save_plots && exists("saved_files")) saved_files else NULL
   ))

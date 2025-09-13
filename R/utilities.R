@@ -18,7 +18,6 @@
 #' }
 #'
 #' @export
-
 handle_missing_values <- function(data, value_column, method, verbose) {
   original_na <- sum(is.na(data[[value_column]]))
   
@@ -43,6 +42,7 @@ handle_missing_values <- function(data, value_column, method, verbose) {
   return(data)
 }
 
+#' @export
 quality_filter <- function(data, variable_column, value_column, grouping_columns, 
                            quality_threshold, min_observations, verbose) {
   original_vars <- length(unique(data[[variable_column]]))
@@ -79,7 +79,7 @@ quality_filter <- function(data, variable_column, value_column, grouping_columns
   
   return(data)
 }
-
+#' @export
 aggregate_data <- function(data, group_col, variable_column, value_column, method) {
   data %>%
     group_by(.data[[group_col]], .data[[variable_column]]) %>%
@@ -92,7 +92,7 @@ aggregate_data <- function(data, group_col, variable_column, value_column, metho
       .groups = "drop"
     )
 }
-
+#' @export
 apply_scaling_enhanced <- function(matrix_data, scale_method, verbose = FALSE) {
   if (verbose) cat("Applying scaling method:", scale_method, "\n")
   
@@ -141,7 +141,7 @@ apply_scaling_enhanced <- function(matrix_data, scale_method, verbose = FALSE) {
          }
   )
 }
-
+#' @export
 clean_heatmap_matrix <- function(matrix_data, min_finite = 2, verbose = FALSE) {
   if (nrow(matrix_data) == 0 || ncol(matrix_data) == 0) {
     if (verbose) cat("Warning: Empty matrix\n")
@@ -170,7 +170,7 @@ clean_heatmap_matrix <- function(matrix_data, min_finite = 2, verbose = FALSE) {
   
   return(matrix_clean)
 }
-
+#' @export
 create_annotations_enhanced <- function(rownames_vector, factor_cols) {
   # Parse combined names back to individual factors
   split_names <- strsplit(rownames_vector, "_")
@@ -203,7 +203,7 @@ create_annotations_enhanced <- function(rownames_vector, factor_cols) {
   
   return(list(annotations = annotations, colors = annotation_colors))
 }
-
+#' @export
 create_color_palette_enhanced <- function(palette_name = "yellow_purple", custom_colors = NULL, data_matrix = NULL) {
   if (!is.null(custom_colors)) {
     colors <- colorRampPalette(custom_colors)(100)
@@ -250,10 +250,11 @@ create_color_palette_enhanced <- function(palette_name = "yellow_purple", custom
 }
 
 # Helper function for null coalescing (R equivalent of %||%)
+#' @export
 `%||%` <- function(lhs, rhs) {
   if (!is.null(lhs)) lhs else rhs
 }
-
+#' @export
 print_detailed_summary <- function(top_vars, pc_x_top, pc_y_top, high_both, 
                                    pc_x, pc_y, top_n, min_loading_threshold) {
   
@@ -295,7 +296,7 @@ print_detailed_summary <- function(top_vars, pc_x_top, pc_y_top, high_both,
     cat(paste("\nNo variables exceed threshold (", min_loading_threshold, ") in both PCs\n"))
   }
 }
-
+#' @export
 setup_color_scheme <- function(color_scheme, custom_colors) {
   if (color_scheme == "viridis") {
     return(list(

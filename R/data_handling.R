@@ -276,7 +276,7 @@ discover_mea_structure <- function(main_dir,
 #' raw_data <- result$raw_data
 #' normalized_data <- result$normalized_data
 #' }
-#'
+#' @export
 process_mea_flexible <- function(main_dir,
                                  selected_experiments = NULL,
                                  selected_timepoints = NULL,
