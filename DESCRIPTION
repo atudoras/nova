@@ -7,8 +7,8 @@ Description: A comprehensive toolkit for analyzing and visualizing neural data o
     Array (MEA) heatmap generation, and variable importance analysis. Provides 
     publication-ready visualizations with flexible customization options for 
     neuroscience research applications.
-Author: Your Name Here
-Maintainer: Your Name <your.email@example.com>
+Author: Àlex Tudoras
+Maintainer: Àlex Tudoras <alex.tudorasmiravet@ucsf.edu>
 License: GPL-3
 Encoding: UTF-8
 LazyData: true
