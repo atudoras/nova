@@ -74,5 +74,4 @@ result <- process_mea_flexible(
 raw_data <- result$raw_data
 normalized_data <- result$normalized_data
 }
-
 }

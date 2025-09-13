@@ -15,6 +15,7 @@ pca_plots_enhanced(
   color_variable = "Treatment",
   shape_variable = "Genotype",
   secondary_shape_variable = "Timepoint",
+  pannels_var = NULL,
   components = c(1, 2),
   gray_color_value = NULL,
   save_plots = TRUE,
