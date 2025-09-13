@@ -6,8 +6,8 @@ A comprehensive R toolkit for analyzing and visualizing neural data outputs, inc
 ## Installation
 
 ```r
-# Install from GitHub 
-devtools::install_github("atudoras/nova")
+# Install from GitHub (replace 'yourusername' with your GitHub username)
+devtools::install_github("yourusername/NOVA")
 
 # Or install from CRAN (when available)
 install.packages("NOVA")
@@ -53,7 +53,17 @@ heatmaps <- create_mea_heatmaps_enhanced(
 )
 ```
 
-## Key Features
+## Quick Example
+
+See the complete analysis workflow in the package vignette:
+
+```r
+# View the comprehensive example
+vignette("mea-analysis-example", package = "NOVA")
+
+# Access sample data
+sample_data_path <- system.file("extdata", "sample_mea_data", package = "NOVA")
+```
 
 - **Flexible data discovery**: Automatically detect MEA data structure
 - **Multi-experiment processing**: Handle multiple experiments and timepoints
@@ -61,7 +71,3 @@ heatmaps <- create_mea_heatmaps_enhanced(
 - **Variable importance analysis**: Identify key neural variables
 - **MEA heatmap generation**: Comprehensive electrode data visualization
 - **Batch effect correction**: Built-in normalization options
-
-## License
-
-[Choose your license - e.g., GPL-3, Apache-2.0, or custom research license]
