@@ -1,0 +1,226 @@
+---
+title: "Complete MEA Analysis Example"
+author: "Alex Tudoras"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Complete MEA Analysis Example}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+
+devtools::install_github("atudoras/nova")
+install.packages("NOVA")
+library("NOVA")
+```
+
+# MEA Data Analysis Pipeline
+This script processes Multi-Electrode Array (MEA) data from multiple experiments, performs normalization, PCA analysis, and generates comprehensive visualizations including trajectory analysis and batch effect correction.
+
+## Package Installation and Loading
+
+```{r package_setup}
+# ============================================================================
+# PACKAGE INSTALLATION AND LOADING
+# ============================================================================
+# Function to install packages if not available
+install_if_missing <- function(packages, bioc_packages = NULL) {
+  # CRAN packages
+  missing_cran <- packages[!sapply(packages, require, character.only = TRUE, quietly = TRUE)]
+  if (length(missing_cran) > 0) {
+    cat("Installing CRAN packages:", paste(missing_cran, collapse = ", "), "\n")
+    install.packages(missing_cran, dependencies = TRUE)
+  }
+  
+  # Bioconductor packages
+  if (!is.null(bioc_packages)) {
+    if (!require("BiocManager", quietly = TRUE)) {
+      install.packages("BiocManager")
+    }
+    
+    missing_bioc <- bioc_packages[!sapply(bioc_packages, require, character.only = TRUE, quietly = TRUE)]
+    if (length(missing_bioc) > 0) {
+      cat("Installing Bioconductor packages:", paste(missing_bioc, collapse = ", "), "\n")
+      BiocManager::install(missing_bioc)
+    }
+  }
+}
+
+# Define required packages
+cran_packages <- c(
+  # Data manipulation
+  "dplyr", "tidyr", "stringr", "readr", "tibble", "purrr",
+  # File I/O
+  "readxl", "writexl", "rlang",
+  # Visualization
+  "ggplot2", "RColorBrewer", "corrplot", "gridExtra",
+  "ggdendro", "ellipse",
+  # Analysis
+  "fdapace", "VennDiagram", "factoextra", "cluster", 
+  "dendextend", "splines"
+)
+
+bioc_packages <- c("sva", "ggtree", "limma")
+
+# Install and load all packages
+install_if_missing(cran_packages, bioc_packages)
+
+# Load all packages
+invisible(lapply(c(cran_packages, bioc_packages), library, character.only = TRUE))
+
+cat("✓ All packages loaded successfully\n")
+```
+
+```{r cars}
+# ============================================================================
+# MEA FLEXIBLE ANALYSIS - USAGE EXAMPLES
+
+# This script demonstrates how to use the MEA analysis functions
+# ============================================================================
+# 1: DISCOVER DATA STRUCTURE
+# ============================================================================
+
+# First, discover what's available in your data directory
+main_directory <- "MEA Neuronal Agonists"
+# Discover the structure of your MEA data
+discovery_results <- discover_mea_structure(main_directory)
+```
+
+
+```{r cars}
+# ============================================================================
+# 2: BASIC PROCESSING - OPTION: ALL DATA
+# ============================================================================
+
+# Example: fuse 1h30 and 1h30min
+
+# Process all discovered experiments and timepoints
+all_data <- process_mea_flexible(
+  main_dir = main_directory,
+  selected_experiments = NULL,  # NULL = use all discovered experiments
+  selected_timepoints = c("baseline","0min","15min","30min","1h","1h30min","2h"),   # NULL = use all discovered timepoints
+  grouping_variables = c("Experiment","Treatment","Genotype","Well"),  # Standard grouping
+  baseline_timepoint = "baseline",  # Normalize to baseline if available
+  #timepoint_fusions = list("1h30", c("1h30", "1h30min")),
+  verbose = TRUE
+)
+
+
+# ============================================================================
+# WORKING WITH THE RESULTS
+# ============================================================================
+
+# After processing, you can access the results:
+if (exists("all_data")) {
+  
+  # Raw data (always available)
+  raw_data <- all_data$raw_data
+  cat("Raw data dimensions:", dim(raw_data), "\n")
+  
+  # Normalized data (if baseline was specified)
+  if (!is.null(all_data$normalized_data)) {
+    normalized_data <- all_data$normalized_data
+    cat("Normalized data dimensions:", dim(normalized_data), "\n")
+  }
+  
+  # Processing parameters used
+  params <- all_data$processing_params
+  cat("Experiments processed:", paste(params$selected_experiments, collapse = ", "), "\n")
+  cat("Timepoints included:", paste(params$selected_timepoints, collapse = ", "), "\n")
+  cat("Grouping variables:", paste(params$grouping_variables, collapse = ", "), "\n")
+  
+  # Data structure overview
+  cat("\nData structure overview:\n")
+  str(raw_data)
+  
+  # Summary statistics
+  cat("\nSummary by experiment and timepoint:\n")
+  summary_stats <- raw_data %>%
+    dplyr::group_by(Experiment, Timepoint) %>%
+    dplyr::summarise(
+      n_observations = n(),
+      n_wells = n_distinct(Well),
+      n_variables = n_distinct(Variable),
+      mean_value = mean(Value, na.rm = TRUE),
+      .groups = "drop"
+    )
+  print(summary_stats)
+}
+
+# ============================================================================
+#  DOWNSTREAM ANALYSIS (PCA, etc.)
+# ============================================================================
+
+# === ENHANCED PCA ANALYSIS ===
+pca_output <- pca_analysis_enhanced(processing_result = all_data)
+setwd(main_directory)
+save(all_data, pca_output, file = "my_data.RData")
+```
+
+
+```{r cars}
+plot_results <- pca_plots_enhanced(
+  pca_output = pca_output,
+  output_dir = file.path(main_directory, paste0("MEA_Plots")),
+  color_variable = "Treatment",           # Color by genotype instead
+  shape_variable = "Genotype",          # Shape by treatment
+  secondary_shape_variable = "Timepoint", # Secondary plots by timepoint
+  pannels_var = "Genotype",
+  components = c(1, 2),                  # Plot PC1 vs PC2
+  plot_width = 14,                       # Larger plots
+  experiment_name = "Custom_Analysis",    # Custom name
+  verbose = TRUE
+)
+```
+```{r}
+# With direct PCA result
+results <- analyze_pca_variable_importance_general(
+  pca_result = pca_output,
+  output_dir = file.path(main_directory, paste0("MEA_Plots")),
+  color_scheme = "viridis",
+  top_n = 20
+)
+
+```
+
+
+```{r cars}
+results <- plot_pca_trajectories_general(
+  pca_output,
+  #timepoint_order = c("DIV2","DIV3","DIV6","DIV9","DIV11","DIV12"),
+  timepoint_order = c("baseline","0min","15min", "30min","1h", "1h30", "2h"),
+  individual_var = "Well",
+  trajectory_grouping = c("Genotype","Treatment"), 
+  #timepoint_order = c("baseline","0min","15min", "30min","1h", "1h15","1h30","1h45","2h"),
+  #0min, 15min, 1h, 1h15, 1h30, 1h45, 2h, 30min, 45min, baseline, 1h30min
+  smooth_lines = TRUE,
+  output_dir = file.path(main_directory, paste0("MEA_Plots"))
+)
+
+
+# This function will generate the average trajectory per Experiment depending on
+# the grouping from process_mea_flexible. For example, combination of variables.
+# Using trajectory_grouping = "Var" allows to override this and generate the
+# average trajectories according to 1 "Var" variable, which shall be one of
+# the variables from process_mea_flexible when grouping variables.
+
+```
+
+
+```{r cars}
+# First, let's see what columns you actually have
+print("Column names in your data:")
+print(names(all_data$normalized_data))
+
+
+heatmaps <- create_mea_heatmaps_enhanced(
+  processing_result = all_data,
+  grouping_columns = c("Genotype","Treatment"),  # Your actual column names
+  output_dir = file.path(main_directory, paste0("MEA_Plots")),
+  verbose = TRUE
+)
+
+```
