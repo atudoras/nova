@@ -7,7 +7,7 @@ A comprehensive R toolkit for analyzing and visualizing neural data outputs, inc
 
 ```r
 # Install from GitHub (replace 'yourusername' with your GitHub username)
-devtools::install_github("yourusername/NOVA")
+devtools::install_github("atudoras/NOVA")
 
 # Or install from CRAN (when available)
 install.packages("NOVA")
