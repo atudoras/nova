@@ -23,7 +23,7 @@ create_mea_heatmaps_enhanced(
   create_combined_heatmap = TRUE,
   create_variable_correlation = TRUE,
   output_dir = NULL,
-  save_plots = TRUE,
+  save_plots = FALSE,
   plot_format = "png",
   plot_width = 10,
   plot_height = 8,
@@ -76,9 +76,9 @@ Function will auto-detect which columns are available.}
 
 \item{create_variable_correlation}{Logical indicating whether to create variable correlation heatmap (default: TRUE).}
 
-\item{output_dir}{Character string specifying output directory for saved plots. If NULL, creates "mea_heatmaps" in current directory.}
+\item{output_dir}{Character string specifying output directory (default: NULL, no files saved)}
 
-\item{save_plots}{Logical indicating whether to save plots to disk (default: TRUE).}
+\item{save_plots}{Logical indicating whether to save plots to disk (default: FALSE)}
 
 \item{plot_format}{Character string specifying file format for saved plots (default: "png").}
 
@@ -106,13 +106,15 @@ Function will auto-detect which columns are available.}
 }
 \value{
 A list containing:
+\describe{
   \item{individual_heatmaps}{Named list of heatmap objects for each grouping variable}
   \item{combined_heatmap}{Heatmap object for grouping variable interactions (if applicable)}
   \item{variable_correlation}{List with correlation heatmap and correlation matrix}
   \item{metadata}{List containing processing information and parameters used}
-  Each heatmap object contains: heatmap (pheatmap object), scaled_data (processed matrix),
-  raw_data (aggregated input data), annotation (row annotations), annotation_colors (color schemes),
-  and scaling_info (scaling parameters).
+}
+Each heatmap object contains: heatmap (pheatmap object), scaled_data (processed matrix),
+raw_data (aggregated input data), annotation (row annotations), annotation_colors (color schemes),
+and scaling_info (scaling parameters).
 }
 \description{
 This function generates comprehensive heatmap visualizations for MEA data analysis,
@@ -144,39 +146,18 @@ color palettes appropriate for the scaling method chosen (diverging palettes for
 sequential palettes for min_max).
 }
 \examples{
-\dontrun{
 # Basic usage with processing result
-heatmaps <- create_mea_heatmaps_enhanced(
-  processing_result = mea_results,
-  scale_method = "z_score"
-)
+# heatmaps <- create_mea_heatmaps_enhanced(
+#   processing_result = mea_results,
+#   scale_method = "z_score"
+# )
+# 
+# Save plots to specific directory
+# heatmaps <- create_mea_heatmaps_enhanced(
+#   processing_result = results,
+#   save_plots = TRUE,
+#   output_dir = file.path(tempdir(), "heatmaps")
+# )
 
-# Custom grouping and scaling
-heatmaps <- create_mea_heatmaps_enhanced(
-  data = mea_data,
-  grouping_columns = c("Treatment", "Genotype", "Timepoint"),
-  scale_method = "robust",
-  aggregation_method = "median",
-  cluster_method = "correlation"
-)
 
-# High-quality publication plots
-heatmaps <- create_mea_heatmaps_enhanced(
-  processing_result = results,
-  save_plots = TRUE,
-  plot_format = "pdf",
-  dpi = 600,
-  plot_width = 12,
-  plot_height = 10,
-  fontsize = 12
-)
-
-# Access specific results
-treatment_heatmap <- heatmaps$treatment_heatmap$heatmap
-correlation_matrix <- heatmaps$variable_correlation$correlation_matrix
-}
-
-}
-\seealso{
-\code{\link{pheatmap}} for the underlying heatmap generation
 }

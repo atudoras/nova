@@ -19,6 +19,7 @@ pca_analysis_enhanced(
   value_column = "Normalized_Value",
   variable_column = "Variable",
   timepoint_column = "Timepoint",
+  output_path = NULL,
   verbose = TRUE
 )
 }
@@ -50,6 +51,8 @@ pca_analysis_enhanced(
 \item{variable_column}{Character. Name of column containing variable names (default: "Variable")}
 
 \item{timepoint_column}{Character. Name of column containing timepoint information (default: "Timepoint")}
+
+\item{output_path}{Character. Optional path to save elbow plot (default: NULL, no file saved)}
 
 \item{verbose}{Logical. Whether to print detailed progress messages (default: TRUE)}
 }
@@ -94,27 +97,26 @@ The function handles common MEA data challenges:
 - Variable numbers of experiments and conditions
 }
 \examples{
-\dontrun{
 # Method 1: Use output from MEA processing function
-mea_result <- process_mea_flexible("/path/to/data", baseline_timepoint = "baseline")
-pca_result <- pca_analysis_enhanced(processing_result = mea_result)
+# mea_result <- process_mea_flexible("/path/to/data", baseline_timepoint = "baseline")
+# pca_result <- pca_analysis_enhanced(processing_result = mea_result)
 
 # Method 2: Load from saved Excel file
-pca_result <- pca_analysis_enhanced(data_path = "/path/to/processed_data.xlsx")
+# pca_result <- pca_analysis_enhanced(data_path = "/path/to/processed_data.xlsx")
 
 # Method 3: Use pre-loaded data with custom parameters
-pca_result <- pca_analysis_enhanced(
-  normalized_data = my_data,
-  min_var = 0.05,
-  n_components = 5,
-  variance_cutoff = 80,
-  grouping_variables = c("Treatment", "Genotype", "Batch")
-)
+# pca_result <- pca_analysis_enhanced(
+#   normalized_data = my_data,
+#   min_var = 0.05,
+#   n_components = 5,
+#   variance_cutoff = 80,
+#   grouping_variables = c("Treatment", "Genotype", "Batch")
+# )
 
-# Access results
-plot(pca_result$elbow_plot)
-head(pca_result$plot_data)
-print(pca_result$components_needed)
-}
+# Save elbow plot to file
+# pca_result <- pca_analysis_enhanced(
+#   normalized_data = my_data,
+#   output_path = file.path(tempdir(), "elbow_plot.png")
+# )
 
 }

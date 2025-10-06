@@ -2,27 +2,37 @@
 % Please edit documentation in R/utilities.R
 \name{handle_missing_values}
 \alias{handle_missing_values}
-\title{Standardize Timepoint Names}
+\title{Handle Missing Values in MEA Data}
 \usage{
 handle_missing_values(data, value_column, method, verbose)
 }
 \arguments{
-\item{timepoints}{Character vector of timepoint names}
+\item{data}{Data frame containing MEA data}
 
-\item{naming_scheme}{Character. Standardization scheme to apply}
+\item{value_column}{Character string specifying the column with values to process}
 
-\item{...}{Additional parameters}
+\item{method}{Character string specifying handling method: "remove", "impute_mean", "impute_zero"}
+
+\item{verbose}{Logical indicating whether to print progress messages}
 }
 \value{
-Character vector with standardized timepoint names
+Data frame with missing values handled according to specified method
 }
 \description{
-Template function for standardizing timepoint naming across experiments
+Handles missing values in MEA datasets using various imputation strategies
+or removal methods.
 }
 \examples{
-\dontrun{
-# Standardize timepoint names
-std_timepoints <- standardize_timepoint_names(c("1h", "1hr", "60min"))
-}
+# Create sample data with missing values
+test_data <- data.frame(
+  ID = 1:10,
+  Value = c(1.2, NA, 3.4, 2.1, NA, 5.6, 4.3, NA, 2.8, 3.9)
+)
+
+# Remove rows with missing values
+cleaned <- handle_missing_values(test_data, "Value", method = "remove", verbose = FALSE)
+
+# Impute with mean
+imputed <- handle_missing_values(test_data, "Value", method = "impute_mean", verbose = TRUE)
 
 }

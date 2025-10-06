@@ -30,16 +30,10 @@
 #' - Rows 125-168: Variable names and measurements
 #'
 #' @examples
-#' \dontrun{
-#' # Discover structure of MEA data
-#' structure <- discover_mea_structure("/path/to/mea/data")
-#' 
-#' # View discovered experiments
-#' names(structure$experiments)
-#' 
-#' # Check available timepoints
-#' structure$all_timepoints
-#' }
+#' # Discover structure of MEA data (requires data directory)
+#' # structure <- discover_mea_structure("/path/to/mea/data")
+#' # names(structure$experiments)
+#' # structure$all_timepoints
 #'
 #' @export
 discover_mea_structure <- function(main_dir, 
@@ -243,13 +237,15 @@ discover_mea_structure <- function(main_dir,
 #' @param unique_id_vars Character vector. Variables that uniquely identify observations for normalization
 #' @param exclude_std_variables Logical. Whether to automatically exclude standard deviation variables (default: TRUE)
 #' @param experiment_pattern Character. Regex pattern for experiment directories (default: "MEA\\d+")
+#' @param timepoint_fusions Timepoint fusions to generate
 #' @param verbose Logical. Whether to print progress messages (default: TRUE)
+#' @param output_path Character. Optional path for output file (default: NULL saves to main_dir with auto-generated name)
 #'
 #' @return A list containing:
 #'   - raw_data: Processed data in long format
 #'   - normalized_data: Baseline-normalized data (if baseline_timepoint specified)
 #'   - processing_params: List of parameters used for processing
-#'   - output_path: Path to saved Excel file
+#'   - output_path: Path to saved Excel file (only if output_path was provided)
 #'   - experiment_name: Combined experiment identifier
 #'
 #' @details
@@ -257,25 +253,19 @@ discover_mea_structure <- function(main_dir,
 #' in their names (e.g., "Number of Spikes - Std") while keeping average/mean variables
 #' (e.g., "Number of Spikes - Avg"). Wells marked with "Ex" or "ex" in row 124 are excluded.
 #' 
-#' Data is exported to Excel format with separate sheets for raw and normalized data.
+#' By default, no files are written. To save output, provide an explicit output_path parameter.
 #' Normalization creates fold-change values relative to baseline timepoint.
 #'
 #' @examples
-#' \dontrun{
-#' # Process all experiments and timepoints
-#' result <- process_mea_flexible("/path/to/mea/data")
+#' # Process data without saving (returns data frames only)
+#' # result <- process_mea_flexible("/path/to/mea/data")
+#' # raw_data <- result$raw_data
 #' 
-#' # Process specific experiments with baseline normalization
-#' result <- process_mea_flexible(
-#'   main_dir = "/path/to/data",
-#'   selected_experiments = c("MEA001", "MEA002"), 
-#'   baseline_timepoint = "baseline"
-#' )
-#' 
-#' # Access processed data
-#' raw_data <- result$raw_data
-#' normalized_data <- result$normalized_data
-#' }
+#' # Save output by providing explicit path
+#' # result <- process_mea_flexible(
+#' #   main_dir = "/path/to/data",
+#' #   output_path = file.path(tempdir(), "mea_output.xlsx")
+#' # )
 #' @export
 process_mea_flexible <- function(main_dir,
                                  selected_experiments = NULL,
@@ -286,7 +276,8 @@ process_mea_flexible <- function(main_dir,
                                  exclude_std_variables = TRUE,
                                  experiment_pattern = "MEA\\d+",
                                  timepoint_fusions = NULL,
-                                 verbose = TRUE) {
+                                 verbose = TRUE,
+                                 output_path = NULL) {
   
   if (verbose) cat("=== PROCESSING MEA DATA WITH USER PARAMETERS ===\n")
   
@@ -638,42 +629,45 @@ process_mea_flexible <- function(main_dir,
   }
   
   # ============================================================================
-  # SAVE RESULTS
+  # SAVE RESULTS (ONLY IF OUTPUT PATH PROVIDED)
   # ============================================================================
   
-  # Generate output filename and save results
-  experiment_name <- paste(selected_experiments, collapse = "_")
-  timestamp <- format(Sys.time(), "%Y%m%d_%H%M%S")
-  output_filename <- paste0("MEA_processed_", experiment_name, "_", timestamp, ".xlsx")
-  output_path <- file.path(main_dir, output_filename)
-  
-  # Prepare data for Excel export
-  export_data <- list("raw_data" = final_data)
-  if (!is.null(normalized_data)) {
-    export_data$normalized_data <- normalized_data
+  saved_path <- NULL
+  if (!is.null(output_path)) {
+    # Prepare data for Excel export
+    export_data <- list("raw_data" = final_data)
+    if (!is.null(normalized_data)) {
+      export_data$normalized_data <- normalized_data
+    }
+    
+    # Add fusion mapping info if used
+    if (!is.null(fusion_map)) {
+      fusion_info <- data.frame(
+        Source_Timepoint = names(fusion_map),
+        Target_Timepoint = unlist(fusion_map),
+        stringsAsFactors = FALSE
+      )
+      export_data$timepoint_fusions <- fusion_info
+    }
+    
+    # Export to Excel file
+    writexl::write_xlsx(export_data, path = output_path)
+    saved_path <- output_path
+    
+    if (verbose) cat("\n [OK] Data saved to:", output_path, "\n")
+  } else {
+    if (verbose) cat("\n [INFO] No output file saved (output_path not specified)\n")
   }
-  
-  # Add fusion mapping info if used
-  if (!is.null(fusion_map)) {
-    fusion_info <- data.frame(
-      Source_Timepoint = names(fusion_map),
-      Target_Timepoint = unlist(fusion_map),
-      stringsAsFactors = FALSE
-    )
-    export_data$timepoint_fusions <- fusion_info
-  }
-  
-  # Export to Excel file
-  writexl::write_xlsx(export_data, path = output_path)
-  
-  if (verbose) cat("\n✅ Data saved to:", output_path, "\n")
   
   # ============================================================================
   # RETURN COMPREHENSIVE RESULTS
   # ============================================================================
   
+  # Generate experiment name for reference
+  experiment_name <- paste(selected_experiments, collapse = "_")
+  
   # Return comprehensive results
-  return(list(
+  result <- list(
     raw_data = final_data,
     normalized_data = normalized_data,
     processing_params = list(
@@ -686,11 +680,13 @@ process_mea_flexible <- function(main_dir,
       timepoint_fusions = timepoint_fusions,
       fusion_map = fusion_map
     ),
-    output_path = output_path,
     experiment_name = experiment_name
-  ))
+  )
+  
+  # Only add output_path if file was actually saved
+  if (!is.null(saved_path)) {
+    result$output_path <- saved_path
+  }
+  
+  return(result)
 }
-
-
-
-# Add more data handling functions here as you share them

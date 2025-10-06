@@ -6,7 +6,7 @@
 \usage{
 analyze_pca_variable_importance_general(
   pca_result = NULL,
-  output_dir = "pca_plots",
+  output_dir = tempdir(),
   experiment_name = "PCA_Analysis",
   pc_x = "PC1",
   pc_y = "PC2",
@@ -44,11 +44,13 @@ containing a PCA object in fields named 'pca_result', 'pca', 'result', or 'prcom
 }
 \value{
 A list containing:
+\describe{
   \item{plots}{Named list of ggplot objects: 'biplot', 'importance_bar', 'pc_comparison', 'heatmap'}
   \item{variable_importance}{Data frame with comprehensive variable importance metrics for all variables}
   \item{selected_variables}{Data frame containing the top N most important variables with detailed statistics}
   \item{analysis_summary}{List with key analysis metrics and variance explained information}
   \item{config_used}{List documenting all parameters used in the analysis}
+}
 }
 \description{
 This function performs comprehensive analysis of variable importance in Principal Component Analysis,
@@ -91,7 +93,9 @@ Color schemes provide different aesthetic options:
 }
 \section{Output Files}{
 
-When \code{save_plots = TRUE}, the function creates:
+When \code{save_plots = TRUE}, the function creates files in the specified
+output directory (default: "pca_plots"). For CRAN compliance, use \code{tempdir()}
+for the output directory:
 \itemize{
   \item PNG files for each visualization type
   \item CSV file with complete variable importance rankings
@@ -101,34 +105,21 @@ When \code{save_plots = TRUE}, the function creates:
 }
 
 \examples{
-\dontrun{
-# Basic analysis with default settings
-results <- analyze_pca_variable_importance_general(pca_result = my_pca)
+# Basic example with simulated data
+set.seed(123)
+test_data <- matrix(rnorm(100 * 10), nrow = 100, ncol = 10)
+colnames(test_data) <- paste0("Var", 1:10)
+pca_obj <- prcomp(test_data, scale. = TRUE)
 
-# Custom analysis focusing on PC2 vs PC3
+# Quick analysis without saving files
 results <- analyze_pca_variable_importance_general(
-  pca_result = my_pca,
-  pc_x = "PC2",
-  pc_y = "PC3",
-  experiment_name = "Treatment_Analysis",
-  color_scheme = "viridis",
-  top_n = 20
-)
-
-# High-throughput analysis with minimal output
-results <- analyze_pca_variable_importance_general(
-  pca_result = my_pca,
+  pca_result = pca_obj,
   save_plots = FALSE,
-  show_labels = FALSE,
-  verbose = FALSE,
-  top_n = 50
+  verbose = FALSE
 )
 
-# Access specific results
-importance_table <- results$variable_importance
-top_variables <- results$selected_variables
-biplot <- results$plots$biplot
-}
+# View top variables
+head(results$selected_variables)
 
 }
 \seealso{

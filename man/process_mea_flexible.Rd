@@ -14,7 +14,8 @@ process_mea_flexible(
   exclude_std_variables = TRUE,
   experiment_pattern = "MEA\\\\d+",
   timepoint_fusions = NULL,
-  verbose = TRUE
+  verbose = TRUE,
+  output_path = NULL
 )
 }
 \arguments{
@@ -34,14 +35,18 @@ process_mea_flexible(
 
 \item{experiment_pattern}{Character. Regex pattern for experiment directories (default: "MEA\\d+")}
 
+\item{timepoint_fusions}{Timepoint fusions to generate}
+
 \item{verbose}{Logical. Whether to print progress messages (default: TRUE)}
+
+\item{output_path}{Character. Optional path for output file (default: NULL saves to main_dir with auto-generated name)}
 }
 \value{
 A list containing:
   - raw_data: Processed data in long format
   - normalized_data: Baseline-normalized data (if baseline_timepoint specified)
   - processing_params: List of parameters used for processing
-  - output_path: Path to saved Excel file
+  - output_path: Path to saved Excel file (only if output_path was provided)
   - experiment_name: Combined experiment identifier
 }
 \description{
@@ -55,23 +60,17 @@ The function automatically detects and excludes variables containing "Std", "std
 in their names (e.g., "Number of Spikes - Std") while keeping average/mean variables
 (e.g., "Number of Spikes - Avg"). Wells marked with "Ex" or "ex" in row 124 are excluded.
 
-Data is exported to Excel format with separate sheets for raw and normalized data.
+By default, no files are written. To save output, provide an explicit output_path parameter.
 Normalization creates fold-change values relative to baseline timepoint.
 }
 \examples{
-\dontrun{
-# Process all experiments and timepoints
-result <- process_mea_flexible("/path/to/mea/data")
+# Process data without saving (returns data frames only)
+# result <- process_mea_flexible("/path/to/mea/data")
+# raw_data <- result$raw_data
 
-# Process specific experiments with baseline normalization
-result <- process_mea_flexible(
-  main_dir = "/path/to/data",
-  selected_experiments = c("MEA001", "MEA002"), 
-  baseline_timepoint = "baseline"
-)
-
-# Access processed data
-raw_data <- result$raw_data
-normalized_data <- result$normalized_data
-}
+# Save output by providing explicit path
+# result <- process_mea_flexible(
+#   main_dir = "/path/to/data",
+#   output_path = file.path(tempdir(), "mea_output.xlsx")
+# )
 }
