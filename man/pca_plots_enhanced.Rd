@@ -2,7 +2,7 @@
 % Please edit documentation in R/plots.R
 \name{pca_plots_enhanced}
 \alias{pca_plots_enhanced}
-\title{Plot PCA Biplot}
+\title{Enhanced PCA Plotting for Neural and Omics Data}
 \usage{
 pca_plots_enhanced(
   pca_output = NULL,
@@ -18,7 +18,7 @@ pca_plots_enhanced(
   pannels_var = NULL,
   components = c(1, 2),
   gray_color_value = NULL,
-  save_plots = TRUE,
+  save_plots = FALSE,
   plot_width = 12,
   plot_height = 10,
   dpi = 300,
@@ -32,7 +32,7 @@ pca_plots_enhanced(
 
 \item{pca_result}{List. PCA result object (e.g., from prcomp() or princomp())}
 
-\item{output_dir}{Character. Directory path for saving plots (default: current working directory)}
+\item{output_dir}{Character. Directory path for saving plots (default: NULL, no files saved)}
 
 \item{processing_result}{List. Result object from process_mea_flexible() (optional)}
 
@@ -46,11 +46,13 @@ pca_plots_enhanced(
 
 \item{secondary_shape_variable}{Character. Alternative shape variable (default: "Timepoint")}
 
+\item{pannels_var}{Character. Variable for panel faceting (default: NULL)}
+
 \item{components}{Numeric vector. PC components to plot (default: c(1, 2))}
 
 \item{gray_color_value}{Character. Specific value of color_variable to display in gray (default: NULL)}
 
-\item{save_plots}{Logical. Whether to save plots to files (default: TRUE)}
+\item{save_plots}{Logical. Whether to save plots to files (default: FALSE)}
 
 \item{plot_width}{Numeric. Plot width in inches (default: 12)}
 
@@ -59,23 +61,10 @@ pca_plots_enhanced(
 \item{dpi}{Numeric. Plot resolution (default: 300)}
 
 \item{verbose}{Logical. Whether to print progress messages (default: TRUE)}
-
-\item{pc_x}{Integer. Principal component for x-axis (default: 1)}
-
-\item{pc_y}{Integer. Principal component for y-axis (default: 2)}
-
-\item{color_by}{Character. Variable to color points by}
-
-\item{shape_by}{Character. Variable to shape points by}
-
-\item{show_loadings}{Logical. Whether to show loading vectors (default: TRUE)}
-
-\item{...}{Additional plotting parameters}
 }
 \value{
-ggplot object
-
 A list containing:
+\describe{
   \item{plots}{Named list of ggplot objects for each plot type}
   \item{plot_data}{Data.frame with plotting data and metadata}
   \item{variance_explained}{Numeric vector of variance explained by each component}
@@ -85,69 +74,30 @@ A list containing:
   \item{plotting_config}{List of configuration parameters used}
   \item{saved_files}{Character vector of saved file paths (if save_plots = TRUE)}
 }
+}
 \description{
-Template function for creating PCA biplots
-}
-\details{
-The function creates up to 5 different plot variants:
-\enumerate{
-  \item Primary combination: color + shape mapping
-  \item Secondary combination: color + alternative shape mapping
-  \item Color only: simplified view with larger points
-  \item Color with ellipses: 95% confidence ellipses around groups
-  \item Faceted plots: color mapping with faceting by third variable
-}
-
-The function uses a carefully curated scientific color palette optimized for
-publications and colorblind accessibility. The gray_color_value parameter
-allows highlighting specific experimental conditions by displaying them in gray.
-
-Input flexibility:
-\itemize{
-  \item Use complete pca_output object from integrated analysis pipeline
-  \item Use processing_result from process_mea_flexible() with separate PCA results
-  \item Manually specify plot_data and pca_result for custom workflows
-}
-}
-\examples{
-\dontrun{
-# Create PCA biplot colored by treatment
-p <- plot_pca_biplot(pca_results, color_by = "treatment")
-print(p)
-}
-
-Enhanced PCA Plotting for Neural and Omics Data
-
 Creates publication-ready PCA plots with scientific color palettes, flexible
 aesthetic mapping, and multiple visualization options. Designed specifically
 for neural activity and omics datasets with support for complex experimental
 designs including treatments, genotypes, and timepoints.
-
-\dontrun{
-# Using complete PCA output object
-plots <- pca_plots_enhanced(
-  pca_output = my_pca_results,
-  experiment_name = "MEA_Experiment_2024",
-  gray_color_value = "Control"
-)
-
-# Using separate components
-plots <- pca_plots_enhanced(
-  plot_data = pca_data,
-  pca_result = pca_obj,
-  experiment_name = "Custom_Analysis",
-  color_variable = "Treatment",
-  shape_variable = "Genotype",
-  components = c(2, 3)
-)
-
-# Access individual plots
-primary_plot <- plots$plots$primary_combination
-ellipse_plot <- plots$plots$color_with_ellipses
-
-# View all plots
-lapply(plots$plots, print)
 }
+\details{
+The function creates up to 5 different plot variants. Files are only saved when
+save_plots = TRUE AND output_dir is explicitly provided.
+}
+\examples{
+# Using complete PCA output object
+# plots <- pca_plots_enhanced(
+#   pca_output = my_pca_results,
+#   experiment_name = "MEA_Experiment_2024"
+# )
+#
+# Save plots to specific directory
+# plots <- pca_plots_enhanced(
+#   pca_output = my_pca_results,
+#   output_dir = file.path(tempdir(), "pca_plots"),
+#   save_plots = TRUE
+# )
 
 }
 \seealso{

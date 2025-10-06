@@ -44,15 +44,9 @@ The function expects MEA CSV files with standard format:
 - Rows 125-168: Variable names and measurements
 }
 \examples{
-\dontrun{
-# Discover structure of MEA data
-structure <- discover_mea_structure("/path/to/mea/data")
-
-# View discovered experiments
-names(structure$experiments)
-
-# Check available timepoints
-structure$all_timepoints
-}
+# Discover structure of MEA data (requires data directory)
+# structure <- discover_mea_structure("/path/to/mea/data")
+# names(structure$experiments)
+# structure$all_timepoints
 
 }

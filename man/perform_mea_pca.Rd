@@ -24,15 +24,9 @@ List containing PCA results (scores, loadings, variance explained, etc.)
 Template function for performing PCA on MEA data
 }
 \examples{
-\dontrun{
-# Perform PCA analysis
-pca_results <- perform_mea_pca(processed_data)
-
-# Access PC scores
-scores <- pca_results$scores
-
-# Access loadings
-loadings <- pca_results$loadings
-}
+# Perform PCA analysis (requires processed MEA data)
+# pca_results <- perform_mea_pca(processed_data)
+# scores <- pca_results$scores
+# loadings <- pca_results$loadings
 
 }

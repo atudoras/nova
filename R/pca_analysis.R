@@ -14,16 +14,10 @@
 #' @return List containing PCA results (scores, loadings, variance explained, etc.)
 #'
 #' @examples
-#' \dontrun{
-#' # Perform PCA analysis
-#' pca_results <- perform_mea_pca(processed_data)
-#' 
-#' # Access PC scores
-#' scores <- pca_results$scores
-#' 
-#' # Access loadings
-#' loadings <- pca_results$loadings
-#' }
+#' # Perform PCA analysis (requires processed MEA data)
+#' # pca_results <- perform_mea_pca(processed_data)
+#' # scores <- pca_results$scores
+#' # loadings <- pca_results$loadings
 #'
 #' @export
 perform_mea_pca <- function(data, variables = NULL, scale = TRUE, center = TRUE, ...) {
@@ -52,6 +46,7 @@ perform_mea_pca <- function(data, variables = NULL, scale = TRUE, center = TRUE,
 #' @param value_column Character. Name of column containing values for PCA (default: "Normalized_Value")
 #' @param variable_column Character. Name of column containing variable names (default: "Variable")
 #' @param timepoint_column Character. Name of column containing timepoint information (default: "Timepoint")
+#' @param output_path Character. Optional path to save elbow plot (default: NULL, no file saved)
 #' @param verbose Logical. Whether to print detailed progress messages (default: TRUE)
 #'
 #' @return A list containing:
@@ -88,29 +83,29 @@ perform_mea_pca <- function(data, variables = NULL, scale = TRUE, center = TRUE,
 #' - Variable numbers of experiments and conditions
 #'
 #' @examples
-#' \dontrun{
 #' # Method 1: Use output from MEA processing function
-#' mea_result <- process_mea_flexible("/path/to/data", baseline_timepoint = "baseline")
-#' pca_result <- pca_analysis_enhanced(processing_result = mea_result)
+#' # mea_result <- process_mea_flexible("/path/to/data", baseline_timepoint = "baseline")
+#' # pca_result <- pca_analysis_enhanced(processing_result = mea_result)
 #' 
 #' # Method 2: Load from saved Excel file
-#' pca_result <- pca_analysis_enhanced(data_path = "/path/to/processed_data.xlsx")
+#' # pca_result <- pca_analysis_enhanced(data_path = "/path/to/processed_data.xlsx")
 #' 
 #' # Method 3: Use pre-loaded data with custom parameters
-#' pca_result <- pca_analysis_enhanced(
-#'   normalized_data = my_data,
-#'   min_var = 0.05,
-#'   n_components = 5,
-#'   variance_cutoff = 80,
-#'   grouping_variables = c("Treatment", "Genotype", "Batch")
-#' )
+#' # pca_result <- pca_analysis_enhanced(
+#' #   normalized_data = my_data,
+#' #   min_var = 0.05,
+#' #   n_components = 5,
+#' #   variance_cutoff = 80,
+#' #   grouping_variables = c("Treatment", "Genotype", "Batch")
+#' # )
 #' 
-#' # Access results
-#' plot(pca_result$elbow_plot)
-#' head(pca_result$plot_data)
-#' print(pca_result$components_needed)
-#' }
+#' # Save elbow plot to file
+#' # pca_result <- pca_analysis_enhanced(
+#' #   normalized_data = my_data,
+#' #   output_path = file.path(tempdir(), "elbow_plot.png")
+#' # )
 #'
+#' @importFrom ggplot2 annotate scale_x_continuous
 #' @export
 pca_analysis_enhanced <- function(normalized_data = NULL, 
                                   data_path = NULL, 
@@ -126,6 +121,7 @@ pca_analysis_enhanced <- function(normalized_data = NULL,
                                   value_column = "Normalized_Value",
                                   variable_column = "Variable",
                                   timepoint_column = "Timepoint",
+                                  output_path = NULL,
                                   verbose = TRUE) {
   
   if (verbose) cat("=== ENHANCED PCA ANALYSIS ===\n")
@@ -227,18 +223,18 @@ pca_analysis_enhanced <- function(normalized_data = NULL,
   # CONFIG SYSTEM INTEGRATION WITH SMART DEFAULTS
   # ============================================================================
   
-  # Define %||% operator for NULL coalescing if not already defined
-  `%||%` <- function(x, y) if (is.null(x)) y else x
+  # Define null_c operator for NULL coalescing if not already defined
+  null_coalesce <- function(x, y) if (is.null(x)) y else x
   
   # Set config-based defaults if config provided
   if (!is.null(config)) {
-    if (is.null(min_var)) min_var <- config$min_variance_threshold %||% 0.01
-    if (is.null(impute)) impute <- config$impute_missing %||% TRUE
-    if (is.null(scale_data)) scale_data <- config$scale_pca_data %||% TRUE
-    if (is.null(n_components)) n_components <- config$pca_components %||% 2
-    if (is.null(variance_cutoff)) variance_cutoff <- config$pca_variance_cutoff %||% 70
-    if (is.null(grouping_variables)) grouping_variables <- config$grouping_variables %||% c("Treatment", "Genotype")
-    if (is.null(sample_id_components)) sample_id_components <- config$sample_id_components %||% c("Well", "Timepoint", "Treatment", "Genotype")
+    if (is.null(min_var)) min_var <- null_coalesce(config$min_variance_threshold, 0.01)
+    if (is.null(impute)) impute <- null_coalesce(config$impute_missing, TRUE)
+    if (is.null(scale_data)) scale_data <- null_coalesce(config$scale_pca_data, TRUE)
+    if (is.null(n_components)) n_components <- null_coalesce(config$pca_components, 2)
+    if (is.null(variance_cutoff)) variance_cutoff <- null_coalesce(config$pca_variance_cutoff, 70)
+    if (is.null(grouping_variables)) grouping_variables <- null_coalesce(config$grouping_variables, c("Treatment", "Genotype"))
+    if (is.null(sample_id_components)) sample_id_components <- null_coalesce(config$sample_id_components, c("Well", "Timepoint", "Treatment", "Genotype"))
   } else {
     # Fallback defaults when no config provided
     if (is.null(min_var)) min_var <- 0.01
@@ -260,10 +256,6 @@ pca_analysis_enhanced <- function(normalized_data = NULL,
     cat("  Grouping variables:", paste(grouping_variables, collapse = ", "), "\n")
   }
   
-  # Load required packages
-  library(dplyr)
-  library(tidyr)
-  library(ggplot2)
   
   # ============================================================================
   # FLEXIBLE DATA PREPARATION
@@ -474,6 +466,12 @@ pca_analysis_enhanced <- function(normalized_data = NULL,
       axis.title = element_text(size = 10),
       axis.text = element_text(size = 9)
     )
+  
+  # Save plot only if output_path is provided
+  if (!is.null(output_path)) {
+    ggsave(output_path, plot = elbow_plot, width = 10, height = 6, dpi = 300)
+    if (verbose) cat("Elbow plot saved to:", output_path, "\n")
+  }
   
   # ============================================================================
   # PREPARE PLOT DATA

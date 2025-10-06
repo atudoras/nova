@@ -1,28 +1,38 @@
 # utilities.R
 # Helper functions and utilities for MEA data analysis
 
-#' Standardize Timepoint Names
+#' Handle Missing Values in MEA Data
 #' 
-#' Template function for standardizing timepoint naming across experiments
+#' Handles missing values in MEA datasets using various imputation strategies
+#' or removal methods.
 #'
-#' @param timepoints Character vector of timepoint names
-#' @param naming_scheme Character. Standardization scheme to apply
-#' @param ... Additional parameters
+#' @param data Data frame containing MEA data
+#' @param value_column Character string specifying the column with values to process
+#' @param method Character string specifying handling method: "remove", "impute_mean", "impute_zero"
+#' @param verbose Logical indicating whether to print progress messages
 #'
-#' @return Character vector with standardized timepoint names
+#' @return Data frame with missing values handled according to specified method
 #'
 #' @examples
-#' \dontrun{
-#' # Standardize timepoint names
-#' std_timepoints <- standardize_timepoint_names(c("1h", "1hr", "60min"))
-#' }
+#' # Create sample data with missing values
+#' test_data <- data.frame(
+#'   ID = 1:10,
+#'   Value = c(1.2, NA, 3.4, 2.1, NA, 5.6, 4.3, NA, 2.8, 3.9)
+#' )
+#' 
+#' # Remove rows with missing values
+#' cleaned <- handle_missing_values(test_data, "Value", method = "remove", verbose = FALSE)
+#' 
+#' # Impute with mean
+#' imputed <- handle_missing_values(test_data, "Value", method = "impute_mean", verbose = TRUE)
 #'
+#' @export
 handle_missing_values <- function(data, value_column, method, verbose) {
   original_na <- sum(is.na(data[[value_column]]))
   
   switch(method,
          "remove" = {
-           data <- data %>% filter(!is.na(.data[[value_column]]))
+           data <- data %>% dplyr::filter(!is.na(.data[[value_column]]))
          },
          "impute_mean" = {
            mean_val <- mean(data[[value_column]], na.rm = TRUE)
@@ -41,31 +51,45 @@ handle_missing_values <- function(data, value_column, method, verbose) {
   return(data)
 }
 
+#' Filter Data by Quality Metrics
+#' 
+#' Filters variables and groups based on observation counts and data completeness
+#'
+#' @param data Data frame to filter
+#' @param variable_column Column name containing variable identifiers
+#' @param value_column Column name containing values to assess
+#' @param grouping_columns Vector of column names for grouping
+#' @param quality_threshold Minimum data completeness ratio (0-1)
+#' @param min_observations Minimum number of observations required
+#' @param verbose Whether to print filtering results
+#'
+#' @return Filtered data frame
+#' @export
 quality_filter <- function(data, variable_column, value_column, grouping_columns, 
                            quality_threshold, min_observations, verbose) {
   original_vars <- length(unique(data[[variable_column]]))
   
   # Remove variables with insufficient observations
   var_counts <- data %>%
-    group_by(.data[[variable_column]]) %>%
-    summarise(n_obs = n(), .groups = 'drop') %>%
-    filter(n_obs >= min_observations)
+    dplyr::group_by(.data[[variable_column]]) %>%
+    dplyr::summarise(n_obs = dplyr::n(), .groups = 'drop') %>%
+    dplyr::filter(n_obs >= min_observations)
   
-  data <- data %>% filter(.data[[variable_column]] %in% var_counts[[variable_column]])
+  data <- data %>% dplyr::filter(.data[[variable_column]] %in% var_counts[[variable_column]])
   
   # Remove groups with insufficient data completeness
   if (length(grouping_columns) > 0) {
     for (group_col in grouping_columns) {
       if (group_col %in% names(data)) {
         group_quality <- data %>%
-          group_by(.data[[group_col]]) %>%
-          summarise(
-            completeness = sum(!is.na(.data[[value_column]])) / n(),
+          dplyr::group_by(.data[[group_col]]) %>%
+          dplyr::summarise(
+            completeness = sum(!is.na(.data[[value_column]])) / dplyr::n(),
             .groups = 'drop'
           ) %>%
-          filter(completeness >= quality_threshold)
+          dplyr::filter(completeness >= quality_threshold)
         
-        data <- data %>% filter(.data[[group_col]] %in% group_quality[[group_col]])
+        data <- data %>% dplyr::filter(.data[[group_col]] %in% group_quality[[group_col]])
       }
     }
   }
@@ -77,10 +101,23 @@ quality_filter <- function(data, variable_column, value_column, grouping_columns
   
   return(data)
 }
+
+#' Aggregate Data by Groups
+#' 
+#' Aggregates values within groups using specified method
+#'
+#' @param data Data frame to aggregate
+#' @param group_col Column name for grouping
+#' @param variable_column Column name containing variable identifiers
+#' @param value_column Column name containing values to aggregate
+#' @param method Aggregation method: "mean", "median", "sum"
+#'
+#' @return Aggregated data frame
+#' @export
 aggregate_data <- function(data, group_col, variable_column, value_column, method) {
   data %>%
-    group_by(.data[[group_col]], .data[[variable_column]]) %>%
-    summarise(
+    dplyr::group_by(.data[[group_col]], .data[[variable_column]]) %>%
+    dplyr::summarise(
       agg_value = switch(method,
                          "mean" = mean(.data[[value_column]], na.rm = TRUE),
                          "median" = median(.data[[value_column]], na.rm = TRUE),
@@ -90,6 +127,16 @@ aggregate_data <- function(data, group_col, variable_column, value_column, metho
     )
 }
 
+#' Apply Enhanced Scaling Methods
+#' 
+#' Applies various scaling methods to matrix data for heatmap visualization
+#'
+#' @param matrix_data Numeric matrix to scale
+#' @param scale_method Scaling method: "variable_0_10", "robust", "row", "column", "none"
+#' @param verbose Whether to print scaling information
+#'
+#' @return Scaled matrix
+#' @export
 apply_scaling_enhanced <- function(matrix_data, scale_method, verbose = FALSE) {
   if (verbose) cat("Applying scaling method:", scale_method, "\n")
   
@@ -139,6 +186,16 @@ apply_scaling_enhanced <- function(matrix_data, scale_method, verbose = FALSE) {
   )
 }
 
+#' Clean Heatmap Matrix
+#' 
+#' Removes rows and columns with insufficient finite values from matrix
+#'
+#' @param matrix_data Numeric matrix to clean
+#' @param min_finite Minimum number of finite values required per row/column
+#' @param verbose Whether to print cleaning information
+#'
+#' @return Cleaned matrix or NULL if insufficient data
+#' @export
 clean_heatmap_matrix <- function(matrix_data, min_finite = 2, verbose = FALSE) {
   if (nrow(matrix_data) == 0 || ncol(matrix_data) == 0) {
     if (verbose) cat("Warning: Empty matrix\n")
@@ -168,6 +225,15 @@ clean_heatmap_matrix <- function(matrix_data, min_finite = 2, verbose = FALSE) {
   return(matrix_clean)
 }
 
+#' Create Enhanced Annotations for Heatmaps
+#' 
+#' Creates annotation data frames and color schemes for heatmap visualization
+#'
+#' @param rownames_vector Vector of combined row names to parse
+#' @param factor_cols Vector of factor column names
+#'
+#' @return List containing annotations data frame and color schemes
+#' @export
 create_annotations_enhanced <- function(rownames_vector, factor_cols) {
   # Parse combined names back to individual factors
   split_names <- strsplit(rownames_vector, "_")
@@ -201,14 +267,24 @@ create_annotations_enhanced <- function(rownames_vector, factor_cols) {
   return(list(annotations = annotations, colors = annotation_colors))
 }
 
+#' Create Enhanced Color Palettes
+#' 
+#' Creates color palettes and breaks for heatmap visualization
+#'
+#' @param palette_name Name of color palette to use
+#' @param custom_colors Vector of custom colors (optional)
+#' @param data_matrix Data matrix to determine color range
+#'
+#' @return List containing colors and breaks
+#' @export
 create_color_palette_enhanced <- function(palette_name = "yellow_purple", custom_colors = NULL, data_matrix = NULL) {
   if (!is.null(custom_colors)) {
-    colors <- colorRampPalette(custom_colors)(100)
+    colors <- grDevices::colorRampPalette(custom_colors)(100)
     breaks <- seq(min(data_matrix, na.rm = TRUE), max(data_matrix, na.rm = TRUE), length.out = 101)
   } else {
     switch(palette_name,
            "yellow_purple" = {
-             colors <- colorRampPalette(c("#FFFFCC", "#A1DAB4", "#41B6C4", "#2C7FB8", "#253494"))(100)
+             colors <- grDevices::colorRampPalette(c("#FFFFCC", "#A1DAB4", "#41B6C4", "#2C7FB8", "#253494"))(100)
              data_range <- range(data_matrix, na.rm = TRUE)
              breaks <- seq(data_range[1], data_range[2], length.out = 101)
            },
@@ -218,7 +294,7 @@ create_color_palette_enhanced <- function(palette_name = "yellow_purple", custom
              breaks <- seq(data_range[1], data_range[2], length.out = 101)
            },
            "RdBu" = {
-             colors <- colorRampPalette(RColorBrewer::brewer.pal(11, "RdBu"))(100)
+             colors <- grDevices::colorRampPalette(RColorBrewer::brewer.pal(11, "RdBu"))(100)
              # For correlation matrices, center around 0
              data_range <- range(data_matrix, na.rm = TRUE)
              max_abs <- max(abs(data_range))
@@ -236,7 +312,7 @@ create_color_palette_enhanced <- function(palette_name = "yellow_purple", custom
            },
            {
              # Default to improved yellow-purple
-             colors <- colorRampPalette(c("#FFFFCC", "#A1DAB4", "#41B6C4", "#2C7FB8", "#253494"))(100)
+             colors <- grDevices::colorRampPalette(c("#FFFFCC", "#A1DAB4", "#41B6C4", "#2C7FB8", "#253494"))(100)
              data_range <- range(data_matrix, na.rm = TRUE)
              breaks <- seq(data_range[1], data_range[2], length.out = 101)
            }
@@ -246,12 +322,33 @@ create_color_palette_enhanced <- function(palette_name = "yellow_purple", custom
   return(list(colors = colors, breaks = breaks))
 }
 
-# Helper function for null coalescing (R equivalent of %||%)
-
-`%||%` <- function(lhs, rhs) {
+#' Null Coalescing Operator
+#' 
+#' Returns the left-hand side if not NULL, otherwise the right-hand side
+#'
+#' @param lhs Left-hand side value
+#' @param rhs Right-hand side value (default/fallback)
+#'
+#' @return lhs if not NULL, otherwise rhs
+#' @export
+null_coalesce <- function(lhs, rhs) {
   if (!is.null(lhs)) lhs else rhs
 }
-
+#' Print Detailed PCA Variable Summary
+#' 
+#' Prints formatted summary of PCA variable importance analysis
+#'
+#' @param top_vars Data frame of top variables by combined importance
+#' @param pc_x_top Data frame of top variables for first PC
+#' @param pc_y_top Data frame of top variables for second PC
+#' @param high_both Data frame of variables important in both PCs
+#' @param pc_x Name of first principal component
+#' @param pc_y Name of second principal component
+#' @param top_n Number of top variables to display
+#' @param min_loading_threshold Minimum loading threshold
+#'
+#' @return NULL (prints to console)
+#' @export
 print_detailed_summary <- function(top_vars, pc_x_top, pc_y_top, high_both, 
                                    pc_x, pc_y, top_n, min_loading_threshold) {
   
@@ -294,6 +391,15 @@ print_detailed_summary <- function(top_vars, pc_x_top, pc_y_top, high_both,
   }
 }
 
+#' Setup Color Scheme
+#' 
+#' Sets up color schemes for plotting functions
+#'
+#' @param color_scheme Name of color scheme to use
+#' @param custom_colors Custom color list (optional)
+#'
+#' @return List of colors for plotting
+#' @export
 setup_color_scheme <- function(color_scheme, custom_colors) {
   if (color_scheme == "viridis") {
     return(list(

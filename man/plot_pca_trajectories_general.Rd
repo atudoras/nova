@@ -17,8 +17,8 @@ plot_pca_trajectories_general(
   line_size = 2,
   smooth_lines = FALSE,
   color_palette = NULL,
-  save_plots = TRUE,
-  output_dir = ".",
+  save_plots = FALSE,
+  output_dir = NULL,
   plot_prefix = "PCA_trajectories",
   width = 12,
   height = 8,
@@ -28,102 +28,62 @@ plot_pca_trajectories_general(
 )
 }
 \arguments{
-\item{pca_results}{A data frame or list containing PCA results. If a list, must contain
-a 'plot_data' component. If a data frame, will be used directly as plotting data.}
+\item{pca_results}{A data frame or list containing PCA results}
 
-\item{pc_x}{Character string specifying the principal component for x-axis (default: "PC1").}
+\item{pc_x}{Character string specifying the principal component for x-axis (default: "PC1")}
 
-\item{pc_y}{Character string specifying the principal component for y-axis (default: "PC2").}
+\item{pc_y}{Character string specifying the principal component for y-axis (default: "PC2")}
 
-\item{trajectory_grouping}{Character vector of column names to use for grouping trajectories.
-If NULL, the function will auto-detect suitable grouping variables.}
+\item{trajectory_grouping}{Character vector of column names for grouping trajectories}
 
-\item{timepoint_var}{Character string specifying the column name containing timepoint information
-(default: "Timepoint"). Function will attempt smart detection if not found.}
+\item{timepoint_var}{Character string specifying the timepoint column (default: "Timepoint")}
 
-\item{timepoint_order}{Character vector specifying the order of timepoints. If NULL,
-the function will attempt to auto-detect logical ordering (e.g., "baseline", "15min", "1h").}
+\item{timepoint_order}{Character vector specifying the order of timepoints}
 
-\item{individual_var}{Character string specifying the column for individual trajectory identification
-(default: "Experiment"). Used for creating separate trajectories per individual.}
+\item{individual_var}{Character string for individual trajectory identification (default: "Experiment")}
 
-\item{point_size}{Numeric value controlling the size of points in plots (default: 3).}
+\item{point_size}{Numeric value controlling point size (default: 3)}
 
-\item{alpha}{Numeric value between 0-1 controlling point transparency (default: 0.7).}
+\item{alpha}{Numeric value controlling transparency (default: 0.7)}
 
-\item{line_size}{Numeric value controlling the thickness of trajectory lines (default: 2).}
+\item{line_size}{Numeric value controlling line thickness (default: 2)}
 
-\item{smooth_lines}{Logical indicating whether to apply gentle smoothing to trajectories
-(default: FALSE). When TRUE, applies 75% linear + 25% spline smoothing.}
+\item{smooth_lines}{Logical indicating whether to apply smoothing (default: FALSE)}
 
-\item{color_palette}{Character vector of colors for different groups. If NULL,
-uses an automatic color palette.}
+\item{color_palette}{Character vector of colors for groups}
 
-\item{save_plots}{Logical indicating whether to automatically save plots to disk (default: TRUE).}
+\item{save_plots}{Logical indicating whether to save plots (default: FALSE)}
 
-\item{output_dir}{Character string specifying the directory for saving plots (default: ".").}
+\item{output_dir}{Character string specifying output directory (default: NULL)}
 
-\item{plot_prefix}{Character string prefix for saved plot filenames (default: "PCA_trajectories").}
+\item{plot_prefix}{Character string prefix for filenames (default: "PCA_trajectories")}
 
-\item{width}{Numeric value specifying plot width in inches (default: 12).}
+\item{width}{Numeric plot width in inches (default: 12)}
 
-\item{height}{Numeric value specifying plot height in inches (default: 8).}
+\item{height}{Numeric plot height in inches (default: 8)}
 
-\item{dpi}{Numeric value specifying plot resolution for saved files (default: 150).}
+\item{dpi}{Numeric plot resolution (default: 150)}
 
-\item{return_list}{Logical indicating whether to return results as a list (default: TRUE).}
+\item{return_list}{Logical indicating whether to return results as list (default: TRUE)}
 
-\item{verbose}{Logical indicating whether to print progress messages (default: TRUE).}
+\item{verbose}{Logical indicating whether to print messages (default: TRUE)}
 }
 \value{
-A list containing:
-  \item{plots}{Named list of ggplot objects for each generated plot}
-  \item{individual_trajectories}{Data frame with individual trajectory coordinates}
-  \item{group_average_trajectories}{Data frame with group-averaged trajectory coordinates}
-  \item{group_summary}{Data frame summarizing the number of trajectories per group}
-  \item{plotting_params}{List of parameters used for plotting}
-  \item{data_info}{List with basic information about the dataset}
+A list containing plots, trajectories, and metadata
 }
 \description{
 This function creates comprehensive visualizations of PCA trajectories over time,
 showing both individual and group-averaged trajectories with optional smoothing.
-It automatically detects grouping variables and timepoint ordering, and generates
-multiple plot types for detailed trajectory analysis.
-}
-\details{
-The function generates multiple plot types:
-\itemize{
-  \item Individual trajectory plots for each group
-  \item Group-averaged trajectory plots with error bars (SEM)
-  \item Combined plots showing all trajectories together
-}
-
-The function automatically detects and handles various timepoint naming conventions
-(e.g., "baseline", "15min", "1h", "2h", etc.) and creates logical ordering.
-Individual trajectories are identified by extracting well IDs from the experiment variable.
 }
 \examples{
-\dontrun{
-# Basic usage with auto-detection
-results <- plot_pca_trajectories_general(pca_data)
-
-# Specify custom grouping and timepoints
-results <- plot_pca_trajectories_general(
-  pca_data,
-  trajectory_grouping = c("Treatment", "Genotype"),
-  timepoint_order = c("baseline", "15min", "30min", "1h"),
-  smooth_lines = TRUE
-)
-
-# Custom styling and save options
-results <- plot_pca_trajectories_general(
-  pca_data,
-  point_size = 4,
-  line_size = 1.5,
-  color_palette = c("#E31A1C", "#1F78B4", "#33A02C"),
-  output_dir = "trajectory_plots",
-  plot_prefix = "experiment_PCA"
-)
-}
+# Basic usage
+# results <- plot_pca_trajectories_general(pca_data)
+# 
+# Save plots to directory
+# results <- plot_pca_trajectories_general(
+#   pca_data,
+#   save_plots = TRUE,
+#   output_dir = file.path(tempdir(), "trajectories")
+# )
 
 }

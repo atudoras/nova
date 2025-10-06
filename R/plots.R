@@ -1,27 +1,15 @@
 # plots.R
 # Functions for visualizing MEA data and PCA results
+#' @importFrom dplyr filter mutate select group_by summarise arrange %>% n case_when bind_rows full_join rename distinct first last n_distinct row_number
+#' @importFrom ggplot2 ggplot aes aes_string geom_point geom_line geom_segment labs theme_minimal theme coord_fixed scale_color_manual scale_shape_manual guides guide_legend facet_wrap stat_ellipse
+#' @importFrom stringr str_to_title str_detect
+#' @importFrom rlang syms .data
+#' @importFrom tidyr pivot_wider gather unite
+#' @importFrom scales alpha
+#' @importFrom grDevices colorRampPalette
+#' @importFrom stats approx smooth.spline predict median mad
+NULL
 
-#' Plot PCA Biplot
-#' 
-#' Template function for creating PCA biplots
-#'
-#' @param pca_result PCA result object or scores data frame
-#' @param pc_x Integer. Principal component for x-axis (default: 1)
-#' @param pc_y Integer. Principal component for y-axis (default: 2)
-#' @param color_by Character. Variable to color points by
-#' @param shape_by Character. Variable to shape points by
-#' @param show_loadings Logical. Whether to show loading vectors (default: TRUE)
-#' @param ... Additional plotting parameters
-#'
-#' @return ggplot object
-#'
-#' @examples
-#' \dontrun{
-#' # Create PCA biplot colored by treatment
-#' p <- plot_pca_biplot(pca_results, color_by = "treatment")
-#' print(p)
-#' }
-#'
 #' Enhanced PCA Plotting for Neural and Omics Data
 #'
 #' Creates publication-ready PCA plots with scientific color palettes, flexible
@@ -32,22 +20,24 @@
 #' @param pca_output List. Complete PCA output object from pca_analysis_enhanced() (optional)
 #' @param plot_data Data.frame. Data containing PC coordinates and metadata variables
 #' @param pca_result List. PCA result object (e.g., from prcomp() or princomp())
-#' @param output_dir Character. Directory path for saving plots (default: current working directory)
+#' @param output_dir Character. Directory path for saving plots (default: NULL, no files saved)
 #' @param processing_result List. Result object from process_mea_flexible() (optional)
 #' @param experiment_name Character. Name for the experiment (used in titles and filenames)
 #' @param grouping_variables Character vector. Available metadata variables for plotting (default: c("Treatment", "Genotype", "Timepoint"))
 #' @param color_variable Character. Variable name for color aesthetic (default: "Treatment")
 #' @param shape_variable Character. Variable name for shape aesthetic (default: "Genotype")
 #' @param secondary_shape_variable Character. Alternative shape variable (default: "Timepoint")
+#' @param pannels_var Character. Variable for panel faceting (default: NULL)
 #' @param components Numeric vector. PC components to plot (default: c(1, 2))
 #' @param gray_color_value Character. Specific value of color_variable to display in gray (default: NULL)
-#' @param save_plots Logical. Whether to save plots to files (default: TRUE)
+#' @param save_plots Logical. Whether to save plots to files (default: FALSE)
 #' @param plot_width Numeric. Plot width in inches (default: 12)
 #' @param plot_height Numeric. Plot height in inches (default: 10)
 #' @param dpi Numeric. Plot resolution (default: 300)
 #' @param verbose Logical. Whether to print progress messages (default: TRUE)
 #'
 #' @return A list containing:
+#' \describe{
 #'   \item{plots}{Named list of ggplot objects for each plot type}
 #'   \item{plot_data}{Data.frame with plotting data and metadata}
 #'   \item{variance_explained}{Numeric vector of variance explained by each component}
@@ -56,54 +46,25 @@
 #'   \item{shape_palette}{Named numeric vector of shapes used}
 #'   \item{plotting_config}{List of configuration parameters used}
 #'   \item{saved_files}{Character vector of saved file paths (if save_plots = TRUE)}
+#' }
 #'
 #' @details
-#' The function creates up to 5 different plot variants:
-#' \enumerate{
-#'   \item Primary combination: color + shape mapping
-#'   \item Secondary combination: color + alternative shape mapping
-#'   \item Color only: simplified view with larger points
-#'   \item Color with ellipses: 95% confidence ellipses around groups
-#'   \item Faceted plots: color mapping with faceting by third variable
-#' }
-#'
-#' The function uses a carefully curated scientific color palette optimized for
-#' publications and colorblind accessibility. The gray_color_value parameter
-#' allows highlighting specific experimental conditions by displaying them in gray.
-#'
-#' Input flexibility:
-#' \itemize{
-#'   \item Use complete pca_output object from integrated analysis pipeline
-#'   \item Use processing_result from process_mea_flexible() with separate PCA results
-#'   \item Manually specify plot_data and pca_result for custom workflows
-#' }
+#' The function creates up to 5 different plot variants. Files are only saved when
+#' save_plots = TRUE AND output_dir is explicitly provided.
 #'
 #' @examples
-#' \dontrun{
 #' # Using complete PCA output object
-#' plots <- pca_plots_enhanced(
-#'   pca_output = my_pca_results,
-#'   experiment_name = "MEA_Experiment_2024",
-#'   gray_color_value = "Control"
-#' )
-#'
-#' # Using separate components
-#' plots <- pca_plots_enhanced(
-#'   plot_data = pca_data,
-#'   pca_result = pca_obj,
-#'   experiment_name = "Custom_Analysis",
-#'   color_variable = "Treatment",
-#'   shape_variable = "Genotype",
-#'   components = c(2, 3)
-#' )
-#'
-#' # Access individual plots
-#' primary_plot <- plots$plots$primary_combination
-#' ellipse_plot <- plots$plots$color_with_ellipses
-#'
-#' # View all plots
-#' lapply(plots$plots, print)
-#' }
+#' # plots <- pca_plots_enhanced(
+#' #   pca_output = my_pca_results,
+#' #   experiment_name = "MEA_Experiment_2024"
+#' # )
+#' #
+#' # Save plots to specific directory
+#' # plots <- pca_plots_enhanced(
+#' #   pca_output = my_pca_results,
+#' #   output_dir = file.path(tempdir(), "pca_plots"),
+#' #   save_plots = TRUE
+#' # )
 #'
 #' @seealso
 #' \code{\link{process_mea_flexible}} for MEA data processing,
@@ -112,7 +73,7 @@
 #' @importFrom dplyr left_join mutate filter select
 #' @importFrom ggplot2 ggplot aes aes_string geom_point scale_color_manual scale_shape_manual
 #' @importFrom ggplot2 labs theme_minimal theme element_text element_rect element_blank element_line
-#' @importFrom ggplot2 coord_fixed guides guide_legend facet_wrap stat_ellipse ggsave unit margin
+#' @importFrom ggplot2 coord_fixed guides guide_legend facet_wrap stat_ellipse unit margin
 #' @importFrom stringr str_to_title
 #' @importFrom scales alpha
 #' @importFrom rlang syms
@@ -129,8 +90,8 @@ pca_plots_enhanced <- function(pca_output = NULL,
                                secondary_shape_variable = "Timepoint",
                                pannels_var = NULL,
                                components = c(1, 2),
-                               gray_color_value = NULL,  # NEW: Specify which color_variable value to make gray
-                               save_plots = TRUE,
+                               gray_color_value = NULL,
+                               save_plots = FALSE,
                                plot_width = 12,
                                plot_height = 10,
                                dpi = 300,
@@ -138,57 +99,35 @@ pca_plots_enhanced <- function(pca_output = NULL,
   
   if (verbose) cat("=== ENHANCED PCA PLOTTING ===\n")
   
-  library(dplyr)
-  library(ggplot2)
-  library(scales)
-  library(rlang)
-  library(stringr)  # Add this library for str_to_title()
-  
   # ============================================================================
   # FLEXIBLE INPUT HANDLING
   # ============================================================================
   
-  # Option 1: Use complete pca_output object (from pca_analysis_enhanced)
   if (!is.null(pca_output)) {
     if (verbose) cat("Using complete PCA output object...\n")
-    
     plot_data <- pca_output$plot_data
     pca_result <- pca_output$pca_result
-    
-    # Extract grouping variables from PCA output if available
     if (is.null(grouping_variables) && !is.null(pca_output$config_used$grouping_variables)) {
       grouping_variables <- pca_output$config_used$grouping_variables
     }
-    
-    # Extract output directory from processing source info
     if (is.null(output_dir) && !is.null(pca_output$processing_source) && pca_output$processing_source == "processing_result") {
-      # Will try to get from processing_result or use current directory
       output_dir <- getwd()
     }
-  }
-  
-  # Option 2: Use processing result (from process_mea_flexible_enhanced)
-  else if (!is.null(processing_result)) {
+  } else if (!is.null(processing_result)) {
     if (verbose) cat("Extracting PCA data from processing result...\n")
-    
     if (is.null(plot_data) || is.null(pca_result)) {
       stop("When using processing_result, you must also run PCA first and provide plot_data and pca_result")
     }
-    
     if (is.null(output_dir)) output_dir <- dirname(processing_result$output_path)
     if (is.null(experiment_name)) experiment_name <- processing_result$experiment_name
     if (is.null(grouping_variables)) grouping_variables <- processing_result$processing_params$grouping_variables
-  }
-  
-  # Option 3: Manual specification (backwards compatibility)
-  else {
+  } else {
     if (is.null(plot_data) || is.null(pca_result)) {
       stop("Must provide either pca_output, or both plot_data and pca_result")
     }
     if (verbose) cat("Using manually provided plot_data and pca_result...\n")
   }
   
-  # Set defaults
   if (is.null(output_dir)) output_dir <- getwd()
   if (is.null(experiment_name)) experiment_name <- paste0("MEA_PCA_", format(Sys.time(), "%Y%m%d_%H%M%S"))
   if (is.null(grouping_variables)) grouping_variables <- c("Treatment", "Genotype", "Timepoint")
@@ -207,7 +146,6 @@ pca_plots_enhanced <- function(pca_output = NULL,
   # VALIDATE AND PREPARE DATA
   # ============================================================================
   
-  # Check which grouping variables are actually available in the data
   available_columns <- names(plot_data)
   valid_grouping_vars <- grouping_variables[grouping_variables %in% available_columns]
   
@@ -216,7 +154,6 @@ pca_plots_enhanced <- function(pca_output = NULL,
     cat("Valid grouping variables:", paste(valid_grouping_vars, collapse = ", "), "\n")
   }
   
-  # Respect user input for variables, only fall back if they don't exist in data
   if (!color_variable %in% available_columns) {
     if (length(valid_grouping_vars) > 0) {
       old_color_variable <- color_variable
@@ -231,7 +168,6 @@ pca_plots_enhanced <- function(pca_output = NULL,
   }
   
   if (!shape_variable %in% available_columns) {
-    # Find an alternative that's not the color_variable
     available_alternatives <- valid_grouping_vars[valid_grouping_vars != color_variable]
     if (length(available_alternatives) > 0) {
       old_shape_variable <- shape_variable
@@ -246,7 +182,6 @@ pca_plots_enhanced <- function(pca_output = NULL,
   }
   
   if (!secondary_shape_variable %in% available_columns) {
-    # Find an alternative that's not the color_variable or shape_variable
     available_alternatives <- valid_grouping_vars[!valid_grouping_vars %in% c(color_variable, shape_variable)]
     if (length(available_alternatives) > 0) {
       old_secondary_shape_variable <- secondary_shape_variable
@@ -260,7 +195,6 @@ pca_plots_enhanced <- function(pca_output = NULL,
     if (verbose) cat("Using requested secondary shape variable:", secondary_shape_variable, "\n")
   }
   
-  # Get PC column names
   pc_cols <- paste0("PC", components)
   if (!all(pc_cols %in% available_columns)) {
     missing_pcs <- pc_cols[!pc_cols %in% available_columns]
@@ -282,20 +216,17 @@ pca_plots_enhanced <- function(pca_output = NULL,
   # CREATE COLOR AND SHAPE PALETTES WITH GRAY OPTION
   # ============================================================================
   
-  # Enhanced scientific color palette
   scientific_colors <- c(
-    "#E31A1C", "#1F78B4", "#33A02C", "#FF7F00", "#6A3D9A",  # Strong primary colors
-    "#FB9A99", "#A6CEE3", "#B2DF8A", "#FDBF6F", "#CAB2D6",  # Lighter versions
-    "#FFFF99", "#B15928", "#FF1493", "#00CED1", "#FFD700",   # Additional colors
-    "#8B008B", "#00FFFF", "#32CD32", "#8B4513", "#DC143C"   # More colors
+    "#E31A1C", "#1F78B4", "#33A02C", "#FF7F00", "#6A3D9A",
+    "#FB9A99", "#A6CEE3", "#B2DF8A", "#FDBF6F", "#CAB2D6",
+    "#FFFF99", "#B15928", "#FF1493", "#00CED1", "#FFD700",
+    "#8B008B", "#00FFFF", "#32CD32", "#8B4513", "#DC143C"
   )
   
-  # Create color mapping for primary color variable with gray option
   if (!is.null(color_variable)) {
     unique_color_vals <- sort(unique(plot_data[[color_variable]]))
     n_colors <- length(unique_color_vals)
     
-    # Validate gray_color_value if provided
     if (!is.null(gray_color_value)) {
       if (!gray_color_value %in% unique_color_vals) {
         warning("Specified gray_color_value '", gray_color_value, "' not found in ", color_variable, 
@@ -304,14 +235,10 @@ pca_plots_enhanced <- function(pca_output = NULL,
       }
     }
     
-    # Create color palette
     if (!is.null(gray_color_value)) {
-      # Create palette with specified value as gray
       color_palette <- scientific_colors[1:min(n_colors, length(scientific_colors))]
       names(color_palette) <- unique_color_vals
-      
-      # Set the specified value to gray
-      color_palette[gray_color_value] <- "gray50"  # Medium gray
+      color_palette[gray_color_value] <- "gray50"
       
       if (verbose) {
         cat("Color mapping (", color_variable, ") with gray option:\n")
@@ -321,15 +248,12 @@ pca_plots_enhanced <- function(pca_output = NULL,
         }
       }
     } else {
-      # Standard color palette without gray
       color_palette <- scientific_colors[1:min(n_colors, length(scientific_colors))]
       names(color_palette) <- unique_color_vals
-      
       if (verbose) cat("Color mapping (", color_variable, "):", paste(names(color_palette), collapse = ", "), "\n")
     }
   }
   
-  # Create shape mappings
   basic_shapes <- c(16, 17, 15, 18, 19, 8, 0, 1, 2, 5, 6, 3, 4, 7, 9:14, 20:25)
   
   if (!is.null(shape_variable)) {
@@ -337,11 +261,9 @@ pca_plots_enhanced <- function(pca_output = NULL,
     n_shapes <- length(unique_shape_vals)
     shape_palette <- basic_shapes[1:min(n_shapes, length(basic_shapes))]
     names(shape_palette) <- unique_shape_vals
-    
     if (verbose) cat("Shape mapping (", shape_variable, "):", paste(names(shape_palette), "=", shape_palette, collapse = ", "), "\n")
   }
   
-  # Special handling for timepoint ordering if it's used
   if (!is.null(secondary_shape_variable) && secondary_shape_variable == "Timepoint") {
     standard_timepoints <- c("baseline", "0min", "15min", "30min", "45min", "1h", "1h15", "1h30", "1h45", "2h", "2h30", "3h")
     present_timepoints <- standard_timepoints[standard_timepoints %in% unique(plot_data$Timepoint)]
@@ -352,12 +274,10 @@ pca_plots_enhanced <- function(pca_output = NULL,
     
     plot_data$Timepoint <- factor(plot_data$Timepoint, levels = present_timepoints, ordered = TRUE)
     
-    # Progressive shapes for timepoints
     progressive_shapes <- c(16, 17, 15, 18, 19, 25, 8, 0, 1, 2, 5, 6)
     timepoint_shape_palette <- progressive_shapes[1:length(present_timepoints)]
     names(timepoint_shape_palette) <- present_timepoints
     
-    # Make the last timepoint distinctive
     if (length(timepoint_shape_palette) > 1) {
       timepoint_shape_palette[length(timepoint_shape_palette)] <- 8
     }
@@ -396,8 +316,6 @@ pca_plots_enhanced <- function(pca_output = NULL,
   # ============================================================================
   
   plots_list <- list()
-  
-  # Base aesthetic mapping
   base_aes <- aes_string(x = pc1_col, y = pc2_col)
   
   # --- PLOT 1: Color + Shape (Primary combination) ---
@@ -415,7 +333,7 @@ pca_plots_enhanced <- function(pca_output = NULL,
       scale_color_manual(values = color_palette, name = str_to_title(color_variable)) +
       scale_shape_manual(values = shape_palette, name = str_to_title(shape_variable)) +
       labs(
-        title = paste0("PCA Analysis: ", str_to_title(color_variable), " × ", str_to_title(shape_variable)),
+        title = paste0("PCA Analysis: ", str_to_title(color_variable), " x ", str_to_title(shape_variable)),
         subtitle = plot_subtitle,
         x = paste0("PC", components[1], " (", pc1_var, "% variance)"),
         y = paste0("PC", components[2], " (", pc2_var, "% variance)")
@@ -432,11 +350,10 @@ pca_plots_enhanced <- function(pca_output = NULL,
     print(p1)
   }
   
-  # --- PLOT 2: Color + Secondary Shape (e.g., Treatment + Timepoint) ---
+  # --- PLOT 2: Color + Secondary Shape ---
   if (!is.null(color_variable) && !is.null(secondary_shape_variable)) {
     if (verbose) cat("Creating Plot 2: Color =", color_variable, ", Shape =", secondary_shape_variable, "\n")
     
-    # Use appropriate shape palette
     if (secondary_shape_variable == "Timepoint" && exists("timepoint_shape_palette")) {
       sec_shape_palette <- timepoint_shape_palette
     } else {
@@ -456,7 +373,7 @@ pca_plots_enhanced <- function(pca_output = NULL,
       scale_color_manual(values = color_palette, name = str_to_title(color_variable)) +
       scale_shape_manual(values = sec_shape_palette, name = str_to_title(secondary_shape_variable)) +
       labs(
-        title = paste0("PCA Analysis: ", str_to_title(color_variable), " × ", str_to_title(secondary_shape_variable)),
+        title = paste0("PCA Analysis: ", str_to_title(color_variable), " x ", str_to_title(secondary_shape_variable)),
         subtitle = plot_subtitle,
         x = paste0("PC", components[1], " (", pc1_var, "% variance)"),
         y = paste0("PC", components[2], " (", pc2_var, "% variance)")
@@ -473,7 +390,7 @@ pca_plots_enhanced <- function(pca_output = NULL,
     print(p2)
   }
   
-  # --- PLOT 3: Color Only (Simplified view) ---
+  # --- PLOT 3: Color Only ---
   if (!is.null(color_variable)) {
     if (verbose) cat("Creating Plot 3: Color =", color_variable, " only\n")
     
@@ -500,7 +417,7 @@ pca_plots_enhanced <- function(pca_output = NULL,
     print(p3)
   }
   
-  # --- PLOT 4: Color with Ellipses (NEW) ---
+  # --- PLOT 4: Color with Ellipses ---
   if (!is.null(color_variable)) {
     if (verbose) cat("Creating Plot 4: Color =", color_variable, " with ellipses\n")
     
@@ -510,8 +427,8 @@ pca_plots_enhanced <- function(pca_output = NULL,
     }
     
     p4 <- ggplot(plot_data, aes_string(x = pc1_col, y = pc2_col, color = color_variable)) +
-      stat_ellipse(type = "norm", level = 0.95, size = 1.2, alpha = 0.8) +  # Add confidence ellipses
-      geom_point(size = 2, alpha = 0.8) +  # Half the size of original dots (4 -> 2)
+      stat_ellipse(type = "norm", level = 0.95, size = 1.2, alpha = 0.8) +
+      geom_point(size = 2, alpha = 0.8) +
       scale_color_manual(values = color_palette, name = str_to_title(color_variable)) +
       labs(
         title = paste0("PCA Analysis: ", str_to_title(color_variable), " with Ellipses"),
@@ -528,7 +445,7 @@ pca_plots_enhanced <- function(pca_output = NULL,
     print(p4)
   }
   
-  # --- PLOT 5: Faceted by third variable (FIXED) ---
+  # --- PLOT 5: Faceted ---
   if (!is.null(pannels_var)) {
     third_var <- valid_grouping_vars[3]
     if (verbose) cat("Creating Plot 5: Faceted by", third_var, "\n")
@@ -541,7 +458,7 @@ pca_plots_enhanced <- function(pca_output = NULL,
     p5 <- ggplot(plot_data, aes_string(x = pc1_col, y = pc2_col, color = color_variable)) +
       geom_point(size = 3, alpha = 0.8) +
       scale_color_manual(values = color_palette, name = str_to_title(color_variable)) +
-      facet_wrap(as.formula(paste("~", third_var))) +  # REMOVED scales = "free"
+      facet_wrap(as.formula(paste("~", third_var))) +
       labs(
         title = paste0("PCA Analysis: ", str_to_title(color_variable), " by ", str_to_title(third_var)),
         subtitle = plot_subtitle,
@@ -549,7 +466,7 @@ pca_plots_enhanced <- function(pca_output = NULL,
         y = paste0("PC", components[2], " (", pc2_var, "% variance)")
       ) +
       enhanced_theme() +
-      coord_fixed() +  # This now works because scales are not free
+      coord_fixed() +
       guides(color = guide_legend(override.aes = list(size = 4))) +
       theme(
         legend.position = "bottom",
@@ -562,13 +479,13 @@ pca_plots_enhanced <- function(pca_output = NULL,
   }
   
   # ============================================================================
-  # SAVE PLOTS
+  # SAVE PLOTS (ONLY IF REQUESTED AND OUTPUT_DIR PROVIDED)
   # ============================================================================
   
-  if (save_plots) {
+  saved_files <- NULL
+  if (save_plots && !is.null(output_dir)) {
     if (verbose) cat("\nSaving plots to:", output_dir, "\n")
     
-    # Ensure output directory exists
     if (!dir.exists(output_dir)) {
       dir.create(output_dir, recursive = TRUE)
     }
@@ -576,9 +493,7 @@ pca_plots_enhanced <- function(pca_output = NULL,
     saved_files <- character()
     
     for (plot_name in names(plots_list)) {
-      # Add gray indicator to filename if applicable
       gray_suffix <- if (!is.null(gray_color_value)) paste0("_", gray_color_value, "Gray") else ""
-      
       filename <- paste0(experiment_name, "_PCA_", plot_name, "_PC", components[1], "-", components[2], gray_suffix, ".png")
       filepath <- file.path(output_dir, filename)
       
@@ -589,11 +504,13 @@ pca_plots_enhanced <- function(pca_output = NULL,
     }
     
     if (verbose) {
-      cat("✅ Saved", length(saved_files), "PCA plots:\n")
+      cat("[OK] Saved", length(saved_files), "PCA plots:\n")
       for (file in saved_files) {
         cat("  -", file, "\n")
       }
     }
+  } else if (save_plots && is.null(output_dir)) {
+    if (verbose) cat("\n[INFO] save_plots=TRUE but no output_dir provided, plots not saved\n")
   }
   
   # ============================================================================
@@ -605,7 +522,6 @@ pca_plots_enhanced <- function(pca_output = NULL,
     cat("PCA PLOTTING SUMMARY for", experiment_name, "\n")
     cat(strrep("=", 60), "\n")
     
-    # PCA summary
     cat("Variance explained by selected components:\n")
     for (i in seq_along(components)) {
       comp_num <- components[i]
@@ -617,7 +533,6 @@ pca_plots_enhanced <- function(pca_output = NULL,
     cat("\nCumulative variance (PC1-PC", max(components), "): ", 
         round(sum(var_explained[1:max(components)]) * 100, 2), "%\n", sep = "")
     
-    # Data summary
     cat("\nData summary:\n")
     cat("  Total samples plotted:", nrow(plot_data), "\n")
     
@@ -656,130 +571,80 @@ pca_plots_enhanced <- function(pca_output = NULL,
       experiment_name = experiment_name,
       output_dir = output_dir,
       valid_grouping_vars = valid_grouping_vars,
-      gray_color_value = gray_color_value  # NEW: Include in config
+      gray_color_value = gray_color_value
     ),
-    saved_files = if(save_plots && exists("saved_files")) saved_files else NULL
+    saved_files = saved_files
   ))
 }
+
 #' Plot PCA Trajectories for Time Series Data
 #'
 #' This function creates comprehensive visualizations of PCA trajectories over time,
 #' showing both individual and group-averaged trajectories with optional smoothing.
-#' It automatically detects grouping variables and timepoint ordering, and generates
-#' multiple plot types for detailed trajectory analysis.
 #'
-#' @param pca_results A data frame or list containing PCA results. If a list, must contain
-#'   a 'plot_data' component. If a data frame, will be used directly as plotting data.
-#' @param pc_x Character string specifying the principal component for x-axis (default: "PC1").
-#' @param pc_y Character string specifying the principal component for y-axis (default: "PC2").
-#' @param trajectory_grouping Character vector of column names to use for grouping trajectories.
-#'   If NULL, the function will auto-detect suitable grouping variables.
-#' @param timepoint_var Character string specifying the column name containing timepoint information
-#'   (default: "Timepoint"). Function will attempt smart detection if not found.
-#' @param timepoint_order Character vector specifying the order of timepoints. If NULL,
-#'   the function will attempt to auto-detect logical ordering (e.g., "baseline", "15min", "1h").
-#' @param individual_var Character string specifying the column for individual trajectory identification
-#'   (default: "Experiment"). Used for creating separate trajectories per individual.
-#' @param point_size Numeric value controlling the size of points in plots (default: 3).
-#' @param alpha Numeric value between 0-1 controlling point transparency (default: 0.7).
-#' @param line_size Numeric value controlling the thickness of trajectory lines (default: 2).
-#' @param smooth_lines Logical indicating whether to apply gentle smoothing to trajectories
-#'   (default: FALSE). When TRUE, applies 75% linear + 25% spline smoothing.
-#' @param color_palette Character vector of colors for different groups. If NULL,
-#'   uses an automatic color palette.
-#' @param save_plots Logical indicating whether to automatically save plots to disk (default: TRUE).
-#' @param output_dir Character string specifying the directory for saving plots (default: ".").
-#' @param plot_prefix Character string prefix for saved plot filenames (default: "PCA_trajectories").
-#' @param width Numeric value specifying plot width in inches (default: 12).
-#' @param height Numeric value specifying plot height in inches (default: 8).
-#' @param dpi Numeric value specifying plot resolution for saved files (default: 150).
-#' @param return_list Logical indicating whether to return results as a list (default: TRUE).
-#' @param verbose Logical indicating whether to print progress messages (default: TRUE).
+#' @param pca_results A data frame or list containing PCA results
+#' @param pc_x Character string specifying the principal component for x-axis (default: "PC1")
+#' @param pc_y Character string specifying the principal component for y-axis (default: "PC2")
+#' @param trajectory_grouping Character vector of column names for grouping trajectories
+#' @param timepoint_var Character string specifying the timepoint column (default: "Timepoint")
+#' @param timepoint_order Character vector specifying the order of timepoints
+#' @param individual_var Character string for individual trajectory identification (default: "Experiment")
+#' @param point_size Numeric value controlling point size (default: 3)
+#' @param alpha Numeric value controlling transparency (default: 0.7)
+#' @param line_size Numeric value controlling line thickness (default: 2)
+#' @param smooth_lines Logical indicating whether to apply smoothing (default: FALSE)
+#' @param color_palette Character vector of colors for groups
+#' @param save_plots Logical indicating whether to save plots (default: FALSE)
+#' @param output_dir Character string specifying output directory (default: NULL)
+#' @param plot_prefix Character string prefix for filenames (default: "PCA_trajectories")
+#' @param width Numeric plot width in inches (default: 12)
+#' @param height Numeric plot height in inches (default: 8)
+#' @param dpi Numeric plot resolution (default: 150)
+#' @param return_list Logical indicating whether to return results as list (default: TRUE)
+#' @param verbose Logical indicating whether to print messages (default: TRUE)
 #'
-#' @return A list containing:
-#'   \item{plots}{Named list of ggplot objects for each generated plot}
-#'   \item{individual_trajectories}{Data frame with individual trajectory coordinates}
-#'   \item{group_average_trajectories}{Data frame with group-averaged trajectory coordinates}
-#'   \item{group_summary}{Data frame summarizing the number of trajectories per group}
-#'   \item{plotting_params}{List of parameters used for plotting}
-#'   \item{data_info}{List with basic information about the dataset}
-#'
-#' @details
-#' The function generates multiple plot types:
-#' \itemize{
-#'   \item Individual trajectory plots for each group
-#'   \item Group-averaged trajectory plots with error bars (SEM)
-#'   \item Combined plots showing all trajectories together
-#' }
-#'
-#' The function automatically detects and handles various timepoint naming conventions
-#' (e.g., "baseline", "15min", "1h", "2h", etc.) and creates logical ordering.
-#' Individual trajectories are identified by extracting well IDs from the experiment variable.
+#' @return A list containing plots, trajectories, and metadata
 #'
 #' @examples
-#' \dontrun{
-#' # Basic usage with auto-detection
-#' results <- plot_pca_trajectories_general(pca_data)
-#' 
-#' # Specify custom grouping and timepoints
-#' results <- plot_pca_trajectories_general(
-#'   pca_data,
-#'   trajectory_grouping = c("Treatment", "Genotype"),
-#'   timepoint_order = c("baseline", "15min", "30min", "1h"),
-#'   smooth_lines = TRUE
-#' )
-#' 
-#' # Custom styling and save options
-#' results <- plot_pca_trajectories_general(
-#'   pca_data,
-#'   point_size = 4,
-#'   line_size = 1.5,
-#'   color_palette = c("#E31A1C", "#1F78B4", "#33A02C"),
-#'   output_dir = "trajectory_plots",
-#'   plot_prefix = "experiment_PCA"
-#' )
-#' }
+#' # Basic usage
+#' # results <- plot_pca_trajectories_general(pca_data)
+#' # 
+#' # Save plots to directory
+#' # results <- plot_pca_trajectories_general(
+#' #   pca_data,
+#' #   save_plots = TRUE,
+#' #   output_dir = file.path(tempdir(), "trajectories")
+#' # )
 #'
 #' @importFrom dplyr filter group_by summarise mutate arrange distinct
-#' @importFrom ggplot2 ggplot geom_point geom_segment geom_errorbar geom_errorbarh geom_text
-#'   aes labs theme_minimal theme element_rect element_line coord_fixed ggsave
+#' @importFrom ggplot2 ggplot geom_point geom_segment geom_errorbar geom_errorbarh geom_text scale_color_viridis_c
 #' @importFrom tidyr unnest
 #' @importFrom purrr walk map
 #' @importFrom rlang syms .data
 #' @importFrom stringr str_detect
 #' @importFrom RColorBrewer brewer.pal
-#' @importFrom ggplot2 scale_color_viridis_c
 #'
 #' @export
 plot_pca_trajectories_general <- function(pca_results, 
                                           pc_x = "PC1", 
                                           pc_y = "PC2",
-                                          trajectory_grouping = NULL,  # Auto-detect or specify grouping vars
+                                          trajectory_grouping = NULL,
                                           timepoint_var = "Timepoint", 
-                                          timepoint_order = NULL,      # Specify custom order or auto-detect
-                                          individual_var = "Experiment", # Variable for labeling individual trajectories
+                                          timepoint_order = NULL,
+                                          individual_var = "Experiment",
                                           point_size = 3,
                                           alpha = 0.7,
                                           line_size = 2,
-                                          smooth_lines = FALSE,        # Changed from smoothness to match other function
-                                          color_palette = NULL,        # Custom colors for groups
-                                          save_plots = TRUE,           # NEW: Auto-save plots
-                                          output_dir = ".",            # NEW: Output directory
-                                          plot_prefix = "PCA_trajectories", # NEW: File prefix
-                                          width = 12,                  # NEW: Plot width
-                                          height = 8,                  # NEW: Plot height
-                                          dpi = 150,                   # NEW: Plot DPI
+                                          smooth_lines = FALSE,
+                                          color_palette = NULL,
+                                          save_plots = FALSE,
+                                          output_dir = NULL,
+                                          plot_prefix = "PCA_trajectories",
+                                          width = 12,
+                                          height = 8,
+                                          dpi = 150,
                                           return_list = TRUE,
                                           verbose = TRUE) {
-  
-  library(dplyr)
-  library(ggplot2)
-  library(tidyr)
-  library(purrr)
-  library(rlang)
-  library(stringr)
-  library(RColorBrewer)
-  library(viridis)
   
   if (verbose) cat("=== GENERALIZED PCA TRAJECTORY PLOTTING ===\n")
   
@@ -787,7 +652,6 @@ plot_pca_trajectories_general <- function(pca_results,
   # FLEXIBLE DATA EXTRACTION
   # ============================================================================
   
-  # Extract plot_data from various possible PCA result structures
   plot_data <- NULL
   
   if (is.list(pca_results) && "plot_data" %in% names(pca_results)) {
@@ -808,13 +672,11 @@ plot_pca_trajectories_general <- function(pca_results,
   
   available_cols <- names(plot_data)
   
-  # Validate PC columns
   if (!pc_x %in% available_cols || !pc_y %in% available_cols) {
     stop("Principal components '", pc_x, "' and/or '", pc_y, "' not found in data. Available PC columns: ", 
          paste(available_cols[grepl("^PC", available_cols)], collapse = ", "))
   }
   
-  # Smart timepoint detection
   timepoint_candidates <- c(timepoint_var, "Timepoint", "Time", "timepoint", "time", "Time_point")
   timepoint_var <- timepoint_candidates[timepoint_candidates %in% available_cols][1]
   
@@ -822,7 +684,6 @@ plot_pca_trajectories_general <- function(pca_results,
     stop("No timepoint variable found. Available columns: ", paste(available_cols, collapse = ", "))
   }
   
-  # Smart experiment variable detection
   experiment_candidates <- c(individual_var, "Experiment", "experiment", "Exp", "exp", "ID", "Sample")
   individual_var <- experiment_candidates[experiment_candidates %in% available_cols][1]
   
@@ -842,17 +703,11 @@ plot_pca_trajectories_general <- function(pca_results,
   # ============================================================================
   
   if (is.null(trajectory_grouping)) {
-    # Smart detection of grouping variables
     grouping_candidates <- c("Treatment", "Genotype", "Condition", "Group", 
                              "treatment", "genotype", "condition", "group")
     
-    # Find available grouping variables
     available_grouping <- grouping_candidates[grouping_candidates %in% available_cols]
-    
-    # Remove timepoint and experiment from grouping if present
     available_grouping <- setdiff(available_grouping, c(timepoint_var, individual_var))
-    
-    # Remove PC columns from grouping
     available_grouping <- available_grouping[!grepl("^PC\\d+", available_grouping)]
     
     if (length(available_grouping) == 0) {
@@ -867,7 +722,6 @@ plot_pca_trajectories_general <- function(pca_results,
       cat("Auto-detected trajectory grouping variables:", paste(trajectory_grouping, collapse = ", "), "\n")
     }
   } else {
-    # Validate user-specified trajectory grouping variables
     missing_vars <- setdiff(trajectory_grouping, available_cols)
     if (length(missing_vars) > 0) {
       stop("Trajectory grouping variables not found in data: ", paste(missing_vars, collapse = ", "))
@@ -881,9 +735,7 @@ plot_pca_trajectories_general <- function(pca_results,
   unique_timepoints <- unique(plot_data[[timepoint_var]])
   
   if (is.null(timepoint_order)) {
-    # Smart timepoint ordering - matching the other function's approach
     timepoint_order <- tryCatch({
-      # Try common biological timepoint patterns
       baseline_patterns <- c("baseline", "Baseline", "BL", "bl", "0", "pre", "Pre")
       minute_patterns <- c("0min", "15min", "30min", "45min", "60min")
       hour_patterns <- c("1h", "1h30min", "2h", "3h", "4h", "6h", "8h", "12h", "24h")
@@ -892,7 +744,6 @@ plot_pca_trajectories_general <- function(pca_results,
       
       all_patterns <- c(baseline_patterns, minute_patterns, hour_patterns, day_patterns, week_patterns)
       
-      # Find which timepoints match known patterns
       matched_timepoints <- intersect(all_patterns, unique_timepoints)
       unmatched_timepoints <- setdiff(unique_timepoints, matched_timepoints)
       
@@ -900,7 +751,6 @@ plot_pca_trajectories_general <- function(pca_results,
         ordered_matched <- all_patterns[all_patterns %in% matched_timepoints]
         
         if (length(unmatched_timepoints) > 0) {
-          # Try numeric sorting for unmatched
           numeric_attempt <- suppressWarnings(as.numeric(unmatched_timepoints))
           if (!any(is.na(numeric_attempt))) {
             sorted_unmatched <- unmatched_timepoints[order(numeric_attempt)]
@@ -912,7 +762,6 @@ plot_pca_trajectories_general <- function(pca_results,
           ordered_matched
         }
       } else {
-        # Try pure numeric sorting
         numeric_attempt <- suppressWarnings(as.numeric(unique_timepoints))
         if (!any(is.na(numeric_attempt))) {
           unique_timepoints[order(numeric_attempt)]
@@ -924,35 +773,26 @@ plot_pca_trajectories_general <- function(pca_results,
       sort(unique_timepoints)
     })
     
-    if (verbose) cat("Auto-detected timepoint order:", paste(timepoint_order, collapse = " → "), "\n")
+    if (verbose) cat("Auto-detected timepoint order:", paste(timepoint_order, collapse = " --> "), "\n")
   }
   
-  # Set timepoint as ordered factor
   plot_data[[timepoint_var]] <- factor(plot_data[[timepoint_var]], levels = timepoint_order)
   
   # ============================================================================
   # CREATE GROUP COMBINATIONS AND CALCULATE TRAJECTORIES
   # ============================================================================
   
-  # Create group identifier
   plot_data$group_id <- do.call(paste, c(plot_data[trajectory_grouping], sep = "_"))
-  
-  # Add time rank for interpolation
   plot_data$time_rank <- as.integer(plot_data[[timepoint_var]])
   
-  # Remove rows with missing data
   plot_data_clean <- plot_data %>%
     filter(!is.na(time_rank), 
            !is.na(.data[[pc_x]]), 
            !is.na(.data[[pc_y]]),
            !is.na(group_id))
   
-  # Extract well/plate identifier from experiment variable to create true trajectories
-  # Pattern: extract  ID (e.g., "A4" from "A4_DIV11_cgasKO")
   plot_data_clean$well_id <- sub("_.*", "", plot_data_clean[[individual_var]])
   
-  # Calculate individual trajectory summaries - CREATE PROPER TRAJECTORIES
-  # Group by ID AND timepoint to get one point per timepoint
   individual_trajectories <- plot_data_clean %>%
     group_by(group_id, !!!syms(trajectory_grouping), well_id, .data[[timepoint_var]], time_rank) %>%
     summarise(
@@ -962,7 +802,6 @@ plot_pca_trajectories_general <- function(pca_results,
       .groups = 'drop'
     )
   
-  # Count actual trajectories per group
   well_trajectory_counts <- plot_data_clean %>%
     group_by(group_id, !!!syms(trajectory_grouping)) %>%
     summarise(
@@ -972,7 +811,6 @@ plot_pca_trajectories_general <- function(pca_results,
       .groups = 'drop'
     )
   
-  # Calculate group average trajectories (mean across all per group per timepoint)
   group_average_trajectories <- plot_data_clean %>%
     group_by(group_id, !!!syms(trajectory_grouping), .data[[timepoint_var]], time_rank) %>%
     summarise(
@@ -996,7 +834,7 @@ plot_pca_trajectories_general <- function(pca_results,
   }
   
   # ============================================================================
-  # COLOR SETUP - Matching the other function's approach
+  # COLOR SETUP
   # ============================================================================
   
   unique_groups <- unique(plot_data_clean$group_id)
@@ -1004,12 +842,10 @@ plot_pca_trajectories_general <- function(pca_results,
   
   generate_colors <- function(n) {
     if (n <= 1) return("#E31A1C")
-    # Create a gradient from red to blue with intermediate colors
     gradient_colors <- c("#E31A1C", "#FF7F00", "#FDBF6F", "#33A02C", "#1F78B4", "#6A3D9A", "#B15928", "#FB9A99", "#A6CEE3", "#B2DF8A")
     if (n <= length(gradient_colors)) {
       return(gradient_colors[1:n])
     } else {
-      # If more colors needed, interpolate
       colorRampPalette(gradient_colors)(n)
     }
   }
@@ -1024,15 +860,13 @@ plot_pca_trajectories_general <- function(pca_results,
   names(color_palette) <- unique_groups
   
   # ============================================================================
-  # GENTLE SMOOTHING HELPER FUNCTIONS - MODIFIED FOR SUBTLE CURVES
+  # GENTLE SMOOTHING HELPER FUNCTIONS
   # ============================================================================
   
   create_gradient_segments <- function(data, group_var, smooth = FALSE, pts = 100) {
     grad_list <- list()
     
-    # ALWAYS create individual well trajectories
     if ("well_id" %in% names(data)) {
-      # Get unique combinations for individual trajectories
       combos <- distinct(data, group_id, well_id)
       for (i in seq_len(nrow(combos))) {
         tv <- data %>% 
@@ -1044,33 +878,22 @@ plot_pca_trajectories_general <- function(pca_results,
         
         tryCatch({
           if (smooth) {
-            # GENTLE SMOOTHING: Use lower smoothing parameter and fewer interpolation points
-            # Method 1: Use approx with more conservative interpolation
-            n_interp_pts <- min(pts, nrow(tv) * 8)  # Reduce interpolation points
-            
-            # Create a gentle interpolation that stays closer to original path
-            # Use a weighted approach: 70% linear interpolation + 30% spline smoothing
-            
-            # Linear interpolation (sharp)
+            n_interp_pts <- min(pts, nrow(tv) * 8)
             xi_linear <- approx(tv$time_rank, tv$mean_x, n = n_interp_pts)$y
             yi_linear <- approx(tv$time_rank, tv$mean_y, n = n_interp_pts)$y
             
-            # Gentle spline (use low smoothing parameter)
-            # Use smooth.spline with low spar value for minimal smoothing
             tryCatch({
-              smooth_x <- smooth.spline(tv$time_rank, tv$mean_x, spar = 0.1)  # Low smoothing
+              smooth_x <- smooth.spline(tv$time_rank, tv$mean_x, spar = 0.1)
               smooth_y <- smooth.spline(tv$time_rank, tv$mean_y, spar = 0.1)
               
               time_seq <- seq(min(tv$time_rank), max(tv$time_rank), length.out = n_interp_pts)
               xi_smooth <- predict(smooth_x, time_seq)$y
               yi_smooth <- predict(smooth_y, time_seq)$y
               
-              # Blend: 75% linear + 25% smooth for very gentle curves
               xi <- 0.75 * xi_linear + 0.25 * xi_smooth
               yi <- 0.75 * yi_linear + 0.25 * yi_smooth
               
             }, error = function(e) {
-              # Fallback to pure linear if smooth.spline fails
               xi <- xi_linear
               yi <- yi_linear
             })
@@ -1078,7 +901,6 @@ plot_pca_trajectories_general <- function(pca_results,
             ti <- seq(min(tv$time_rank), max(tv$time_rank), length.out = n_interp_pts)
             
           } else {
-            # Regular linear interpolation
             xi <- approx(tv$time_rank, tv$mean_x, n = pts)$y
             yi <- approx(tv$time_rank, tv$mean_y, n = pts)$y
             ti <- seq(min(tv$time_rank), max(tv$time_rank), length.out = pts)
@@ -1090,14 +912,13 @@ plot_pca_trajectories_general <- function(pca_results,
             xend = xi[-1], yend = yi[-1],
             tfrac = (ti[-n_final_pts] - min(ti)) / (max(ti) - min(ti)),
             group_id = tv$group_id[1],
-            well_id = tv$well_id[1]  # Keep track of well ID
+            well_id = tv$well_id[1]
           )
         }, error = function(e) {
           if (verbose) cat("Warning: Could not create gradient for", combos$group_id[i], combos$well_id[i], "\n")
         })
       }
     } else {
-      # For averaged data (group averages only)
       unique_groups <- unique(data$group_id)
       for (group in unique_groups) {
         tv <- data %>% 
@@ -1109,14 +930,10 @@ plot_pca_trajectories_general <- function(pca_results,
         
         tryCatch({
           if (smooth) {
-            # GENTLE SMOOTHING for group averages
             n_interp_pts <- min(pts, nrow(tv) * 8)
-            
-            # Linear interpolation
             xi_linear <- approx(tv$time_rank, tv$avg_x, n = n_interp_pts)$y
             yi_linear <- approx(tv$time_rank, tv$avg_y, n = n_interp_pts)$y
             
-            # Gentle smoothing
             tryCatch({
               smooth_x <- smooth.spline(tv$time_rank, tv$avg_x, spar = 0.1)
               smooth_y <- smooth.spline(tv$time_rank, tv$avg_y, spar = 0.1)
@@ -1125,7 +942,6 @@ plot_pca_trajectories_general <- function(pca_results,
               xi_smooth <- predict(smooth_x, time_seq)$y
               yi_smooth <- predict(smooth_y, time_seq)$y
               
-              # Blend: 75% linear + 25% smooth
               xi <- 0.75 * xi_linear + 0.25 * xi_smooth
               yi <- 0.75 * yi_linear + 0.25 * yi_smooth
               
@@ -1164,22 +980,18 @@ plot_pca_trajectories_general <- function(pca_results,
   }
   
   # ============================================================================
-  # PLOT GENERATION FUNCTIONS - Matching other function's style
+  # PLOT GENERATION FUNCTIONS
   # ============================================================================
   
   create_individual_trajectories_plot <- function(group_data, group_name) {
-    # Create gradient segments for EACH INDIVIDUAL ID - FIXED
     grad_df <- create_gradient_segments(group_data, "group_id", smooth_lines)
     
-    # Get unique wells in this group for color variation
     unique_wells <- unique(group_data$well_id)
     n_wells <- length(unique_wells)
     
-    # Create a color palette for wells (subtle variations of the same hue)
     well_colors <- colorRampPalette(c("#1f78b4", "#a6cee3"))(n_wells)
     names(well_colors) <- unique_wells
     
-    # Label only 3 key timepoints per trajectory: first, middle, last
     all_timepoints <- unique(as.character(group_data[[timepoint_var]]))
     n_tp <- length(all_timepoints)
     if (n_tp >= 3) {
@@ -1188,7 +1000,6 @@ plot_pca_trajectories_general <- function(pca_results,
       available_labels <- all_timepoints
     }
     
-    # Only label every 2nd or 3rd well if there are many
     wells_to_label <- if (n_wells <= 3) {
       unique_wells
     } else if (n_wells <= 8) {
@@ -1208,7 +1019,6 @@ plot_pca_trajectories_general <- function(pca_results,
       )
     
     p <- ggplot() +
-      # Individual trajectory lines - FIXED 
       {if(nrow(grad_df) > 0 && "well_id" %in% names(grad_df)) {
         geom_segment(data = grad_df, aes(x, y, xend = xend, yend = yend, group = well_id, color = tfrac), 
                      size = line_size * 0.4, alpha = 0.6)
@@ -1217,12 +1027,10 @@ plot_pca_trajectories_general <- function(pca_results,
                      size = line_size * 0.4, alpha = 0.6)
       }} +
       scale_color_viridis_c(guide = 'none') +
-      # Points for each well - colored by well
       geom_point(data = group_data, aes(x = mean_x, y = mean_y, fill = well_id), 
                  shape = 21, size = point_size * 0.6, alpha = alpha * 0.8, 
                  color = 'black', stroke = 0.2) +
-      scale_fill_manual(values = well_colors, name = "Well", guide = "none") +  # Hide legend for cleaner look
-      # Labels only for selected wells and timepoints
+      scale_fill_manual(values = well_colors, name = "Well", guide = "none") +
       geom_text(data = label_df, aes(x = mean_x, y = mean_y, label = label_text), 
                 nudge_x = 0.02, nudge_y = 0.02, size = point_size * 0.7, fontface = 'bold') +
       labs(title = paste('Individual Trajectories - Group:', group_name, '(', n_wells,')'), x = pc_x, y = pc_y) +
@@ -1240,10 +1048,8 @@ plot_pca_trajectories_general <- function(pca_results,
   }
   
   create_group_average_plot <- function(group_data, group_name, group_color) {
-    # Create gradient segments for average
     grad_avg <- create_gradient_segments(group_data, "group_id", smooth_lines)
     
-    # Label only 3 key timepoints per trajectory: first, middle, last
     all_timepoints <- unique(as.character(group_data[[timepoint_var]]))
     n_tp <- length(all_timepoints)
     if (n_tp >= 3) {
@@ -1262,22 +1068,18 @@ plot_pca_trajectories_general <- function(pca_results,
       )
     
     p <- ggplot() +
-      # Main average trajectory (removed individual background trajectories)
       {if(nrow(grad_avg) > 0) geom_segment(data = grad_avg, aes(x, y, xend = xend, yend = yend, color = tfrac), 
                                            size = line_size)} +
       scale_color_viridis_c(guide = 'none') +
-      # Points for labeled timepoints
       geom_point(data = label_df, aes(x = avg_x, y = avg_y), 
                  shape = 21, fill = 'white', size = point_size) +
-      # Error bars - using SEM (standard error of mean)
       geom_errorbar(data = group_data, aes(x = avg_x, ymin = avg_y - se_y, ymax = avg_y + se_y), 
                     width = 0.08, color = "gray60", alpha = 0.6, size = 0.5) +
       geom_errorbarh(data = group_data, aes(y = avg_y, xmin = avg_x - se_x, xmax = avg_x + se_x), 
                      height = 0.08, color = "gray60", alpha = 0.6, size = 0.5) +
-      # Labels
       geom_text(data = label_df, aes(x = avg_x, y = avg_y, label = label_text), 
                 nudge_x = 0.02, nudge_y = 0.02, size = point_size * 0.9, fontface = 'bold') +
-      labs(title = paste('Avg Trajectory ± SEM - Group:', group_name), x = pc_x, y = pc_y) +
+      labs(title = paste('Avg Trajectory +/- SEM - Group:', group_name), x = pc_x, y = pc_y) +
       coord_fixed() +
       theme_minimal() +
       theme(
@@ -1302,19 +1104,15 @@ plot_pca_trajectories_general <- function(pca_results,
     group_data_avg <- group_average_trajectories %>% filter(group_id == group)
     
     if (nrow(group_data_ind) > 0) {
-      # Individual trajectories plot
       plot_list[[paste0(group, "_all")]] <- create_individual_trajectories_plot(group_data_ind, group)
-      
-      # Group average plot
       plot_list[[paste0(group, "_avg")]] <- create_group_average_plot(group_data_avg, group, color_palette[group])
     }
   }
   
   # ============================================================================
-  # CREATE COMBINED PLOTS - WITH MODIFIED END POINTS AND GENTLE SMOOTHING
+  # CREATE COMBINED PLOTS
   # ============================================================================
   
-  # Combined individual trajectories
   pts <- 100
   grad_list_combined <- list()
   
@@ -1332,14 +1130,10 @@ plot_pca_trajectories_general <- function(pca_results,
       
       tryCatch({
         if (smooth_lines) {
-          # GENTLE SMOOTHING for combined plot
           n_interp_pts <- min(pts, nrow(tv) * 8)
-          
-          # Linear interpolation
           xi_linear <- approx(tv$time_rank, tv$mean_x, n = n_interp_pts)$y
           yi_linear <- approx(tv$time_rank, tv$mean_y, n = n_interp_pts)$y
           
-          # Gentle smoothing
           tryCatch({
             smooth_x <- smooth.spline(tv$time_rank, tv$mean_x, spar = 0.1)
             smooth_y <- smooth.spline(tv$time_rank, tv$mean_y, spar = 0.1)
@@ -1348,7 +1142,6 @@ plot_pca_trajectories_general <- function(pca_results,
             xi_smooth <- predict(smooth_x, time_seq)$y
             yi_smooth <- predict(smooth_y, time_seq)$y
             
-            # Blend: 75% linear + 25% smooth
             xi <- 0.75 * xi_linear + 0.25 * xi_smooth
             yi <- 0.75 * yi_linear + 0.25 * yi_smooth
             
@@ -1379,12 +1172,11 @@ plot_pca_trajectories_general <- function(pca_results,
   }
   grad_df_combined <- bind_rows(grad_list_combined)
   
-  # Combined individual plot - THINNER LINES for more trajectories
   p_combined <- ggplot() +
     geom_segment(data = grad_df_combined, aes(x, y, xend = xend, yend = yend, color = group_id),
-                 size = line_size * 0.3, alpha = alpha * 0.6) +  # MUCH THINNER LINES
+                 size = line_size * 0.3, alpha = alpha * 0.6) +
     geom_point(data = individual_trajectories, aes(x = mean_x, y = mean_y, color = group_id),
-               size = point_size * 0.2, alpha = 0.5) +  # MUCH SMALLER POINTS
+               size = point_size * 0.2, alpha = 0.5) +
     scale_color_manual(values = color_palette, name = "Group") +
     labs(title = "Combined Individual Trajectories", x = pc_x, y = pc_y) +
     coord_fixed() +
@@ -1398,7 +1190,6 @@ plot_pca_trajectories_general <- function(pca_results,
       legend.position = "right"
     )
   
-  # Get first and last points for combined_all plot with colored borders
   first_last_combined <- individual_trajectories %>%
     group_by(group_id, well_id) %>%
     arrange(time_rank) %>%
@@ -1410,36 +1201,25 @@ plot_pca_trajectories_general <- function(pca_results,
       .groups = "drop"
     )
   
-  # Add start and end points to combined plot - MODIFIED for individual wells
   p_combined <- p_combined +
-    # Start points: white with colored border (smaller for many trajectories)
     geom_point(data = first_last_combined, aes(x = first_x, y = first_y, color = group_id),
                fill = "white", shape = 21, size = point_size * 0.5, stroke = 0.8) +
-    # End points: black fill with colored border (smaller for many trajectories)
     geom_point(data = first_last_combined, aes(x = last_x, y = last_y, color = group_id),
                fill = "black", shape = 21, size = point_size * 0.5, stroke = 0.8)
   
-  # Combined average trajectories
   grad_avg_combined_list <- list()
   for (group in unique_groups) {
     group_data <- group_average_trajectories %>% filter(group_id == group) %>% arrange(time_rank)
     
     if (nrow(group_data) < 2) next
-    
-    # Remove any rows with NA values
     group_data <- group_data %>% filter(!is.na(avg_x) & !is.na(avg_y))
-    
     if (nrow(group_data) < 2) next
     
     if (smooth_lines) {
-      # GENTLE SMOOTHING for combined average trajectories
       n_interp_pts <- min(pts, nrow(group_data) * 8)
-      
-      # Linear interpolation
       xi_linear <- approx(group_data$time_rank, group_data$avg_x, n = n_interp_pts)$y
       yi_linear <- approx(group_data$time_rank, group_data$avg_y, n = n_interp_pts)$y
       
-      # Gentle smoothing
       tryCatch({
         smooth_x <- smooth.spline(group_data$time_rank, group_data$avg_x, spar = 0.1)
         smooth_y <- smooth.spline(group_data$time_rank, group_data$avg_y, spar = 0.1)
@@ -1448,7 +1228,6 @@ plot_pca_trajectories_general <- function(pca_results,
         xi_smooth <- predict(smooth_x, time_seq)$y
         yi_smooth <- predict(smooth_y, time_seq)$y
         
-        # Blend: 75% linear + 25% smooth
         xi <- 0.75 * xi_linear + 0.25 * xi_smooth
         yi <- 0.75 * yi_linear + 0.25 * yi_smooth
         
@@ -1476,62 +1255,42 @@ plot_pca_trajectories_general <- function(pca_results,
   
   grad_avg_combined <- bind_rows(grad_avg_combined_list)
   
-  # Get first and last points for each group
   first_last_points <- group_average_trajectories %>%
     group_by(group_id) %>%
     arrange(time_rank) %>%
     summarise(
       first_x = first(avg_x),
       first_y = first(avg_y),
-      first_label = "B",  # Always use "B" for baseline/start point
+      first_label = "B",
       last_x = last(avg_x),
       last_y = last(avg_y),
       last_label = last(as.character(.data[[timepoint_var]])),
       .groups = "drop"
     )
   
-  # Professional color palette for combined average plot
   professional_colors <- c(
-    "#E31A1C",  # Red
-    "#FF7F00",  # Orange
-    "#FDBF6F",  # Light Orange
-    "#33A02C",  # Green
-    "#1F78B4",  # Blue
-    "#6A3D9A",  # Purple
-    "#B15928",  # Brown
-    "#FB9A99",  # Light Pink
-    "#A6CEE3",  # Light Blue
-    "#B2DF8A"   # Light Green
+    "#E31A1C", "#FF7F00", "#FDBF6F", "#33A02C", "#1F78B4",
+    "#6A3D9A", "#B15928", "#FB9A99", "#A6CEE3", "#B2DF8A"
   )
   
-  
-  
-  # Extend palette if needed
   if (n_groups > length(professional_colors)) {
     professional_colors <- colorRampPalette(professional_colors)(n_groups)
   }
   names(professional_colors) <- unique_groups
   
-  # Combined average plot - MODIFIED WITH COLORED BORDERS FOR BLACK POINTS
   p_comb_avg <- ggplot() +
-    # Trajectory lines
     geom_segment(data = grad_avg_combined, aes(x, y, xend = xend, yend = yend, color = group_id),
                  size = line_size, alpha = 1) +
-    # All timepoint dots (small, colored)
     geom_point(data = group_average_trajectories, aes(x = avg_x, y = avg_y, color = group_id),
                size = point_size * 0.5, alpha = 0.8) +
-    # Error bars - using SEM (standard error of mean) instead of SD
     geom_errorbar(data = group_average_trajectories, aes(x = avg_x, ymin = avg_y - se_y, ymax = avg_y + se_y, color = group_id),
                   width = 0.05, alpha = 0.5, size = 0.4) +
     geom_errorbarh(data = group_average_trajectories, aes(y = avg_y, xmin = avg_x - se_x, xmax = avg_x + se_x, color = group_id),
                    height = 0.05, alpha = 0.5, size = 0.4) +
-    # First point: white-filled with colored border (larger)
     geom_point(data = first_last_points, aes(x = first_x, y = first_y, color = group_id),
                fill = "white", shape = 21, size = point_size * 1.2, stroke = 1.2) +
-    # Last point: black-filled with colored border (larger) - MODIFIED
     geom_point(data = first_last_points, aes(x = last_x, y = last_y, color = group_id),
                fill = "black", shape = 21, size = point_size * 1.2, stroke = 1.2) +
-    # Offset text labels (B for start, actual timepoint for end)
     geom_text(data = first_last_points, aes(x = last_x, y = last_y, label = last_label),
               nudge_x = 0.08, nudge_y = 0.08, fontface = "bold", size = point_size * 1.1, color = "black") +
     geom_text(data = first_last_points, aes(x = first_x, y = first_y, label = first_label),
@@ -1553,19 +1312,17 @@ plot_pca_trajectories_general <- function(pca_results,
   plot_list$combined_avg <- p_comb_avg
   
   # ============================================================================
-  # SAVE PLOTS AUTOMATICALLY
+  # SAVE PLOTS (ONLY IF REQUESTED AND OUTPUT_DIR PROVIDED)
   # ============================================================================
   
-  if (save_plots) {
+  if (save_plots && !is.null(output_dir)) {
     if (verbose) cat("\n=== SAVING PLOTS ===\n")
     
-    # Create output directory if it doesn't exist
     if (!dir.exists(output_dir)) {
       dir.create(output_dir, recursive = TRUE)
       if (verbose) cat("Created output directory:", output_dir, "\n")
     }
     
-    # Save each plot with appropriate filename
     for (plot_name in names(plot_list)) {
       filename <- file.path(output_dir, paste0(plot_prefix, "_", plot_name, ".png"))
       
@@ -1581,6 +1338,8 @@ plot_pca_trajectories_general <- function(pca_results,
         warning("Failed to save ", filename, ": ", e$message)
       })
     }
+  } else if (save_plots && is.null(output_dir)) {
+    if (verbose) cat("\n[INFO] save_plots=TRUE but no output_dir provided, plots not saved\n")
   }
   
   # ============================================================================
@@ -1596,7 +1355,7 @@ plot_pca_trajectories_general <- function(pca_results,
     } else {
       cat("Smoothing: Disabled (direct line connections)\n")
     }
-    if (save_plots) {
+    if (save_plots && !is.null(output_dir)) {
       cat("Plots saved to:", output_dir, "\n")
     }
   }
@@ -1624,7 +1383,6 @@ plot_pca_trajectories_general <- function(pca_results,
   )
   
   if (return_list) {
-    # Display plots automatically when function is called
     if (verbose) cat("\n=== DISPLAYING PLOTS ===\n")
     for (plot_name in names(plot_list)) {
       cat("Displaying:", plot_name, "\n")
@@ -1664,8 +1422,8 @@ plot_pca_trajectories_general <- function(pca_results,
 #' @param create_individual_heatmaps Logical indicating whether to create separate heatmaps for each grouping variable (default: TRUE).
 #' @param create_combined_heatmap Logical indicating whether to create interaction heatmap when multiple grouping variables are present (default: TRUE).
 #' @param create_variable_correlation Logical indicating whether to create variable correlation heatmap (default: TRUE).
-#' @param output_dir Character string specifying output directory for saved plots. If NULL, creates "mea_heatmaps" in current directory.
-#' @param save_plots Logical indicating whether to save plots to disk (default: TRUE).
+#' @param output_dir Character string specifying output directory (default: NULL, no files saved)
+#' @param save_plots Logical indicating whether to save plots to disk (default: FALSE)
 #' @param plot_format Character string specifying file format for saved plots (default: "png").
 #' @param plot_width Numeric value specifying plot width in inches (default: 10).
 #' @param plot_height Numeric value specifying plot height in inches (default: 8).
@@ -1680,13 +1438,15 @@ plot_pca_trajectories_general <- function(pca_results,
 #' @param min_observations Numeric value specifying minimum observations required per group (default: 3).
 #'
 #' @return A list containing:
+#' \describe{
 #'   \item{individual_heatmaps}{Named list of heatmap objects for each grouping variable}
 #'   \item{combined_heatmap}{Heatmap object for grouping variable interactions (if applicable)}
 #'   \item{variable_correlation}{List with correlation heatmap and correlation matrix}
 #'   \item{metadata}{List containing processing information and parameters used}
-#'   Each heatmap object contains: heatmap (pheatmap object), scaled_data (processed matrix),
-#'   raw_data (aggregated input data), annotation (row annotations), annotation_colors (color schemes),
-#'   and scaling_info (scaling parameters).
+#' }
+#' Each heatmap object contains: heatmap (pheatmap object), scaled_data (processed matrix),
+#' raw_data (aggregated input data), annotation (row annotations), annotation_colors (color schemes),
+#' and scaling_info (scaling parameters).
 #'
 #' @details
 #' The function performs several key operations:
@@ -1712,105 +1472,57 @@ plot_pca_trajectories_general <- function(pca_results,
 #' sequential palettes for min_max).
 #'
 #' @examples
-#' \dontrun{
 #' # Basic usage with processing result
-#' heatmaps <- create_mea_heatmaps_enhanced(
-#'   processing_result = mea_results,
-#'   scale_method = "z_score"
-#' )
-#' 
-#' # Custom grouping and scaling
-#' heatmaps <- create_mea_heatmaps_enhanced(
-#'   data = mea_data,
-#'   grouping_columns = c("Treatment", "Genotype", "Timepoint"),
-#'   scale_method = "robust",
-#'   aggregation_method = "median",
-#'   cluster_method = "correlation"
-#' )
-#' 
-#' # High-quality publication plots
-#' heatmaps <- create_mea_heatmaps_enhanced(
-#'   processing_result = results,
-#'   save_plots = TRUE,
-#'   plot_format = "pdf",
-#'   dpi = 600,
-#'   plot_width = 12,
-#'   plot_height = 10,
-#'   fontsize = 12
-#' )
-#' 
-#' # Access specific results
-#' treatment_heatmap <- heatmaps$treatment_heatmap$heatmap
-#' correlation_matrix <- heatmaps$variable_correlation$correlation_matrix
-#' }
+#' # heatmaps <- create_mea_heatmaps_enhanced(
+#' #   processing_result = mea_results,
+#' #   scale_method = "z_score"
+#' # )
+#' # 
+#' # Save plots to specific directory
+#' # heatmaps <- create_mea_heatmaps_enhanced(
+#' #   processing_result = results,
+#' #   save_plots = TRUE,
+#' #   output_dir = file.path(tempdir(), "heatmaps")
+#' # )
 #'
+#'
+#' @importFrom dplyr across all_of
 #' @importFrom pheatmap pheatmap
-#' @importFrom RColorBrewer brewer.pal
-#' @importFrom viridis viridis
-#' @importFrom dplyr group_by summarise filter select mutate arrange distinct across all_of
-#' @importFrom tidyr pivot_wider unite
-#' @importFrom ggplot2 ggplot
-#'
-#' @seealso 
-#' \code{\link{pheatmap}} for the underlying heatmap generation
 #' 
 #' @export
 create_mea_heatmaps_enhanced <- function(
     data = NULL,
     processing_result = NULL,
     config = NULL,
-    
-    # Data column specifications
     value_column = "Normalized_Value",
     variable_column = "Variable",
     grouping_columns = c("Treatment", "Genotype"),
     sample_id_columns = c("Well"),
     timepoint_column = "Timepoint",
-    
-    # Scaling and transformation options
-    scale_method = "z_score",           # "z_score", "min_max", "robust", "none"
-    aggregation_method = "mean",        # "mean", "median", "sum"
-    missing_value_handling = "remove",  # "remove", "impute_mean", "impute_zero"
-    
-    # Visual customization
-    cluster_method = "euclidean",       # "euclidean", "correlation", "manhattan"
+    scale_method = "z_score",
+    aggregation_method = "mean",
+    missing_value_handling = "remove",
+    cluster_method = "euclidean",
     cluster_rows = TRUE,
     cluster_cols = TRUE,
-    
-    # Heatmap generation options
-    create_individual_heatmaps = TRUE,   # Each grouping variable separately
-    create_combined_heatmap = TRUE,      # Interaction heatmap
-    create_variable_correlation = TRUE,   # Variable correlation
-    
-    # Output options
+    create_individual_heatmaps = TRUE,
+    create_combined_heatmap = TRUE,
+    create_variable_correlation = TRUE,
     output_dir = NULL,
-    save_plots = TRUE,
+    save_plots = FALSE,
     plot_format = "png",
-    plot_width = 10,  # Changed to match R Markdown
-    plot_height = 8,  # Changed to match R Markdown
+    plot_width = 10,
+    plot_height = 8,
     dpi = 300,
-    
-    # Display options (matching R Markdown exactly)
     fontsize = 10,
     angle_col = 45,
     show_rownames = TRUE,
     show_colnames = TRUE,
-    
-    # Advanced options
     return_data = TRUE,
     verbose = TRUE,
     quality_threshold = 0.8,
     min_observations = 3
 ) {
-  
-  # Load required libraries
-  required_packages <- c("pheatmap", "RColorBrewer", "viridis", "dplyr", "tidyr", "ggplot2")
-  for (pkg in required_packages) {
-    if (!require(pkg, quietly = TRUE, character.only = TRUE)) {
-      install.packages(pkg)
-      library(pkg, character.only = TRUE)
-    }
-  }
   
   if (verbose) cat("\n=== ENHANCED MEA HEATMAP GENERATION ===\n")
   
@@ -1991,7 +1703,7 @@ create_mea_heatmaps_enhanced <- function(
       
       return(scaled_matrix)
     }, error = function(e) {
-      if (verbose) cat("    ✗ Scaling error:", e$message, "\n")
+      if (verbose) cat("    x Scaling error:", e$message, "\n")
       return(matrix_data)
     })
   }
@@ -2054,12 +1766,12 @@ create_mea_heatmaps_enhanced <- function(
       annotation_data <- agg_data %>%
         select(all_of(group_vars)) %>%
         distinct() %>%
-        unite("group_combination", all_of(group_vars), sep = " × ", remove = FALSE) %>%
+        unite("group_combination", all_of(group_vars), sep = " x ", remove = FALSE) %>%
         column_to_rownames("group_combination")
       
       # Create matrix with proper row names
       matrix_data <- agg_data %>%
-        unite("group_combination", all_of(group_vars), sep = " × ") %>%
+        unite("group_combination", all_of(group_vars), sep = " x ") %>%
         select(group_combination, all_of(var_col), value) %>%
         pivot_wider(names_from = all_of(var_col), values_from = value, values_fill = NA) %>%
         column_to_rownames("group_combination") %>%
@@ -2109,10 +1821,11 @@ create_mea_heatmaps_enhanced <- function(
     # Additional adjustment for annotations
     if (!is.null(annotation_row)) plot_width_adj <- plot_width_adj * 1.2
     
-    # Create heatmap with EXACT R Markdown aesthetics
     tryCatch({
-      # Ensure output directory exists
-      if (save_plots) {
+      # Determine if we should save to file
+      should_save_file <- save_plots && !is.null(output_dir)
+      
+      if (should_save_file) {
         output_file <- file.path(output_dir, paste0(filename, ".", plot_format))
         output_file_dir <- dirname(output_file)
         if (!dir.exists(output_file_dir)) {
@@ -2127,11 +1840,11 @@ create_mea_heatmaps_enhanced <- function(
         show_rownames = show_rownames,
         show_colnames = show_colnames,
         fontsize = fontsize,
-        fontsize_row = fontsize,      # Control row label size (R Markdown style)
-        fontsize_col = fontsize,      # Control column label size (R Markdown style)
+        fontsize_row = fontsize,
+        fontsize_col = fontsize,
         angle_col = angle_col,
-        cellwidth = 22,               # Auto cell width (R Markdown style)
-        cellheight = 30,              # Auto cell height (R Markdown style)
+        cellwidth = 22,
+        cellheight = 30,
         color = color_scheme$colors,
         breaks = color_scheme$breaks,
         main = title,
@@ -2140,7 +1853,7 @@ create_mea_heatmaps_enhanced <- function(
         clustering_distance_rows = cluster_method,
         clustering_distance_cols = cluster_method,
         na_col = "grey90",
-        filename = if(save_plots) file.path(output_dir, paste0(filename, ".", plot_format)) else NA,
+        filename = if(should_save_file) file.path(output_dir, paste0(filename, ".", plot_format)) else NA,
         width = plot_width_adj,
         height = plot_height_adj,
         dpi = dpi,
@@ -2157,7 +1870,7 @@ create_mea_heatmaps_enhanced <- function(
       ))
       
     }, error = function(e) {
-      if (verbose) cat("    ✗ Heatmap creation error:", e$message, "\n")
+      if (verbose) cat("    x Heatmap creation error:", e$message, "\n")
       try(dev.off(), silent = TRUE)
       return(NULL)
     })
@@ -2172,12 +1885,13 @@ create_mea_heatmaps_enhanced <- function(
   data <- quality_filter(data, variable_column, value_column, available_grouping, 
                          quality_threshold, min_observations, verbose)
   
-  # Set up output directory
-  if (is.null(output_dir)) {
+  # Set up output directory only if we're actually saving
+  if (save_plots && !is.null(output_dir)) {
+    if (!dir.exists(output_dir)) {
+      dir.create(output_dir, recursive = TRUE)
+    }
+  } else if (is.null(output_dir)) {
     output_dir <- file.path(getwd(), "mea_heatmaps")
-  }
-  if (!dir.exists(output_dir)) {
-    dir.create(output_dir, recursive = TRUE)
   }
   
   # Initialize results
@@ -2213,14 +1927,14 @@ create_mea_heatmaps_enhanced <- function(
     primary_group <- available_grouping[1]
     secondary_group <- available_grouping[2]
     
-    if (verbose) cat("\n--- Creating Combined", primary_group, "×", secondary_group, "Heatmap ---\n")
+    if (verbose) cat("\n--- Creating Combined", primary_group, "x", secondary_group, "Heatmap ---\n")
     
     heatmap_result <- create_heatmap(
       data = data,
       group_vars = c(primary_group, secondary_group),
       var_col = variable_column,
       val_col = value_column,
-      title = paste0(primary_group, " × ", secondary_group, " Analysis - ", scale_method, " scaling"),
+      title = paste0(primary_group, " x ", secondary_group, " Analysis - ", scale_method, " scaling"),
       filename = paste0(tolower(primary_group), "_", tolower(secondary_group), "_combined")
     )
     
@@ -2323,7 +2037,7 @@ create_mea_heatmaps_enhanced <- function(
   # ============================================================================
   # SUMMARY
   # ============================================================================
-  
+  # Final summary
   if (verbose) {
     cat("\n=== HEATMAP GENERATION SUMMARY ===\n")
     success_count <- length(results)
@@ -2332,24 +2046,27 @@ create_mea_heatmaps_enhanced <- function(
     for (name in names(results)) {
       if (!is.null(results[[name]]$scaled_data)) {
         dims <- dim(results[[name]]$scaled_data)
-        cat(paste0("✓ ", gsub("_", " ", name), ": ", dims[1], " groups × ", dims[2], " variables\n"))
+        cat(paste0("[OK] ", gsub("_", " ", name), ": ", dims[1], " groups x ", dims[2], " variables\n"))
       } else if (!is.null(results[[name]]$correlation_matrix)) {
         dims <- dim(results[[name]]$correlation_matrix)
-        cat(paste0("✓ ", gsub("_", " ", name), ": ", dims[1], "×", dims[2], " correlation matrix\n"))
+        cat(paste0("[OK] ", gsub("_", " ", name), ": ", dims[1], "x", dims[2], " correlation matrix\n"))
       }
     }
     
-    if (save_plots) cat("Plots saved to:", output_dir, "\n")
+    if (save_plots && !is.null(output_dir)) {
+      cat("Plots saved to:", output_dir, "\n")
+    } else if (save_plots && is.null(output_dir)) {
+      cat("[INFO] save_plots=TRUE but no output_dir provided, plots not saved\n")
+    }
   }
   
-  # Add metadata
   results$metadata <- list(
     input_dimensions = dim(data),
     grouping_columns = available_grouping,
     scaling_method = scale_method,
     aggregation_method = aggregation_method,
     creation_time = Sys.time(),
-    output_directory = output_dir
+    output_directory = if(save_plots && !is.null(output_dir)) output_dir else NULL
   )
   
   return(results)
@@ -2376,11 +2093,13 @@ create_mea_heatmaps_enhanced <- function(
 #' @param verbose Logical indicating whether to print detailed progress messages (default: TRUE).
 #'
 #' @return A list containing:
+#' \describe{
 #'   \item{plots}{Named list of ggplot objects: 'biplot', 'importance_bar', 'pc_comparison', 'heatmap'}
 #'   \item{variable_importance}{Data frame with comprehensive variable importance metrics for all variables}
 #'   \item{selected_variables}{Data frame containing the top N most important variables with detailed statistics}
 #'   \item{analysis_summary}{List with key analysis metrics and variance explained information}
 #'   \item{config_used}{List documenting all parameters used in the analysis}
+#' }
 #'
 #' @details
 #' The function calculates multiple importance metrics for each variable:
@@ -2416,37 +2135,26 @@ create_mea_heatmaps_enhanced <- function(
 #' }
 #'
 #' @examples
-#' \dontrun{
-#' # Basic analysis with default settings
-#' results <- analyze_pca_variable_importance_general(pca_result = my_pca)
+#' # Basic example with simulated data
+#' set.seed(123)
+#' test_data <- matrix(rnorm(100 * 10), nrow = 100, ncol = 10)
+#' colnames(test_data) <- paste0("Var", 1:10)
+#' pca_obj <- prcomp(test_data, scale. = TRUE)
 #' 
-#' # Custom analysis focusing on PC2 vs PC3
+#' # Quick analysis without saving files
 #' results <- analyze_pca_variable_importance_general(
-#'   pca_result = my_pca,
-#'   pc_x = "PC2",
-#'   pc_y = "PC3",
-#'   experiment_name = "Treatment_Analysis",
-#'   color_scheme = "viridis",
-#'   top_n = 20
-#' )
-#' 
-#' # High-throughput analysis with minimal output
-#' results <- analyze_pca_variable_importance_general(
-#'   pca_result = my_pca,
+#'   pca_result = pca_obj,
 #'   save_plots = FALSE,
-#'   show_labels = FALSE,
-#'   verbose = FALSE,
-#'   top_n = 50
+#'   verbose = FALSE
 #' )
 #' 
-#' # Access specific results
-#' importance_table <- results$variable_importance
-#' top_variables <- results$selected_variables
-#' biplot <- results$plots$biplot
-#' }
+#' # View top variables
+#' head(results$selected_variables)
 #'
 #' @section Output Files:
-#' When \code{save_plots = TRUE}, the function creates:
+#' When \code{save_plots = TRUE}, the function creates files in the specified
+#' output directory (default: "pca_plots"). For CRAN compliance, use \code{tempdir()}
+#' for the output directory:
 #' \itemize{
 #'   \item PNG files for each visualization type
 #'   \item CSV file with complete variable importance rankings
@@ -2470,7 +2178,7 @@ create_mea_heatmaps_enhanced <- function(
 #'
 #' @export
 analyze_pca_variable_importance_general <- function(pca_result = NULL,
-                                                    output_dir = "pca_plots",
+                                                    output_dir = tempdir(),  # In our example, "pca_plots"
                                                     experiment_name = "PCA_Analysis",
                                                     pc_x = "PC1",
                                                     pc_y = "PC2",
@@ -2484,15 +2192,15 @@ analyze_pca_variable_importance_general <- function(pca_result = NULL,
   # Load required libraries
   required_packages <- c("ggplot2", "dplyr", "viridis", "RColorBrewer", "gridExtra", 
                          "tidyr", "knitr", "DT")
-  for (pkg in required_packages) {
-    if (!require(pkg, quietly = TRUE, character.only = TRUE)) {
-      install.packages(pkg)
-      library(pkg, character.only = TRUE)
-    }
-  }
-  
+  # for (pkg in required_packages) {
+  #   if (!require(pkg, quietly = TRUE, character.only = TRUE)) {
+  #     install.packages(pkg)
+  #     library(pkg, character.only = TRUE)
+  #   }
+  # }
+  # 
   # Helper function for null coalescing
-  `%||%` <- function(lhs, rhs) {
+  null_coalesce <- function(lhs, rhs) {
     if (!is.null(lhs)) lhs else rhs
   }
   
@@ -2627,7 +2335,7 @@ analyze_pca_variable_importance_general <- function(pca_result = NULL,
     )
   )
   
-  colors <- color_schemes[[color_scheme]] %||% color_schemes[["default"]]
+  colors <- null_coalesce(color_schemes[[color_scheme]], color_schemes[["default"]])
   
   # ============================================================================
   # PLOT 1: LOADING BIPLOT

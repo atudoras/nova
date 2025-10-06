@@ -1,2 +1,6 @@
 ^.*\.Rproj$
 ^\.Rproj\.user$
+^Example(/|$)
+^Example/.*\.RData$
+^CRAN-SUBMISSION$
+^cran-comments\.md$

@@ -55,15 +55,7 @@ heatmaps <- create_mea_heatmaps_enhanced(
 
 ## Quick Example
 
-See the complete analysis workflow in the package vignette:
-
-```r
-# View the comprehensive example
-vignette("mea-analysis-example", package = "NOVA")
-
-# Access sample data
-sample_data_path <- system.file("extdata", "sample_mea_data", package = "NOVA")
-```
+See the complete analysis workflow in our Examples.
 
 - **Flexible data discovery**: Automatically detect MEA data structure
 - **Multi-experiment processing**: Handle multiple experiments and timepoints
