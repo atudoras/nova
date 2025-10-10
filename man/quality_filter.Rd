@@ -35,3 +35,13 @@ Filtered data frame
 \description{
 Filters variables and groups based on observation counts and data completeness
 }
+\examples{
+test_data <- data.frame(
+  Variable = rep(paste0("V", 1:5), each = 20),
+  Value = rnorm(100),
+  Group = rep(c("A", "B"), 50)
+)
+filtered <- quality_filter(test_data, "Variable", "Value", "Group", 
+                           0.8, 5, FALSE)
+
+}

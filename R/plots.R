@@ -2117,7 +2117,7 @@ create_mea_heatmaps_enhanced <- function(
 #' @importFrom tidyr gather
 #' @importFrom knitr kable
 #' @importFrom DT datatable
-#'
+#' 
 #' @seealso
 #' \code{\link{prcomp}} for PCA computation, \code{\link{biplot}} for basic PCA plotting
 #'
