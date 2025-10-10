@@ -75,15 +75,3 @@ A list containing plots, trajectories, and metadata
 This function creates comprehensive visualizations of PCA trajectories over time,
 showing both individual and group-averaged trajectories with optional smoothing.
 }
-\examples{
-# Basic usage
-# results <- plot_pca_trajectories_general(pca_data)
-# 
-# Save plots to directory
-# results <- plot_pca_trajectories_general(
-#   pca_data,
-#   save_plots = TRUE,
-#   output_dir = file.path(tempdir(), "trajectories")
-# )
-
-}

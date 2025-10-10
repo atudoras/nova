@@ -62,15 +62,7 @@ in their names (e.g., "Number of Spikes - Std") while keeping average/mean varia
 
 By default, no files are written. To save output, provide an explicit output_path parameter.
 Normalization creates fold-change values relative to baseline timepoint.
-}
-\examples{
-# Process data without saving (returns data frames only)
-# result <- process_mea_flexible("/path/to/mea/data")
-# raw_data <- result$raw_data
 
-# Save output by providing explicit path
-# result <- process_mea_flexible(
-#   main_dir = "/path/to/data",
-#   output_path = file.path(tempdir(), "mea_output.xlsx")
-# )
+Process data without saving (returns data frames only)
+Save output by providing explicit path
 }

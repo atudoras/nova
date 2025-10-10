@@ -145,19 +145,3 @@ The function automatically adjusts plot dimensions based on data size and uses o
 color palettes appropriate for the scaling method chosen (diverging palettes for z_score/robust,
 sequential palettes for min_max).
 }
-\examples{
-# Basic usage with processing result
-# heatmaps <- create_mea_heatmaps_enhanced(
-#   processing_result = mea_results,
-#   scale_method = "z_score"
-# )
-# 
-# Save plots to specific directory
-# heatmaps <- create_mea_heatmaps_enhanced(
-#   processing_result = results,
-#   save_plots = TRUE,
-#   output_dir = file.path(tempdir(), "heatmaps")
-# )
-
-
-}

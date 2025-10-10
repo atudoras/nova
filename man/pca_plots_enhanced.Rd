@@ -85,21 +85,6 @@ designs including treatments, genotypes, and timepoints.
 The function creates up to 5 different plot variants. Files are only saved when
 save_plots = TRUE AND output_dir is explicitly provided.
 }
-\examples{
-# Using complete PCA output object
-# plots <- pca_plots_enhanced(
-#   pca_output = my_pca_results,
-#   experiment_name = "MEA_Experiment_2024"
-# )
-#
-# Save plots to specific directory
-# plots <- pca_plots_enhanced(
-#   pca_output = my_pca_results,
-#   output_dir = file.path(tempdir(), "pca_plots"),
-#   save_plots = TRUE
-# )
-
-}
 \seealso{
 \code{\link{process_mea_flexible}} for MEA data processing,
 \code{\link{discover_mea_structure}} for automatic data structure detection

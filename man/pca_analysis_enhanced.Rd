@@ -95,28 +95,14 @@ The function handles common MEA data challenges:
 - Inconsistent column naming
 - Mixed data types and missing values
 - Variable numbers of experiments and conditions
-}
-\examples{
-# Method 1: Use output from MEA processing function
-# mea_result <- process_mea_flexible("/path/to/data", baseline_timepoint = "baseline")
-# pca_result <- pca_analysis_enhanced(processing_result = mea_result)
 
-# Method 2: Load from saved Excel file
-# pca_result <- pca_analysis_enhanced(data_path = "/path/to/processed_data.xlsx")
+Method 1: Use output from MEA processing function
+process_mea_flexible("/path/to/data", baseline_timepoint = "baseline")
+pca_analysis_enhanced(processing_result = mea_result)
 
-# Method 3: Use pre-loaded data with custom parameters
-# pca_result <- pca_analysis_enhanced(
-#   normalized_data = my_data,
-#   min_var = 0.05,
-#   n_components = 5,
-#   variance_cutoff = 80,
-#   grouping_variables = c("Treatment", "Genotype", "Batch")
-# )
+Method 2: Load from saved Excel file
+pca_analysis_enhanced(data_path = "/path/to/processed_data.xlsx")
 
-# Save elbow plot to file
-# pca_result <- pca_analysis_enhanced(
-#   normalized_data = my_data,
-#   output_path = file.path(tempdir(), "elbow_plot.png")
-# )
-
+Method 3: Use pre-loaded data with custom parameters
+normalized_data = my_data
 }

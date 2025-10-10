@@ -1,4 +1,11 @@
-# NOVA 0.1.0
+# NOVA 0.1.1
+
+## CRAN Resubmission Fixes
+
+* Removed all commented code from examples and function bodies
+* Fixed DESCRIPTION to spell out Multi-Electrode Array (MEA) without quotes
+* Added newlines at end of all R source files
+* Fixed parse errors in documentation examples
 
 ## Initial CRAN Release
 

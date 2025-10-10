@@ -52,20 +52,6 @@ NULL
 #' The function creates up to 5 different plot variants. Files are only saved when
 #' save_plots = TRUE AND output_dir is explicitly provided.
 #'
-#' @examples
-#' # Using complete PCA output object
-#' # plots <- pca_plots_enhanced(
-#' #   pca_output = my_pca_results,
-#' #   experiment_name = "MEA_Experiment_2024"
-#' # )
-#' #
-#' # Save plots to specific directory
-#' # plots <- pca_plots_enhanced(
-#' #   pca_output = my_pca_results,
-#' #   output_dir = file.path(tempdir(), "pca_plots"),
-#' #   save_plots = TRUE
-#' # )
-#'
 #' @seealso
 #' \code{\link{process_mea_flexible}} for MEA data processing,
 #' \code{\link{discover_mea_structure}} for automatic data structure detection
@@ -604,17 +590,6 @@ pca_plots_enhanced <- function(pca_output = NULL,
 #' @param verbose Logical indicating whether to print messages (default: TRUE)
 #'
 #' @return A list containing plots, trajectories, and metadata
-#'
-#' @examples
-#' # Basic usage
-#' # results <- plot_pca_trajectories_general(pca_data)
-#' # 
-#' # Save plots to directory
-#' # results <- plot_pca_trajectories_general(
-#' #   pca_data,
-#' #   save_plots = TRUE,
-#' #   output_dir = file.path(tempdir(), "trajectories")
-#' # )
 #'
 #' @importFrom dplyr filter group_by summarise mutate arrange distinct
 #' @importFrom ggplot2 ggplot geom_point geom_segment geom_errorbar geom_errorbarh geom_text scale_color_viridis_c
@@ -1471,21 +1446,6 @@ plot_pca_trajectories_general <- function(pca_results,
 #' color palettes appropriate for the scaling method chosen (diverging palettes for z_score/robust,
 #' sequential palettes for min_max).
 #'
-#' @examples
-#' # Basic usage with processing result
-#' # heatmaps <- create_mea_heatmaps_enhanced(
-#' #   processing_result = mea_results,
-#' #   scale_method = "z_score"
-#' # )
-#' # 
-#' # Save plots to specific directory
-#' # heatmaps <- create_mea_heatmaps_enhanced(
-#' #   processing_result = results,
-#' #   save_plots = TRUE,
-#' #   output_dir = file.path(tempdir(), "heatmaps")
-#' # )
-#'
-#'
 #' @importFrom dplyr across all_of
 #' @importFrom pheatmap pheatmap
 #' 
@@ -2134,22 +2094,7 @@ create_mea_heatmaps_enhanced <- function(
 #'   \item \code{colorbrewer}: ColorBrewer palettes optimized for scientific visualization
 #' }
 #'
-#' @examples
-#' # Basic example with simulated data
-#' set.seed(123)
-#' test_data <- matrix(rnorm(100 * 10), nrow = 100, ncol = 10)
-#' colnames(test_data) <- paste0("Var", 1:10)
-#' pca_obj <- prcomp(test_data, scale. = TRUE)
-#' 
-#' # Quick analysis without saving files
-#' results <- analyze_pca_variable_importance_general(
-#'   pca_result = pca_obj,
-#'   save_plots = FALSE,
-#'   verbose = FALSE
-#' )
-#' 
-#' # View top variables
-#' head(results$selected_variables)
+#' View top variables using head(results$selected_variables)
 #'
 #' @section Output Files:
 #' When \code{save_plots = TRUE}, the function creates files in the specified
@@ -2192,13 +2137,6 @@ analyze_pca_variable_importance_general <- function(pca_result = NULL,
   # Load required libraries
   required_packages <- c("ggplot2", "dplyr", "viridis", "RColorBrewer", "gridExtra", 
                          "tidyr", "knitr", "DT")
-  # for (pkg in required_packages) {
-  #   if (!require(pkg, quietly = TRUE, character.only = TRUE)) {
-  #     install.packages(pkg)
-  #     library(pkg, character.only = TRUE)
-  #   }
-  # }
-  # 
   # Helper function for null coalescing
   null_coalesce <- function(lhs, rhs) {
     if (!is.null(lhs)) lhs else rhs

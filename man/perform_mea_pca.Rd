@@ -19,14 +19,9 @@ perform_mea_pca(data, variables = NULL, scale = TRUE, center = TRUE, ...)
 }
 \value{
 List containing PCA results (scores, loadings, variance explained, etc.)
+
+Perform PCA analysis (requires processed MEA data)
 }
 \description{
 Template function for performing PCA on MEA data
-}
-\examples{
-# Perform PCA analysis (requires processed MEA data)
-# pca_results <- perform_mea_pca(processed_data)
-# scores <- pca_results$scores
-# loadings <- pca_results$loadings
-
 }

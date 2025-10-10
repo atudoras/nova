@@ -13,11 +13,7 @@
 #'
 #' @return List containing PCA results (scores, loadings, variance explained, etc.)
 #'
-#' @examples
-#' # Perform PCA analysis (requires processed MEA data)
-#' # pca_results <- perform_mea_pca(processed_data)
-#' # scores <- pca_results$scores
-#' # loadings <- pca_results$loadings
+#' Perform PCA analysis (requires processed MEA data)
 #'
 #' @export
 perform_mea_pca <- function(data, variables = NULL, scale = TRUE, center = TRUE, ...) {
@@ -82,29 +78,16 @@ perform_mea_pca <- function(data, variables = NULL, scale = TRUE, center = TRUE,
 #' - Mixed data types and missing values
 #' - Variable numbers of experiments and conditions
 #'
-#' @examples
-#' # Method 1: Use output from MEA processing function
-#' # mea_result <- process_mea_flexible("/path/to/data", baseline_timepoint = "baseline")
-#' # pca_result <- pca_analysis_enhanced(processing_result = mea_result)
+#' Method 1: Use output from MEA processing function
+#' process_mea_flexible("/path/to/data", baseline_timepoint = "baseline")
+#' pca_analysis_enhanced(processing_result = mea_result)
 #' 
-#' # Method 2: Load from saved Excel file
-#' # pca_result <- pca_analysis_enhanced(data_path = "/path/to/processed_data.xlsx")
+#' Method 2: Load from saved Excel file
+#' pca_analysis_enhanced(data_path = "/path/to/processed_data.xlsx")
 #' 
-#' # Method 3: Use pre-loaded data with custom parameters
-#' # pca_result <- pca_analysis_enhanced(
-#' #   normalized_data = my_data,
-#' #   min_var = 0.05,
-#' #   n_components = 5,
-#' #   variance_cutoff = 80,
-#' #   grouping_variables = c("Treatment", "Genotype", "Batch")
-#' # )
+#' Method 3: Use pre-loaded data with custom parameters
+#' normalized_data = my_data
 #' 
-#' # Save elbow plot to file
-#' # pca_result <- pca_analysis_enhanced(
-#' #   normalized_data = my_data,
-#' #   output_path = file.path(tempdir(), "elbow_plot.png")
-#' # )
-#'
 #' @importFrom ggplot2 annotate scale_x_continuous
 #' @export
 pca_analysis_enhanced <- function(normalized_data = NULL, 
@@ -588,5 +571,3 @@ pca_analysis_enhanced <- function(normalized_data = NULL,
     processing_source = if(!is.null(processing_result)) "processing_result" else if(!is.null(data_path)) "excel_file" else "direct_data"
   ))
 }
-
-# Add more PCA analysis functions here as you share them

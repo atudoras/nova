@@ -29,11 +29,7 @@
 #' - Row 124: Exclusion flags
 #' - Rows 125-168: Variable names and measurements
 #'
-#' @examples
-#' # Discover structure of MEA data (requires data directory)
-#' # structure <- discover_mea_structure("/path/to/mea/data")
-#' # names(structure$experiments)
-#' # structure$all_timepoints
+#' Discover structure of MEA data (requires data directory)
 #'
 #' @export
 discover_mea_structure <- function(main_dir, 
@@ -256,16 +252,9 @@ discover_mea_structure <- function(main_dir,
 #' By default, no files are written. To save output, provide an explicit output_path parameter.
 #' Normalization creates fold-change values relative to baseline timepoint.
 #'
-#' @examples
-#' # Process data without saving (returns data frames only)
-#' # result <- process_mea_flexible("/path/to/mea/data")
-#' # raw_data <- result$raw_data
-#' 
-#' # Save output by providing explicit path
-#' # result <- process_mea_flexible(
-#' #   main_dir = "/path/to/data",
-#' #   output_path = file.path(tempdir(), "mea_output.xlsx")
-#' # )
+#' Process data without saving (returns data frames only)
+#' Save output by providing explicit path
+#'
 #' @export
 process_mea_flexible <- function(main_dir,
                                  selected_experiments = NULL,

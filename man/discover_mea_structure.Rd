@@ -42,11 +42,6 @@ The function expects MEA CSV files with standard format:
 - Row 123: Genotype information  
 - Row 124: Exclusion flags
 - Rows 125-168: Variable names and measurements
-}
-\examples{
-# Discover structure of MEA data (requires data directory)
-# structure <- discover_mea_structure("/path/to/mea/data")
-# names(structure$experiments)
-# structure$all_timepoints
 
+Discover structure of MEA data (requires data directory)
 }
