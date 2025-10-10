@@ -13,19 +13,6 @@
 #'
 #' @return Data frame with missing values handled according to specified method
 #'
-#' @examples
-#' # Create sample data with missing values
-#' test_data <- data.frame(
-#'   ID = 1:10,
-#'   Value = c(1.2, NA, 3.4, 2.1, NA, 5.6, 4.3, NA, 2.8, 3.9)
-#' )
-#' 
-#' # Remove rows with missing values
-#' cleaned <- handle_missing_values(test_data, "Value", method = "remove", verbose = FALSE)
-#' 
-#' # Impute with mean
-#' imputed <- handle_missing_values(test_data, "Value", method = "impute_mean", verbose = TRUE)
-#'
 #' @export
 handle_missing_values <- function(data, value_column, method, verbose) {
   original_na <- sum(is.na(data[[value_column]]))

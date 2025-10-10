@@ -90,6 +90,8 @@ Color schemes provide different aesthetic options:
   \item \code{viridis}: Colorblind-friendly viridis color scale
   \item \code{colorbrewer}: ColorBrewer palettes optimized for scientific visualization
 }
+
+View top variables using head(results$selected_variables)
 }
 \section{Output Files}{
 
@@ -104,24 +106,6 @@ for the output directory:
 }
 }
 
-\examples{
-# Basic example with simulated data
-set.seed(123)
-test_data <- matrix(rnorm(100 * 10), nrow = 100, ncol = 10)
-colnames(test_data) <- paste0("Var", 1:10)
-pca_obj <- prcomp(test_data, scale. = TRUE)
-
-# Quick analysis without saving files
-results <- analyze_pca_variable_importance_general(
-  pca_result = pca_obj,
-  save_plots = FALSE,
-  verbose = FALSE
-)
-
-# View top variables
-head(results$selected_variables)
-
-}
 \seealso{
 \code{\link{prcomp}} for PCA computation, \code{\link{biplot}} for basic PCA plotting
 }

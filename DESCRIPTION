@@ -1,10 +1,10 @@
 Package: NOVA
 Type: Package
 Title: Neural Output Visualization and Analysis
-Version: 0.1.0
+Version: 0.1.1
 Description: A comprehensive toolkit for analyzing and visualizing neural data 
     outputs, including Principal Component Analysis (PCA) trajectory plotting, 
-    Multi-Electrode Array ('MEA') heatmap generation, and variable importance 
+    Multi-Electrode Array (MEA) heatmap generation, and variable importance 
     analysis. Provides publication-ready visualizations with flexible 
     customization options for neuroscience research applications.
 Authors@R: person(given = "Alex",
