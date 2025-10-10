@@ -13,6 +13,13 @@
 #'
 #' @return Data frame with missing values handled according to specified method
 #'
+#'@examples
+#' test_data <- data.frame(
+#'   ID = 1:10,
+#'   Value = c(1.2, NA, 3.4, 2.1, NA, 5.6, 4.3, NA, 2.8, 3.9)
+#' )
+#' cleaned <- handle_missing_values(test_data, "Value", "remove", FALSE)
+#'
 #' @export
 handle_missing_values <- function(data, value_column, method, verbose) {
   original_na <- sum(is.na(data[[value_column]]))
@@ -51,6 +58,16 @@ handle_missing_values <- function(data, value_column, method, verbose) {
 #' @param verbose Whether to print filtering results
 #'
 #' @return Filtered data frame
+#' 
+#' @examples
+#' test_data <- data.frame(
+#'   Variable = rep(paste0("V", 1:5), each = 20),
+#'   Value = rnorm(100),
+#'   Group = rep(c("A", "B"), 50)
+#' )
+#' filtered <- quality_filter(test_data, "Variable", "Value", "Group", 
+#'                            0.8, 5, FALSE)
+#' 
 #' @export
 quality_filter <- function(data, variable_column, value_column, grouping_columns, 
                            quality_threshold, min_observations, verbose) {
@@ -100,6 +117,15 @@ quality_filter <- function(data, variable_column, value_column, grouping_columns
 #' @param method Aggregation method: "mean", "median", "sum"
 #'
 #' @return Aggregated data frame
+#' 
+#' @examples
+#' test_data <- data.frame(
+#'   Group = rep(c("A", "B"), each = 10),
+#'   Variable = rep(paste0("V", 1:5), 4),
+#'   Value = rnorm(20)
+#' )
+#' agg <- aggregate_data(test_data, "Group", "Variable", "Value", "mean")
+#' 
 #' @export
 aggregate_data <- function(data, group_col, variable_column, value_column, method) {
   data %>%
@@ -317,6 +343,11 @@ create_color_palette_enhanced <- function(palette_name = "yellow_purple", custom
 #' @param rhs Right-hand side value (default/fallback)
 #'
 #' @return lhs if not NULL, otherwise rhs
+#' 
+#' @examples
+#' null_coalesce(5, 10)
+#' null_coalesce(NULL, 10)
+#' 
 #' @export
 null_coalesce <- function(lhs, rhs) {
   if (!is.null(lhs)) lhs else rhs

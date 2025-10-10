@@ -17,3 +17,8 @@ lhs if not NULL, otherwise rhs
 \description{
 Returns the left-hand side if not NULL, otherwise the right-hand side
 }
+\examples{
+null_coalesce(5, 10)
+null_coalesce(NULL, 10)
+
+}

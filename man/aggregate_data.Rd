@@ -23,3 +23,12 @@ Aggregated data frame
 \description{
 Aggregates values within groups using specified method
 }
+\examples{
+test_data <- data.frame(
+  Group = rep(c("A", "B"), each = 10),
+  Variable = rep(paste0("V", 1:5), 4),
+  Value = rnorm(20)
+)
+agg <- aggregate_data(test_data, "Group", "Variable", "Value", "mean")
+
+}

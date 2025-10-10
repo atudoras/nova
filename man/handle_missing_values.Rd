@@ -22,3 +22,11 @@ Data frame with missing values handled according to specified method
 Handles missing values in MEA datasets using various imputation strategies
 or removal methods.
 }
+\examples{
+test_data <- data.frame(
+  ID = 1:10,
+  Value = c(1.2, NA, 3.4, 2.1, NA, 5.6, 4.3, NA, 2.8, 3.9)
+)
+cleaned <- handle_missing_values(test_data, "Value", "remove", FALSE)
+
+}
