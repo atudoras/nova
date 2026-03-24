@@ -1,5 +1,5 @@
 # =============================================================================
-# NOVA Workflow — 01_compute.R
+# NOVA Workflow - 01_compute.R
 # Run this script ONCE per dataset. It discovers your data, lets you assign
 # variable roles, computes all analyses, and saves results to an .rds file.
 # Then open 02_plot.R to generate and fine-tune your figures.
@@ -7,14 +7,14 @@
 library(NOVA)
 
 # =============================================================================
-# STEP 1 — POINT TO YOUR DATA
+# STEP 1 - POINT TO YOUR DATA
 # Edit DATA_DIR to the folder containing your MEA experiment subfolders.
 # =============================================================================
 DATA_DIR     <- "path/to/your/MEA_data"   # <-- EDIT THIS
 RESULTS_PATH <- "nova_results.rds"         # where computed results will be saved
 
 # =============================================================================
-# STEP 2 — DISCOVER YOUR DATA
+# STEP 2 - DISCOVER YOUR DATA
 # Run from here to the end of this section. Read the output carefully,
 # then fill in STEP 3 before running further.
 # =============================================================================
@@ -66,7 +66,7 @@ cat("  from STEP 3 to the end of the script.\n")
 cat("========================================\n\n")
 
 # =============================================================================
-# STEP 3 — ASSIGN YOUR VARIABLE ROLES
+# STEP 3 - ASSIGN YOUR VARIABLE ROLES
 # Map each semantic role to the column name in your data.
 # Set a role to NULL if your experiment does not have it.
 # Column names must match exactly what is in your CSV metadata rows.
@@ -92,7 +92,7 @@ BASELINE <- if (length(discovery$potential_baselines) > 0) {
 }
 
 # =============================================================================
-# STEP 4 — COMPUTE EVERYTHING
+# STEP 4 - COMPUTE EVERYTHING
 # Do not edit below this line unless you know what you are doing.
 # =============================================================================
 
@@ -148,7 +148,7 @@ heatmaps <- tryCatch({
 })
 
 # =============================================================================
-# STEP 5 — SAVE RESULTS
+# STEP 5 - SAVE RESULTS
 # =============================================================================
 nova_results <- list(
   processed    = processed,

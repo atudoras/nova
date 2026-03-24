@@ -1,7 +1,7 @@
 # data_handling.R
 # Functions for discovering, loading, and processing MEA data
 
-# MEA file structure constants — row positions in standard MEA CSV format
+# MEA file structure constants - row positions in standard MEA CSV format
 MEA_ROW_WELLS      <- 121L  # Well identifiers (A1, A2, B1, etc.)
 MEA_ROW_TREATMENT  <- 122L  # Treatment conditions
 MEA_ROW_GENOTYPE   <- 123L  # Genotype information

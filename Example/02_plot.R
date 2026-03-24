@@ -1,8 +1,8 @@
 # =============================================================================
-# NOVA Workflow — 02_plot.R
+# NOVA Workflow - 02_plot.R
 # Load results computed by 01_compute.R, tune display parameters,
 # and generate figures. Every plot is shown in the viewer AND saved to disk.
-# Only edit the TUNE block below — re-run anytime to update figures.
+# Only edit the TUNE block below - re-run anytime to update figures.
 # =============================================================================
 library(NOVA)
 library(ggplot2)
@@ -16,7 +16,7 @@ RESULTS_PATH   <- "nova_results.rds"  # path to file saved by 01_compute.R
 OUTPUT_DIR     <- "figures/"          # root folder for saved figures
 
 # --- Filter what to display (NULL = show all) --------------------------------
-# These filters are display-only — the .rds file is never modified.
+# These filters are display-only - the .rds file is never modified.
 SHOW_TIMEPOINTS <- NULL    # e.g. c("baseline", "1h", "2h")
 SHOW_TREATMENTS <- NULL    # e.g. c("Control", "Drug_A")
 SHOW_GENOTYPES  <- NULL    # e.g. c("WT", "KO")
@@ -79,7 +79,7 @@ FACET_BY <- check_var(FACET_BY, "FACET_BY")
 
 # =============================================================================
 # APPLY DISPLAY FILTERS
-# Filters a copy of plot_data — the nova object loaded above is never mutated.
+# Filters a copy of plot_data - the nova object loaded above is never mutated.
 # =============================================================================
 plot_data <- nova$pca$plot_data
 
