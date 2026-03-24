@@ -12,3 +12,30 @@ test_that("null_coalesce is not redefined inside pca_analysis_enhanced body", {
   expect_false(local_def,
     info = "null_coalesce should not be locally redefined inside pca_analysis_enhanced")
 })
+
+test_that("pca_analysis_enhanced loads from raw_data sheet when normalized_data missing", {
+  skip_if_not_installed("writexl")
+  skip_if_not_installed("readxl")
+
+  # Build minimal long-format data
+  fake_data <- data.frame(
+    Variable = rep(paste0("V", 1:5), 2),
+    Sample   = rep(c("S1", "S2"), each = 5),
+    Value    = rnorm(10),
+    stringsAsFactors = FALSE
+  )
+
+  tmp <- tempfile(fileext = ".xlsx")
+  writexl::write_xlsx(list(raw_data = fake_data), path = tmp)
+
+  # Should NOT throw a scoping-related error
+  expect_no_error({
+    result <- pca_analysis_enhanced(
+      data_path       = tmp,
+      value_column    = "Value",
+      variable_column = "Variable",
+      verbose         = FALSE
+    )
+  })
+  unlink(tmp)
+})
