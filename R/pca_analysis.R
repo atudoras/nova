@@ -209,9 +209,6 @@ pca_analysis_enhanced <- function(normalized_data = NULL,
   # CONFIG SYSTEM INTEGRATION WITH SMART DEFAULTS
   # ============================================================================
   
-  # Define null_c operator for NULL coalescing if not already defined
-  null_coalesce <- function(x, y) if (is.null(x)) y else x
-  
   # Set config-based defaults if config provided
   if (!is.null(config)) {
     if (is.null(min_var)) min_var <- null_coalesce(config$min_variance_threshold, 0.01)
