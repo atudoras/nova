@@ -17,8 +17,11 @@
 #'
 #' @export
 perform_mea_pca <- function(data, variables = NULL, scale = TRUE, center = TRUE, ...) {
-  # Template function - implement your PCA logic here
-  stop("This is a template function. Please implement the PCA analysis logic.")
+  stop(
+    "perform_mea_pca() is not implemented. ",
+    "Use pca_analysis_enhanced() instead — it accepts a data frame, ",
+    "a processing result, or a file path. See ?pca_analysis_enhanced."
+  )
 }
 
 #' Enhanced PCA Analysis for MEA Data
