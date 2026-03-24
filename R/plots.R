@@ -2137,11 +2137,6 @@ analyze_pca_variable_importance_general <- function(pca_result = NULL,
   # Load required libraries
   required_packages <- c("ggplot2", "dplyr", "viridis", "RColorBrewer", "gridExtra", 
                          "tidyr", "knitr", "DT")
-  # Helper function for null coalescing
-  null_coalesce <- function(lhs, rhs) {
-    if (!is.null(lhs)) lhs else rhs
-  }
-  
   if (verbose) cat("=== PCA VARIABLE IMPORTANCE ANALYSIS ===\n")
   
   # ============================================================================

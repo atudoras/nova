@@ -19,7 +19,7 @@
 perform_mea_pca <- function(data, variables = NULL, scale = TRUE, center = TRUE, ...) {
   stop(
     "perform_mea_pca() is not implemented. ",
-    "Use pca_analysis_enhanced() instead — it accepts a data frame, ",
+    "Use pca_analysis_enhanced() instead - it accepts a data frame, ",
     "a processing result, or a file path. See ?pca_analysis_enhanced."
   )
 }
@@ -431,14 +431,14 @@ pca_analysis_enhanced <- function(normalized_data = NULL,
   )
   
   elbow_plot <- ggplot(elbow_data, aes(x = PC)) +
-    geom_line(aes(y = Individual_Variance), color = "blue", size = 1) +
+    geom_line(aes(y = Individual_Variance), color = "blue", linewidth = 1) +
     geom_point(aes(y = Individual_Variance), color = "blue", size = 2) +
-    geom_line(aes(y = Cumulative_Variance), color = "red", size = 1) +
+    geom_line(aes(y = Cumulative_Variance), color = "red", linewidth = 1) +
     geom_point(aes(y = Cumulative_Variance), color = "red", size = 2) +
     geom_hline(yintercept = 70, linetype = "dotted", color = "gray50", alpha = 0.7) +
     geom_hline(yintercept = 80, linetype = "dotted", color = "gray50", alpha = 0.7) +
     geom_hline(yintercept = 90, linetype = "dotted", color = "gray50", alpha = 0.7) +
-    geom_hline(yintercept = variance_cutoff, linetype = "dashed", color = "black", size = 1) +
+    geom_hline(yintercept = variance_cutoff, linetype = "dashed", color = "black", linewidth = 1) +
     annotate("text", x = max(elbow_data$PC) * 0.8, y = 72, label = "70%", hjust = 0) +
     annotate("text", x = max(elbow_data$PC) * 0.8, y = 82, label = "80%", hjust = 0) +
     annotate("text", x = max(elbow_data$PC) * 0.8, y = 92, label = "90%", hjust = 0) +
