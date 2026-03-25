@@ -52,6 +52,45 @@ heatmaps -- all figures saved to `DATA_DIR/nova_output/`.
 
 ---
 
+## Getting Started
+
+### Option A — Install from GitHub (recommended for latest version)
+
+```{r install-github, eval=FALSE}
+# Install devtools if needed
+if (!requireNamespace("devtools", quietly = TRUE)) install.packages("devtools")
+
+# Install NOVA from GitHub
+devtools::install_github("atudoras/nova")
+```
+
+Once installed, load the package and point to your data folder:
+
+```{r load-pkg, eval=FALSE}
+library(NOVA)
+
+# Option 1 — use your own MEA export folder
+DATA_DIR <- "/path/to/your/MEA/exports"
+
+# Option 2 — use the bundled demo data (no download needed)
+DATA_DIR <- system.file("extdata", package = "NOVA")
+# If that returns "", download the Example folder from GitHub:
+# https://github.com/atudoras/nova/tree/main/Example
+# and set DATA_DIR <- "/path/where/you/saved/Example"
+```
+
+### Option B — Install from CRAN (coming soon)
+
+```{r install-cran, eval=FALSE}
+install.packages("NOVA")
+```
+
+> **Tip:** After `devtools::install_github()` the package is your official,
+> working copy — identical to running it from source. Re-install any time
+> with the same command to get the latest version.
+
+---
+
 # Step-by-step workflow
 
 ## 1. Discover your data
