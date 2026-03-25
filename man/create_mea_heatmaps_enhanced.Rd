@@ -109,6 +109,18 @@ Function will auto-detect which columns are available.}
 
 \item{min_observations}{Numeric value specifying minimum observations required per group (default: 3).}
 
+\item{use_raw}{Logical. If \code{TRUE}, plot raw electrode values instead of
+normalized values. Default \code{FALSE}.}
+
+\item{filter_timepoints}{Character vector of timepoint names to include.
+\code{NULL} (default) includes all timepoints.}
+
+\item{filter_treatments}{Character vector of treatment names to include.
+\code{NULL} (default) includes all treatments.}
+
+\item{filter_genotypes}{Character vector of genotype names to include.
+\code{NULL} (default) includes all genotypes.}
+
 \item{split_by}{Character string controlling plot splitting. Use
 \code{"combination"} to render a single heatmap of all wells annotated
 by both Treatment and Genotype strips. Pass any column name (e.g.
