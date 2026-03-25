@@ -2,6 +2,7 @@
 # Functions for visualizing MEA data and PCA results
 #' @importFrom dplyr filter mutate select group_by summarise arrange %>% n case_when bind_rows full_join rename distinct first last n_distinct row_number
 #' @importFrom ggplot2 ggplot aes aes_string geom_point geom_line geom_segment labs theme_minimal theme coord_fixed scale_color_manual scale_shape_manual guides guide_legend facet_wrap stat_ellipse
+#' @importFrom ggrepel geom_text_repel
 #' @importFrom stringr str_to_title str_detect
 #' @importFrom rlang syms .data
 #' @importFrom tidyr pivot_wider gather unite
@@ -612,6 +613,7 @@ plot_pca_trajectories_general <- function(pca_results,
                                           line_size = 2,
                                           smooth_lines = FALSE,
                                           color_palette = NULL,
+                                          color_by = "group",
                                           save_plots = FALSE,
                                           output_dir = NULL,
                                           plot_prefix = "PCA_trajectories",
@@ -814,7 +816,47 @@ plot_pca_trajectories_general <- function(pca_results,
   
   unique_groups <- unique(plot_data_clean$group_id)
   n_groups <- length(unique_groups)
-  
+
+  # -- color_by: build active_palette + tp_subtitle ─────────────────────────
+  color_by <- match.arg(color_by, c("group", "Treatment"))
+
+  if (color_by == "Treatment" && "Treatment" %in% names(plot_data)) {
+    treatment_vals <- unique(plot_data$Treatment)
+    n_treat        <- length(treatment_vals)
+    treat_colors   <- if (!is.null(color_palette) && length(color_palette) >= n_treat) {
+      color_palette[seq_len(n_treat)]
+    } else {
+      colorRampPalette(c(
+        "#E31A1C","#FF7F00","#33A02C","#1F78B4",
+        "#6A3D9A","#B15928","#FB9A99","#A6CEE3"
+      ))(n_treat)
+    }
+    names(treat_colors) <- treatment_vals
+    group_treatment_map <- plot_data %>%
+      dplyr::distinct(group_id, Treatment) %>%
+      dplyr::mutate(plot_color = treat_colors[Treatment])
+    active_palette <- setNames(group_treatment_map$plot_color,
+                               group_treatment_map$group_id)
+  } else {
+    active_palette <- if (!is.null(color_palette)) {
+      if (length(color_palette) >= n_groups) {
+        setNames(color_palette[seq_len(n_groups)], unique_groups)
+      } else {
+        setNames(colorRampPalette(color_palette)(n_groups), unique_groups)
+      }
+    } else {
+      pal <- colorRampPalette(c(
+        "#E31A1C","#FF7F00","#FDBF6F","#33A02C","#1F78B4",
+        "#6A3D9A","#B15928","#FB9A99","#A6CEE3","#B2DF8A"
+      ))(n_groups)
+      setNames(pal, unique_groups)
+    }
+  }
+
+  tp_ordered  <- if (!is.null(timepoint_order)) timepoint_order else
+                   sort(unique(plot_data[[timepoint_var]]))
+  tp_subtitle <- paste0("Timepoints: ", paste(tp_ordered, collapse = " \u2192 "))
+
   generate_colors <- function(n) {
     if (n <= 1) return("#E31A1C")
     gradient_colors <- c("#E31A1C", "#FF7F00", "#FDBF6F", "#33A02C", "#1F78B4", "#6A3D9A", "#B15928", "#FB9A99", "#A6CEE3", "#B2DF8A")
@@ -1152,8 +1194,8 @@ plot_pca_trajectories_general <- function(pca_results,
                  size = line_size * 0.3, alpha = alpha * 0.6) +
     geom_point(data = individual_trajectories, aes(x = mean_x, y = mean_y, color = group_id),
                size = point_size * 0.2, alpha = 0.5) +
-    scale_color_manual(values = color_palette, name = "Group") +
-    labs(title = "Combined Individual Trajectories", x = pc_x, y = pc_y) +
+    scale_color_manual(values = active_palette, name = "Group") +
+    labs(title = "Combined Individual Trajectories", subtitle = tp_subtitle, x = pc_x, y = pc_y) +
     coord_fixed() +
     theme_minimal() +
     theme(
@@ -1178,7 +1220,7 @@ plot_pca_trajectories_general <- function(pca_results,
   
   p_combined <- p_combined +
     geom_point(data = first_last_combined, aes(x = first_x, y = first_y, color = group_id),
-               fill = "white", shape = 21, size = point_size * 0.5, stroke = 0.8) +
+               shape = 5, size = point_size * 0.5, stroke = 0.8) +
     geom_point(data = first_last_combined, aes(x = last_x, y = last_y, color = group_id),
                fill = "black", shape = 21, size = point_size * 0.5, stroke = 0.8)
   
@@ -1234,24 +1276,20 @@ plot_pca_trajectories_general <- function(pca_results,
     group_by(group_id) %>%
     arrange(time_rank) %>%
     summarise(
-      first_x = first(avg_x),
-      first_y = first(avg_y),
-      first_label = "B",
-      last_x = last(avg_x),
-      last_y = last(avg_y),
-      last_label = last(as.character(.data[[timepoint_var]])),
+      first_x    = first(avg_x),
+      first_y    = first(avg_y),
+      last_x     = last(avg_x),
+      last_y     = last(avg_y),
+      last_label = if (color_by == "Treatment" && "Genotype" %in% names(.)) {
+                     dplyr::last(as.character(Genotype))
+                   } else {
+                     dplyr::last(as.character(.data[[timepoint_var]]))
+                   },
       .groups = "drop"
     )
   
-  professional_colors <- c(
-    "#E31A1C", "#FF7F00", "#FDBF6F", "#33A02C", "#1F78B4",
-    "#6A3D9A", "#B15928", "#FB9A99", "#A6CEE3", "#B2DF8A"
-  )
-  
-  if (n_groups > length(professional_colors)) {
-    professional_colors <- colorRampPalette(professional_colors)(n_groups)
-  }
-  names(professional_colors) <- unique_groups
+  # active_palette already computed above
+  professional_colors <- active_palette
   
   p_comb_avg <- ggplot() +
     geom_segment(data = grad_avg_combined, aes(x, y, xend = xend, yend = yend, color = group_id),
@@ -1262,16 +1300,23 @@ plot_pca_trajectories_general <- function(pca_results,
                   width = 0.05, alpha = 0.5, size = 0.4) +
     geom_errorbarh(data = group_average_trajectories, aes(y = avg_y, xmin = avg_x - se_x, xmax = avg_x + se_x, color = group_id),
                    height = 0.05, alpha = 0.5, size = 0.4) +
-    geom_point(data = first_last_points, aes(x = first_x, y = first_y, color = group_id),
-               fill = "white", shape = 21, size = point_size * 1.2, stroke = 1.2) +
-    geom_point(data = first_last_points, aes(x = last_x, y = last_y, color = group_id),
-               fill = "black", shape = 21, size = point_size * 1.2, stroke = 1.2) +
-    geom_text(data = first_last_points, aes(x = last_x, y = last_y, label = last_label),
-              nudge_x = 0.08, nudge_y = 0.08, fontface = "bold", size = point_size * 1.1, color = "black") +
-    geom_text(data = first_last_points, aes(x = first_x, y = first_y, label = first_label),
-              nudge_x = -0.08, nudge_y = -0.08, fontface = "bold", size = point_size * 1.1, color = "black") +
-    scale_color_manual(values = professional_colors, name = "Group") +
-    labs(title = "Averaged PCA Trajectories", x = pc_x, y = pc_y) +
+    geom_point(data = first_last_points,
+               aes(x = first_x, y = first_y, color = group_id),
+               shape = 5, size = point_size * 1.4, stroke = 1.4) +
+    geom_point(data = first_last_points,
+               aes(x = last_x, y = last_y, color = group_id),
+               shape = 21, fill = "black", size = point_size * 1.2, stroke = 1.2) +
+    ggrepel::geom_text_repel(
+               data = first_last_points,
+               aes(x = last_x, y = last_y, label = last_label, color = group_id),
+               fontface = "bold", size = point_size * 0.9,
+               box.padding = 0.35, point.padding = 0.3,
+               show.legend = FALSE) +
+    annotate("text", x = -Inf, y = Inf,
+             label = "\u25c7 = start   \u25cf = end",
+             hjust = -0.1, vjust = 1.4, size = 3, color = "gray40") +
+    scale_color_manual(values = active_palette, name = "Group") +
+    labs(title = "Averaged PCA Trajectories", subtitle = tp_subtitle, x = pc_x, y = pc_y) +
     coord_fixed() +
     theme_minimal() +
     theme(
@@ -1283,8 +1328,9 @@ plot_pca_trajectories_general <- function(pca_results,
       legend.position = "right"
     )
   
-  plot_list$combined_all <- p_combined
-  plot_list$combined_avg <- p_comb_avg
+  plot_list$combined_all     <- p_combined
+  plot_list$combined_avg     <- p_comb_avg
+  plot_list$combined_average <- p_comb_avg
   
   # ============================================================================
   # SAVE PLOTS (ONLY IF REQUESTED AND OUTPUT_DIR PROVIDED)
