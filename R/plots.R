@@ -1478,6 +1478,14 @@ plot_pca_trajectories_general <- function(pca_results,
 #' @param verbose Logical indicating whether to print progress messages (default: TRUE).
 #' @param quality_threshold Numeric value between 0-1 specifying minimum data completeness per variable (default: 0.8).
 #' @param min_observations Numeric value specifying minimum observations required per group (default: 3).
+#' @param use_raw Logical. If \code{TRUE}, plot raw electrode values instead of
+#'   normalized values. Default \code{FALSE}.
+#' @param filter_timepoints Character vector of timepoint names to include.
+#'   \code{NULL} (default) includes all timepoints.
+#' @param filter_treatments Character vector of treatment names to include.
+#'   \code{NULL} (default) includes all treatments.
+#' @param filter_genotypes Character vector of genotype names to include.
+#'   \code{NULL} (default) includes all genotypes.
 #' @param split_by Character string controlling plot splitting. Use
 #'   \code{"combination"} to render a single heatmap of all wells annotated
 #'   by both Treatment and Genotype strips. Pass any column name (e.g.
