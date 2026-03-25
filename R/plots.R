@@ -1642,6 +1642,57 @@ create_mea_heatmaps_enhanced <- function(
   }
   if (nrow(data) == 0) stop("No data remaining after applying filters.")
 
+  # ── combination heatmap (Treatment x Genotype) ────────────────────────────
+  if (!is.null(split_by) && tolower(split_by) == "combination") {
+    if (!all(c("Treatment", "Genotype") %in% names(data))) {
+      warning("split_by = 'combination' requires both 'Treatment' and 'Genotype' columns. Skipping.")
+    } else {
+      # Resolve variable and value column names
+      var_col <- if (!is.null(variable_column) && variable_column %in% names(data))
+                   variable_column else "Variable"
+      val_col <- value_column
+
+      # Wide matrix: rows = Well, cols = Variable
+      mat <- data %>%
+        dplyr::select(Well,
+                      Variable = !!dplyr::sym(var_col),
+                      Value    = !!dplyr::sym(val_col)) %>%
+        tidyr::pivot_wider(names_from  = Variable,
+                           values_from = Value,
+                           values_fn   = mean) %>%
+        tibble::column_to_rownames("Well") %>%
+        as.matrix()
+
+      # Annotation: one row per Well, Treatment + Genotype columns
+      ann_row <- data %>%
+        dplyr::distinct(Well, Treatment, Genotype) %>%
+        dplyr::arrange(Treatment, Genotype) %>%
+        tibble::column_to_rownames("Well")
+
+      # Align annotation rows to matrix rows
+      ann_row <- ann_row[rownames(mat), , drop = FALSE]
+
+      combo_hmap <- pheatmap::pheatmap(
+        mat,
+        annotation_row = ann_row,
+        cluster_rows   = TRUE,
+        cluster_cols   = TRUE,
+        show_rownames  = TRUE,
+        show_colnames  = TRUE,
+        main           = "MEA Heatmap - Treatment x Genotype",
+        silent         = TRUE
+      )
+
+      results <- list()
+      results[["combination_result"]] <- list(
+        heatmap    = combo_hmap,
+        data       = mat,
+        annotation = ann_row
+      )
+      return(results)
+    }
+  }
+
   # ── split_by: run once per level, return list ─────────────────────────────
   if (!is.null(split_by) && split_by %in% names(data)) {
     levels_to_split <- sort(unique(data[[split_by]]))
