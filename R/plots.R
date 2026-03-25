@@ -821,7 +821,7 @@ plot_pca_trajectories_general <- function(pca_results,
   unique_groups <- unique(plot_data_clean$group_id)
   n_groups <- length(unique_groups)
 
-  # -- color_by: build active_palette + tp_subtitle ─────────────────────────
+  # -- color_by: build active_palette + tp_subtitle -----------------------------
   color_by <- match.arg(color_by, c("group", "Treatment"))
   if (color_by == "Treatment" && !"Treatment" %in% names(plot_data)) {
     warning("color_by = 'Treatment' requested but 'Treatment' column not found. Falling back to 'group'.")
@@ -863,7 +863,7 @@ plot_pca_trajectories_general <- function(pca_results,
 
   tp_ordered  <- if (!is.null(timepoint_order)) timepoint_order else
                    sort(unique(plot_data[[timepoint_var]]))
-  tp_subtitle <- paste0("Timepoints: ", paste(tp_ordered, collapse = " \u2192 "))
+  tp_subtitle <- paste0("Timepoints: ", paste(tp_ordered, collapse = " -> "))
 
   generate_colors <- function(n) {
     if (n <= 1) return("#E31A1C")
@@ -1334,7 +1334,7 @@ plot_pca_trajectories_general <- function(pca_results,
                box.padding = 0.35, point.padding = 0.3,
                show.legend = FALSE) +
     annotate("text", x = -Inf, y = Inf,
-             label = "\u25c7 = start   \u25cf = end",
+             label = "o = start   * = end",
              hjust = -0.1, vjust = 1.4, size = 3, color = "gray40") +
     scale_color_manual(values = active_palette, name = "Group") +
     labs(title = "Averaged PCA Trajectories", subtitle = tp_subtitle, x = pc_x, y = pc_y) +
@@ -1632,7 +1632,7 @@ create_mea_heatmaps_enhanced <- function(
 
   data_label <- if (value_column == "Value") "Raw Value" else "Normalized Value"
 
-  # ── display-only filters ──────────────────────────────────────────────────
+  # -- display-only filters ----------------------------------------------------
   if (!is.null(filter_timepoints) && timepoint_column %in% names(data)) {
     data <- data[data[[timepoint_column]] %in% filter_timepoints, , drop = FALSE]
     if (verbose) cat("Filtered to timepoints:", paste(filter_timepoints, collapse=", "), "\n")
@@ -1647,7 +1647,7 @@ create_mea_heatmaps_enhanced <- function(
   }
   if (nrow(data) == 0) stop("No data remaining after applying filters.")
 
-  # ── combination heatmap (Treatment x Genotype) ────────────────────────────
+  # -- combination heatmap (Treatment x Genotype) ------------------------------
   if (!is.null(split_by) && split_by == "combination") {
     if (!all(c("Treatment", "Genotype") %in% names(data))) {
       warning("split_by = 'combination' requires both 'Treatment' and 'Genotype' columns. Skipping.")
@@ -1677,7 +1677,7 @@ create_mea_heatmaps_enhanced <- function(
 
       # Z-score per column (variable) so all variables are on a comparable scale
       mat_scaled <- scale(mat)
-      mat_scaled[mat_scaled >  3] <-  3   # cap outliers at ±3 SD
+      mat_scaled[mat_scaled >  3] <-  3   # cap outliers at +/-3 SD
       mat_scaled[mat_scaled < -3] <- -3
 
       # Annotation: one row per Well, Treatment + Genotype columns
@@ -1696,7 +1696,7 @@ create_mea_heatmaps_enhanced <- function(
         cluster_cols   = TRUE,
         show_rownames  = FALSE,
         show_colnames  = TRUE,
-        main           = "MEA Heatmap \u2014 Treatment \u00d7 Genotype (Z-score)",
+        main           = "MEA Heatmap -- Treatment x Genotype (Z-score)",
         color          = colorRampPalette(c("#2166AC", "#F7F7F7", "#B2182B"))(100),
         breaks         = seq(-3, 3, length.out = 101),
         silent         = TRUE
@@ -1712,7 +1712,7 @@ create_mea_heatmaps_enhanced <- function(
     }
   }
 
-  # ── split_by: run once per level, return list ─────────────────────────────
+  # -- split_by: run once per level, return list -------------------------------
   if (!is.null(split_by) && split_by %in% names(data)) {
     levels_to_split <- sort(unique(data[[split_by]]))
     if (verbose) cat("split_by =", split_by, "->", length(levels_to_split), "groups\n")
