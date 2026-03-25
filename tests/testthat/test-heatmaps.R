@@ -99,3 +99,27 @@ test_that("create_mea_heatmaps_enhanced split_by returns one result per level", 
   expect_equal(length(result$split_results), 2)
   expect_true(all(c("WT","KO") %in% names(result$split_results)))
 })
+
+test_that("split_by = 'combination' creates a combination_result with pheatmap", {
+  set.seed(42)
+  df <- data.frame(
+    Well      = rep(c("A1","A2","B1","B2"), each = 2),
+    Treatment = rep(c("PBS","PBS","KA","KA"), each = 2),
+    Genotype  = rep(c("WT","KO","WT","KO"), each = 2),
+    Timepoint = "baseline",
+    Variable  = rep(c("Firing Rate","Burst Rate"), 4),
+    Value     = runif(8),
+    stringsAsFactors = FALSE
+  )
+  result <- create_mea_heatmaps_enhanced(
+    data         = df,
+    value_column = "Value",
+    split_by     = "combination",
+    verbose      = FALSE,
+    save_plots   = FALSE
+  )
+  expect_true("combination_result" %in% names(result))
+  expect_s3_class(result$combination_result$heatmap, "pheatmap")
+  expect_true(is.matrix(result$combination_result$data))
+  expect_true(is.data.frame(result$combination_result$annotation))
+})
