@@ -1482,7 +1482,11 @@ create_mea_heatmaps_enhanced <- function(
     verbose = TRUE,
     quality_threshold = 0.8,
     min_observations = 3,
-    use_raw = FALSE
+    use_raw = FALSE,
+    filter_timepoints  = NULL,
+    filter_treatments  = NULL,
+    filter_genotypes   = NULL,
+    split_by           = NULL
 ) {
   
   if (verbose) cat("\n=== ENHANCED MEA HEATMAP GENERATION ===\n")
@@ -1555,7 +1559,51 @@ create_mea_heatmaps_enhanced <- function(
   }
 
   data_label <- if (value_column == "Value") "Raw Value" else "Normalized Value"
-  
+
+  # ── display-only filters ──────────────────────────────────────────────────
+  if (!is.null(filter_timepoints) && timepoint_column %in% names(data)) {
+    data <- data[data[[timepoint_column]] %in% filter_timepoints, , drop = FALSE]
+    if (verbose) cat("Filtered to timepoints:", paste(filter_timepoints, collapse=", "), "\n")
+  }
+  if (!is.null(filter_treatments) && "Treatment" %in% names(data)) {
+    data <- data[data$Treatment %in% filter_treatments, , drop = FALSE]
+    if (verbose) cat("Filtered to treatments:", paste(filter_treatments, collapse=", "), "\n")
+  }
+  if (!is.null(filter_genotypes) && "Genotype" %in% names(data)) {
+    data <- data[data$Genotype %in% filter_genotypes, , drop = FALSE]
+    if (verbose) cat("Filtered to genotypes:", paste(filter_genotypes, collapse=", "), "\n")
+  }
+  if (nrow(data) == 0) stop("No data remaining after applying filters.")
+
+  # ── split_by: run once per level, return list ─────────────────────────────
+  if (!is.null(split_by) && split_by %in% names(data)) {
+    levels_to_split <- sort(unique(data[[split_by]]))
+    if (verbose) cat("split_by =", split_by, "->", length(levels_to_split), "groups\n")
+    split_results <- lapply(stats::setNames(levels_to_split, levels_to_split), function(lvl) {
+      sub_data <- data[data[[split_by]] == lvl, , drop = FALSE]
+      create_mea_heatmaps_enhanced(
+        data               = sub_data,
+        value_column       = value_column,
+        variable_column    = variable_column,
+        grouping_columns   = grouping_columns,
+        sample_id_columns  = sample_id_columns,
+        timepoint_column   = timepoint_column,
+        scale_method       = scale_method,
+        aggregation_method = aggregation_method,
+        cluster_rows       = cluster_rows,
+        cluster_cols       = cluster_cols,
+        create_individual_heatmaps  = create_individual_heatmaps,
+        create_combined_heatmap     = create_combined_heatmap,
+        create_variable_correlation = create_variable_correlation,
+        save_plots         = save_plots,
+        output_dir         = if (!is.null(output_dir)) file.path(output_dir, lvl) else NULL,
+        verbose            = FALSE,
+        return_data        = return_data
+      )
+    })
+    return(list(split_by = split_by, split_results = split_results))
+  }
+
   # Validate required columns
   required_cols <- c(value_column, variable_column)
   missing_cols <- required_cols[!required_cols %in% names(data)]
