@@ -1481,7 +1481,8 @@ create_mea_heatmaps_enhanced <- function(
     return_data = TRUE,
     verbose = TRUE,
     quality_threshold = 0.8,
-    min_observations = 3
+    min_observations = 3,
+    use_raw = FALSE
 ) {
   
   if (verbose) cat("\n=== ENHANCED MEA HEATMAP GENERATION ===\n")
@@ -1521,24 +1522,39 @@ create_mea_heatmaps_enhanced <- function(
   
   if (!is.null(processing_result)) {
     if (verbose) cat("Using data from processing result...\n")
-    
-    if (!is.null(processing_result$normalized_data)) {
-      data <- processing_result$normalized_data
-      if (verbose) cat("Using normalized data\n")
-    } else if (!is.null(processing_result$raw_data)) {
-      data <- processing_result$raw_data
-      value_column <- "Value"
-      if (verbose) cat("Using raw data (no normalization found)\n")
+
+    if (use_raw) {
+      if (!is.null(processing_result$raw_data)) {
+        data         <- processing_result$raw_data
+        value_column <- "Value"
+        if (verbose) cat("Using raw data (use_raw = TRUE)\n")
+      } else if (!is.null(processing_result$normalized_data)) {
+        data <- processing_result$normalized_data
+        if (verbose) cat("use_raw=TRUE but only normalized data found; using normalized\n")
+      } else {
+        stop("Processing result does not contain usable data")
+      }
     } else {
-      stop("Processing result does not contain usable data")
+      if (!is.null(processing_result$normalized_data)) {
+        data <- processing_result$normalized_data
+        if (verbose) cat("Using normalized data\n")
+      } else if (!is.null(processing_result$raw_data)) {
+        data         <- processing_result$raw_data
+        value_column <- "Value"
+        if (verbose) cat("Using raw data (normalized_data absent)\n")
+      } else {
+        stop("Processing result does not contain usable data")
+      }
     }
-    
+
     if (is.null(config) && !is.null(processing_result$config_used)) {
       config <- processing_result$config_used
     }
   } else if (is.null(data)) {
     stop("Must provide either 'data' or 'processing_result'")
   }
+
+  data_label <- if (value_column == "Value") "Raw Value" else "Normalized Value"
   
   # Validate required columns
   required_cols <- c(value_column, variable_column)
@@ -2026,7 +2042,8 @@ create_mea_heatmaps_enhanced <- function(
     scaling_method = scale_method,
     aggregation_method = aggregation_method,
     creation_time = Sys.time(),
-    output_directory = if(save_plots && !is.null(output_dir)) output_dir else NULL
+    output_directory = if(save_plots && !is.null(output_dir)) output_dir else NULL,
+    value_column = value_column
   )
   
   return(results)
