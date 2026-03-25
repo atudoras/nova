@@ -581,6 +581,10 @@ pca_plots_enhanced <- function(pca_output = NULL,
 #' @param line_size Numeric value controlling line thickness (default: 2)
 #' @param smooth_lines Logical indicating whether to apply smoothing (default: FALSE)
 #' @param color_palette Character vector of colors for groups
+#' @param color_by Character string controlling colour mapping. Use \code{"group"}
+#'   (default) to colour by the full trajectory_grouping combination, or
+#'   \code{"Treatment"} to colour by Treatment only with Genotype labels shown
+#'   at each trajectory's end point via \code{ggrepel}.
 #' @param save_plots Logical indicating whether to save plots (default: FALSE)
 #' @param output_dir Character string specifying output directory (default: NULL)
 #' @param plot_prefix Character string prefix for filenames (default: "PCA_trajectories")
@@ -819,6 +823,10 @@ plot_pca_trajectories_general <- function(pca_results,
 
   # -- color_by: build active_palette + tp_subtitle ─────────────────────────
   color_by <- match.arg(color_by, c("group", "Treatment"))
+  if (color_by == "Treatment" && !"Treatment" %in% names(plot_data)) {
+    warning("color_by = 'Treatment' requested but 'Treatment' column not found. Falling back to 'group'.")
+    color_by <- "group"
+  }
 
   if (color_by == "Treatment" && "Treatment" %in% names(plot_data)) {
     treatment_vals <- unique(plot_data$Treatment)
@@ -1274,24 +1282,35 @@ plot_pca_trajectories_general <- function(pca_results,
   
   grad_avg_combined <- bind_rows(grad_avg_combined_list)
   
-  first_last_points <- group_average_trajectories %>%
-    group_by(group_id) %>%
-    arrange(time_rank) %>%
-    summarise(
-      first_x    = first(avg_x),
-      first_y    = first(avg_y),
-      last_x     = last(avg_x),
-      last_y     = last(avg_y),
-      last_label = if (color_by == "Treatment" && "Genotype" %in% names(.)) {
-                     dplyr::last(as.character(Genotype))
-                   } else {
-                     dplyr::last(as.character(.data[[timepoint_var]]))
-                   },
-      .groups = "drop"
-    )
-  
-  # active_palette already computed above
-  professional_colors <- active_palette
+  # Pre-compute label column to avoid names(.) bug inside summarise
+  has_genotype_col <- "Genotype" %in% names(group_average_trajectories)
+  use_genotype_label <- (color_by == "Treatment" && has_genotype_col)
+
+  if (use_genotype_label) {
+    first_last_points <- group_average_trajectories %>%
+      dplyr::group_by(group_id) %>%
+      dplyr::arrange(time_rank) %>%
+      dplyr::summarise(
+        first_x    = dplyr::first(avg_x),
+        first_y    = dplyr::first(avg_y),
+        last_x     = dplyr::last(avg_x),
+        last_y     = dplyr::last(avg_y),
+        last_label = dplyr::last(as.character(Genotype)),
+        .groups    = "drop"
+      )
+  } else {
+    first_last_points <- group_average_trajectories %>%
+      dplyr::group_by(group_id) %>%
+      dplyr::arrange(time_rank) %>%
+      dplyr::summarise(
+        first_x    = dplyr::first(avg_x),
+        first_y    = dplyr::first(avg_y),
+        last_x     = dplyr::last(avg_x),
+        last_y     = dplyr::last(avg_y),
+        last_label = dplyr::last(as.character(.data[[timepoint_var]])),
+        .groups    = "drop"
+      )
+  }
   
   p_comb_avg <- ggplot() +
     geom_segment(data = grad_avg_combined, aes(x, y, xend = xend, yend = yend, color = group_id),
