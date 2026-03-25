@@ -11,9 +11,9 @@ Authors@R: person(given = "Alex",
                   family = "Tudoras", 
                   role = c("aut", "cre"),
                   email = "alex.tudorasmiravet@ucsf.edu")
-License: GPL-3
+License: GPL (>= 3)
 Encoding: UTF-8
-LazyData: true
+Language: en-US
 RoxygenNote: 7.3.3
 Depends: R (>= 3.6.0)
 Imports:
