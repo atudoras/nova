@@ -172,10 +172,47 @@ plot_mea_metric(
 )
 ```
 
+```{r metric-examples, eval=TRUE, echo=FALSE, message=FALSE, warning=FALSE, fig.show='hide'}
+library(NOVA)
+set.seed(42)
+toy <- data.frame(
+  Treatment  = rep(c("PBS","KA","Gabazine"), each = 12),
+  Genotype   = rep(rep(c("WT","KO"), each = 6), 3),
+  Timepoint  = rep(rep(c("0min","30min","60min"), each = 2), 6),
+  Variable   = "MFR",
+  Value      = c(rnorm(12, 2, 0.5), rnorm(12, 4, 0.8), rnorm(12, 1.5, 0.4)),
+  stringsAsFactors = FALSE
+)
+fig_dir <- "user-guide/figures"
+p_bar <- plot_mea_metric(toy, metric = "MFR", plot_type = "bar",
+                          group_by = "Treatment")
+p_box <- plot_mea_metric(toy, metric = "MFR", plot_type = "box",
+                          group_by = "Treatment")
+p_vio <- plot_mea_metric(toy, metric = "MFR", plot_type = "violin",
+                          group_by = "Treatment")
+ggplot2::ggsave(file.path(fig_dir, "metric_bar.png"),    p_bar, width=6, height=4, dpi=120)
+ggplot2::ggsave(file.path(fig_dir, "metric_box.png"),    p_box, width=6, height=4, dpi=120)
+ggplot2::ggsave(file.path(fig_dir, "metric_violin.png"), p_vio, width=6, height=4, dpi=120)
+```
+
 ### Output
 
-```{r metric-plot-fig, echo=FALSE, eval=TRUE, out.width="80%", fig.cap="Average PCA trajectories across conditions — an example of the per-condition summary output style that `plot_mea_metric()` replicates for individual metrics."}
-knitr::include_graphics("user-guide/figures/traj_combined_avg.png")
+**Bar plot** — mean ± SEM per group:
+
+```{r metric-bar-fig, echo=FALSE, eval=TRUE, out.width="70%"}
+knitr::include_graphics("user-guide/figures/metric_bar.png")
+```
+
+**Box plot** — full distribution per group:
+
+```{r metric-box-fig, echo=FALSE, eval=TRUE, out.width="70%"}
+knitr::include_graphics("user-guide/figures/metric_box.png")
+```
+
+**Violin plot** — density shape per group:
+
+```{r metric-violin-fig, echo=FALSE, eval=TRUE, out.width="70%"}
+knitr::include_graphics("user-guide/figures/metric_violin.png")
 ```
 
 > **Key benefit:** Researchers can now drop from a PCA result into a single-metric view in
@@ -347,6 +384,43 @@ knitr::include_graphics("user-guide/figures/traj_KA_avg.png")
 > **Key benefit:** New users and collaborators can self-onboard using a document that shows
 > real data, explains scientific context, and demonstrates every major function. This
 > substantially reduces the hands-on training time required from existing lab members.
+
+---
+
+## Customizing Figures {#customizing}
+
+### Customizing Figures
+
+NOVA plot functions return standard `ggplot2` objects, so you can apply any ggplot2 layer on top. The most useful built-in styling parameters:
+
+```{r custom-code, eval=FALSE}
+# Custom colour palette -- named vector matching your group levels
+p <- plot_mea_metric(
+  data      = results$processed_data,
+  metric    = "MFR",
+  plot_type = "bar",
+  group_by  = "Treatment",
+  colors    = c("PBS" = "#1F78B4", "KA" = "#E31A1C", "Gabazine" = "#33A02C")
+)
+
+# Layer on any ggplot2 theme adjustments
+p + ggplot2::theme(
+  axis.text  = ggplot2::element_text(size = 14),
+  plot.title = ggplot2::element_text(face = "bold")
+)
+```
+
+```{r custom-color-fig, echo=FALSE, eval=TRUE, out.width="60%"}
+knitr::include_graphics("user-guide/figures/s3_custom_color.png")
+```
+
+| Parameter | Controls | Example value |
+|-----------|----------|---------------|
+| `colors` | Fill colour per group | `c("KA" = "#E31A1C")` |
+| `plot_type` | Chart type | `"bar"`, `"box"`, `"violin"`, `"line"` |
+| `error_type` | Error bar style | `"sem"`, `"sd"`, `"ci95"` |
+| `group_by` | X-axis grouping variable | `"Genotype"` |
+| `facet_by` | Facet panels | `"Timepoint"` |
 
 ---
 
