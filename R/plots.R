@@ -1050,7 +1050,8 @@ plot_pca_trajectories_general <- function(pca_results,
       scale_fill_manual(values = well_colors, name = "Well", guide = "none") +
       geom_text(data = label_df, aes(x = mean_x, y = mean_y, label = label_text), 
                 nudge_x = 0.02, nudge_y = 0.02, size = point_size * 0.7, fontface = 'bold') +
-      labs(title = paste('Individual Trajectories - Group:', group_name, '(', n_wells,')'), x = pc_x, y = pc_y) +
+      labs(title = paste('Individual Trajectories - Group:', group_name, '(', n_wells,')'),
+           subtitle = tp_subtitle, x = pc_x, y = pc_y) +
       coord_fixed() +
       theme_minimal() +
       theme(
@@ -1096,7 +1097,8 @@ plot_pca_trajectories_general <- function(pca_results,
                      height = 0.08, color = "gray60", alpha = 0.6, size = 0.5) +
       geom_text(data = label_df, aes(x = avg_x, y = avg_y, label = label_text), 
                 nudge_x = 0.02, nudge_y = 0.02, size = point_size * 0.9, fontface = 'bold') +
-      labs(title = paste('Avg Trajectory +/- SEM - Group:', group_name), x = pc_x, y = pc_y) +
+      labs(title = paste('Avg Trajectory +/- SEM - Group:', group_name),
+           subtitle = tp_subtitle, x = pc_x, y = pc_y) +
       coord_fixed() +
       theme_minimal() +
       theme(
