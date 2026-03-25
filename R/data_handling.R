@@ -10,6 +10,16 @@ MEA_ROW_VARS_START <- 125L  # First measured variable row
 MEA_ROW_VARS_END   <- 168L  # Last measured variable row
 MEA_MIN_ROWS       <- 124L  # Minimum rows required in a valid CSV
 
+# ---------------------------------------------------------------------------
+# Internal helper: find a metadata row by scanning column 1 for a label
+# ---------------------------------------------------------------------------
+find_mea_metadata_row <- function(raw, label, search_from = 100L, fallback = NULL) {
+  col1 <- trimws(as.character(unlist(raw[seq(search_from, nrow(raw)), 1])))
+  hit  <- which(tolower(col1) == tolower(label))
+  if (length(hit) > 0L) return(as.integer(search_from + hit[1L] - 1L))
+  fallback
+}
+
 #' Discover MEA Data Structure
 #' 
 #' This function scans a directory containing MEA (Multi-Electrode Array) experiment 
@@ -128,10 +138,12 @@ discover_mea_structure <- function(main_dir,
       
       if (nrow(raw_data) >= MEA_MIN_ROWS) {
         # Standard MEA file structure positions
-        well_row <- MEA_ROW_WELLS      # Well identifiers (A1, A2, B1, etc.)
-        treatment_row <- MEA_ROW_TREATMENT # Treatment conditions
-        genotype_row <- MEA_ROW_GENOTYPE  # Genotype information
-        exclude_row <- MEA_ROW_EXCLUDE   # Exclusion flags
+        treatment_row <- find_mea_metadata_row(raw_data, "Treatment", fallback = MEA_ROW_TREATMENT)
+        genotype_row  <- find_mea_metadata_row(raw_data, "Genotype",  fallback = MEA_ROW_GENOTYPE)
+        exclude_row   <- find_mea_metadata_row(raw_data, "Exclude",   fallback = MEA_ROW_EXCLUDE)
+        well_row      <- treatment_row - 1L
+        vars_start    <- exclude_row   + 1L
+        vars_end      <- min(nrow(raw_data), exclude_row + 45L)
         
         # Extract and analyze metadata
         wells <- unlist(raw_data[well_row, -1])
@@ -150,8 +162,8 @@ discover_mea_structure <- function(main_dir,
       }
       
       # Extract variable names (features measured) from rows 125-168
-      if (nrow(raw_data) >= MEA_ROW_VARS_END) {
-        variables <- unlist(raw_data[MEA_ROW_VARS_START:MEA_ROW_VARS_END, 1])
+      if (nrow(raw_data) >= vars_end) {
+        variables <- unlist(raw_data[vars_start:vars_end, 1])
         variables <- variables[!is.na(variables) & variables != ""]
         metadata_info$variables <- variables
         metadata_info$n_variables <- length(variables)
@@ -423,16 +435,23 @@ process_mea_flexible <- function(main_dir,
       tryCatch({
         raw <- readr::read_csv(file_path, col_names = FALSE, show_col_types = FALSE)
         
-        if (nrow(raw) < MEA_ROW_VARS_END) {
-          warning("File ", filename, " has insufficient rows (", nrow(raw), " < 168)")
+        if (nrow(raw) < MEA_MIN_ROWS) {
+          warning("File ", filename, " has insufficient rows (", nrow(raw), " < ", MEA_MIN_ROWS, ")")
           next
         }
         
         # Extract metadata from standard MEA positions
-        well_ids   <- unlist(raw[MEA_ROW_WELLS, -1])      # Well identifiers
-        treatments <- unlist(raw[MEA_ROW_TREATMENT, -1])  # Treatment conditions
-        genotypes  <- unlist(raw[MEA_ROW_GENOTYPE, -1])   # Genotype information
-        exclude    <- unlist(raw[MEA_ROW_EXCLUDE, -1])    # Exclusion flags
+        treatment_row  <- find_mea_metadata_row(raw, "Treatment", fallback = MEA_ROW_TREATMENT)
+        genotype_row   <- find_mea_metadata_row(raw, "Genotype",  fallback = MEA_ROW_GENOTYPE)
+        exclude_row    <- find_mea_metadata_row(raw, "Exclude",   fallback = MEA_ROW_EXCLUDE)
+        well_row       <- treatment_row - 1L
+        vars_start     <- exclude_row   + 1L
+        vars_end       <- min(nrow(raw), exclude_row + 45L)
+
+        well_ids   <- unlist(raw[well_row,       -1])
+        treatments <- unlist(raw[treatment_row,  -1])
+        genotypes  <- unlist(raw[genotype_row,   -1])
+        exclude    <- unlist(raw[exclude_row,    -1])
         
         # Identify valid wells (non-empty well IDs)
         valid_cols <- which(!(is.na(well_ids) | well_ids == "" | well_ids == "NA"))
@@ -442,8 +461,8 @@ process_mea_flexible <- function(main_dir,
         }
         
         # Extract variable names and measurement matrix
-        variable_names <- unlist(raw[MEA_ROW_VARS_START:MEA_ROW_VARS_END, 1])
-        values_matrix  <- raw[MEA_ROW_VARS_START:MEA_ROW_VARS_END, -1]
+        variable_names <- unlist(raw[vars_start:vars_end, 1])
+        values_matrix  <- raw[vars_start:vars_end, -1]
         
         # Remove empty/NA variable names
         valid_vars <- which(!is.na(variable_names) & variable_names != "")
