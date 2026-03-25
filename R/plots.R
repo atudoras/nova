@@ -1,6 +1,7 @@
 # plots.R
 # Functions for visualizing MEA data and PCA results
 #' @importFrom dplyr filter mutate select group_by summarise arrange %>% n case_when bind_rows full_join rename distinct first last n_distinct row_number
+#' @importFrom ggrepel geom_text_repel
 #' @importFrom ggplot2 ggplot aes aes_string geom_point geom_line geom_segment labs theme_minimal theme coord_fixed scale_color_manual scale_shape_manual guides guide_legend facet_wrap stat_ellipse
 #' @importFrom stringr str_to_title str_detect
 #' @importFrom rlang syms .data
