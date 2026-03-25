@@ -1,135 +1,176 @@
 # NOVA
-*Neural Output Visualization and Analysis*
+**Neural Output Visualization and Analysis**
 
-A comprehensive R toolkit for analyzing and visualizing neural data outputs, including Principal Component Analysis (PCA) trajectory plotting, Multi-Electrode Array (MEA) heatmap generation, and variable importance analysis. Provides publication-ready visualizations with flexible customization options for neuroscience research applications.
+[![License: GPL-3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0) [![R >= 3.6.0](https://img.shields.io/badge/R-%3E%3D%203.6.0-brightgreen)](https://cran.r-project.org/) [![Lifecycle: experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental)
+
+A comprehensive R toolkit for analyzing and visualizing Multi-Electrode Array (MEA) neural data — from raw CSV discovery through PCA trajectory analysis, heatmap generation, and per-metric plotting — with publication-ready figures in a few lines of code.
+
+---
+
+## Key Features
+
+- 🔍 **Smart data discovery** — automatically detects MEA folder structure and CSV metadata rows without manual configuration
+- 🔥 **Raw-data heatmaps** — visualize un-normalized electrode activity directly alongside normalized views
+- 📊 **Per-metric plotting** — bar, box, violin, or line plots for any single MEA variable with flexible faceting and filtering
+- 🎯 **PCA trajectory analysis** — track how neural populations evolve over time with publication-ready trajectory and ellipse plots
+- ⚡ **Zero-code quickstart** — one script (`Example/nova_quickstart.R`) to change a single path and generate all figures automatically
+- 📖 **Full user guide** — illustrated HTML guide with step-by-step walkthroughs for every major function
+
+---
 
 ## Installation
 
 ```r
-# Install from GitHub (replace 'yourusername' with your GitHub username)
-devtools::install_github("atudoras/NOVA")
+# Install the development version from GitHub (recommended)
+# install.packages("devtools")
+devtools::install_github("atudoras/nova")
 
-# Or install from CRAN (when available)
+# Install from CRAN (coming soon)
 install.packages("NOVA")
 ```
 
-## Usage
+---
+
+## Quick Start
 
 ```r
 library(NOVA)
 
-# 1. Discover your MEA data structure
-discovery_results <- discover_mea_structure("path/to/your/MEA_data")
+# Step 1: Discover your MEA data directory structure
+discovery <- discover_mea_structure("path/to/your/MEA_data")
 
-# 2. Process MEA data with flexible options
-processed_data <- process_mea_flexible(
-  main_dir = "path/to/your/MEA_data",
-  selected_timepoints = c("baseline", "0min", "15min", "30min", "1h", "2h"),
-  grouping_variables = c("Experiment", "Treatment", "Genotype", "Well"),
-  baseline_timepoint = "baseline"
+# Step 2: Process MEA data across timepoints and grouping variables
+processed <- process_mea_flexible(
+  main_dir       = "path/to/your/MEA_data",
+  selected_timepoints  = c("baseline", "0min", "15min", "30min", "1h", "2h"),
+  grouping_variables   = c("Experiment", "Treatment", "Genotype", "Well"),
+  baseline_timepoint   = "baseline"
 )
 
-# 3. Perform enhanced PCA analysis
-pca_results <- pca_analysis_enhanced(processing_result = processed_data)
+# Step 3: Run enhanced PCA
+pca_results <- pca_analysis_enhanced(processing_result = processed)
 
-# 4. Generate comprehensive PCA plots
+# Step 4: Generate PCA plots (scatter, ellipses, loadings)
 pca_plots <- pca_plots_enhanced(
-  pca_output = pca_results,
-  color_variable = "Treatment",
-  shape_variable = "Genotype"
+  pca_output      = pca_results,
+  color_variable  = "Treatment",
+  shape_variable  = "Genotype"
 )
 
-# 5. Create trajectory analysis
+# Step 5: Plot PCA trajectories across timepoints
 trajectories <- plot_pca_trajectories_general(
   pca_results,
-  timepoint_order = c("baseline", "0min", "15min", "30min", "1h", "2h"),
-  trajectory_grouping = c("Genotype", "Treatment")
+  timepoint_order      = c("baseline", "0min", "15min", "30min", "1h", "2h"),
+  trajectory_grouping  = c("Genotype", "Treatment")
 )
 
-# 6. Generate MEA heatmaps
+# Step 6: Create MEA heatmaps (split by genotype, filter to specific treatments)
 heatmaps <- create_mea_heatmaps_enhanced(
-  processing_result = processed_data,
-  grouping_columns = c("Genotype", "Treatment")
+  processing_result   = processed,
+  grouping_columns    = c("Genotype", "Treatment"),
+  split_by            = "Genotype",
+  filter_treatments   = c("Vehicle", "Drug_A")
+)
+
+# Step 7: Plot a single metric across groups
+plot_mea_metric(
+  data       = processed$processed_data,
+  metric     = "MeanFiringRate",
+  plot_type  = "violin",
+  facet_by   = "Timepoint"
 )
 ```
 
-# MEA Package Directory Structure Guide
+![NOVA PCA analysis](docs/user-guide/figures/pca_primary_combination.png)
 
-## Overview
-The MEA package expects a specific directory structure to automatically discover and process your experimental data. Here's how to organize your files:
+---
 
-## Required Directory Structure
+## What's New in v0.1.1
+
+| Feature | Description |
+|---|---|
+| Smart CSV row detection | `find_mea_metadata_row()` scans for the "Treatment" label instead of assuming a fixed row number — handles Axion software export variations automatically |
+| Raw-data heatmaps | New `use_raw = TRUE` parameter in `create_mea_heatmaps_enhanced()` renders un-normalized electrode data directly |
+| Per-metric plots | New `plot_mea_metric()` function generates bar, box, violin, or line plots for any single MEA variable with full faceting and error bar control |
+| Heatmap filter and split | New `filter_treatments`, `filter_genotypes`, and `split_by` parameters in `create_mea_heatmaps_enhanced()` for focused, side-by-side comparisons |
+| Zero-code quickstart script | `Example/nova_quickstart.R` — set `DATA_DIR` once, run the script, and all figures are saved automatically |
+| Illustrated user guide | Full step-by-step HTML guide with figures available in `docs/user-guide/` |
+
+---
+
+## Function Reference
+
+| Function | Description | Key Parameters |
+|---|---|---|
+| `discover_mea_structure` | Scans a directory and reports all detected MEA experiments and timepoints | `main_dir`, `verbose` |
+| `process_mea_flexible` | Reads and merges CSVs across experiments and timepoints; normalizes to baseline | `main_dir`, `selected_timepoints`, `grouping_variables`, `baseline_timepoint` |
+| `pca_analysis_enhanced` | Runs PCA on the processed feature matrix; returns scores, loadings, and variance explained | `processing_result`, `scale`, `center` |
+| `pca_plots_enhanced` | Generates a suite of PCA visualizations (scatter, ellipses, loadings, variance) | `pca_output`, `color_variable`, `shape_variable` |
+| `plot_pca_trajectories_general` | Draws mean PCA trajectories across timepoints for each experimental group | `pca_output`, `timepoint_order`, `trajectory_grouping` |
+| `create_mea_heatmaps_enhanced` | Creates heatmaps of MEA metrics by treatment and/or genotype; supports raw or normalized data | `processing_result`, `grouping_columns`, `split_by`, `filter_treatments`, `filter_genotypes`, `use_raw` |
+| `plot_mea_metric` | Bar, box, violin, or line plot for a single MEA variable with optional faceting and filtering | `data`, `metric`, `plot_type`, `facet_by`, `filter_treatments`, `filter_genotypes`, `error_type` |
+
+---
+
+## Data Format
+
+NOVA expects a straightforward directory layout that mirrors how Axion BioSystems software exports data:
+
+- **Top-level folder**: one directory per MEA plate, named `MEA` followed by digits (e.g., `MEA001`, `MEA016a`)
+- **CSV files**: one file per timepoint inside each folder, named `<plate>_<timepoint>.csv` (e.g., `MEA001_baseline.csv`, `MEA001_1h.csv`)
+- **Metadata rows**: well identifiers and experimental variables (Treatment, Genotype, etc.) are located starting from the row containing the label "Treatment" — NOVA finds this row automatically with `find_mea_metadata_row()`
+- **Timepoint names**: any string after the underscore is accepted — `baseline`, `1h`, `DIV7`, or any custom label
 
 ```
-main_directory/
+MEA_data/
 ├── MEA001/
 │   ├── MEA001_baseline.csv
 │   ├── MEA001_1h.csv
-│   ├── MEA001_3h.csv
 │   └── MEA001_24h.csv
 ├── MEA002/
-    ├── MEA002_baseline.csv
-    ├── MEA002_1h.csv
-    └── MEA002_6h.csv
+│   ├── MEA002_baseline.csv
+│   └── MEA002_1h.csv
 ```
 
-## Key Requirements
+---
 
-### 1. Main Directory
-- Create a parent folder that contains all your MEA experiments
-- This is the `main_dir` parameter you'll pass to the function
+## Quickstart Script
 
-### 2. Experiment Folders
-- **Naming Convention**: Each experiment folder must follow the pattern `MEA` + numbers
-  - Examples: `MEA001`, `MEA012`, `MEA123`
-  - Optional letter suffix is supported: `MEA016a`, `MEA025b`
-- **Pattern**: The function looks for folders matching `MEA\\d+` (MEA followed by digits)
+For the fastest path to results, open `Example/nova_quickstart.R`. The only change required is setting `DATA_DIR` to your data folder path. Running the script end-to-end will:
 
-### 3. CSV Files Within Each Experiment
-- **File Format**: All data files must be CSV format (`.csv` extension)
-- **Naming Pattern**: Files should follow one of these patterns:
-  - `MEAExperimentNumber_timepoint.csv` (e.g., `MEA001_1h.csv`)
-  - `MEAExperimentNumber[letter]_timepoint.csv` (e.g., `MEA016a_DIV2.csv`)
+1. Discover all MEA experiments automatically
+2. Process and normalize the data
+3. Run PCA and trajectory analysis
+4. Generate and save all heatmaps and metric plots to an output folder
 
-### 4. Timepoint Naming Examples
-The function can extract various timepoint formats:
-- **Time-based**: `baseline`, `1h`, `3h`, `24h`, `0min`
-- **Days in vitro**: `DIV2`, `DIV7`, `DIV14`
-- **Custom**: Any descriptive name that follows the underscore
+No other configuration is needed.
 
-## CSV File Structure Requirements
+---
 
-Each CSV file must contain:
-- Minimum 124 rows for basic processing (more if you have additional metadata)
-- Row 121: Well identifiers (A1, A2, B1, etc.) - This is fixed
-- Row 122: First metadata variable (e.g., Treatment, Genotype, Dose, etc.)
-- Row 123: Second metadata variable
-- Row 124: Third metadata variable
-- Additional rows: You can add more metadata variables in subsequent rows
-Variable names start after metadata: If you have metadata in rows 122-125, then variables would start in row 126
+## User Guide
 
-## Tips for Success
+A full illustrated guide covering all functions, parameters, and interpretation of outputs is available at:
 
-1. **Consistent Naming**: Keep experiment folder names consistent with the MEA + number pattern
-2. **Clear Timepoints**: Use descriptive timepoint names in your CSV filenames
-3. **File Completeness**: Ensure CSV files have the required metadata rows (121-168)
-4. **No Spaces**: Avoid spaces in folder and file names; use underscores instead
-5. **Backup Data**: Always keep backups of your original data files
+[`docs/user-guide/NOVA-User-Guide.html`](docs/user-guide/NOVA-User-Guide.html)
 
-## Troubleshooting
+The guide includes example figures, annotated code, and recommendations for common experimental designs.
 
-- If no experiments are found, check that folder names match `MEA` + numbers
-- If timepoints aren't detected, verify filename follows `experiment_timepoint.csv` pattern
-- If files can't be read, ensure they're valid CSV files with proper structure
-- Enable `verbose = TRUE` to see detailed discovery process and identify issues
+---
 
-## Detailed Example
+## Citation
 
-See an example of a complete analysis workflow in the folder "Example".
+If you use NOVA in published research, please cite:
 
-- **Flexible data discovery**: Automatically detect MEA data structure
-- **Multi-experiment processing**: Handle multiple experiments and timepoints
-- **Enhanced PCA analysis**: Publication-ready PCA plots with trajectory analysis
-- **Variable importance analysis**: Identify key neural variables
-- **MEA heatmap generation**: Comprehensive electrode data visualization
-- **Batch effect correction**: Built-in normalization options
+> Tudoras, A. (2025). *NOVA: Neural Output Visualization and Analysis* (R package version 0.1.1). https://github.com/atudoras/nova
+
+---
+
+## Contributing
+
+Bug reports and feature requests are welcome via [GitHub Issues](https://github.com/atudoras/nova/issues). Pull requests should follow standard R package conventions and include tests where applicable.
+
+For questions, contact Alex Tudoras at alex.tudorasmiravet@ucsf.edu.
+
+---
+
+*NOVA is released under the [GPL-3 License](https://www.gnu.org/licenses/gpl-3.0).*
