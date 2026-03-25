@@ -1675,6 +1675,11 @@ create_mea_heatmaps_enhanced <- function(
         return(result)
       }
 
+      # Z-score per column (variable) so all variables are on a comparable scale
+      mat_scaled <- scale(mat)
+      mat_scaled[mat_scaled >  3] <-  3   # cap outliers at ±3 SD
+      mat_scaled[mat_scaled < -3] <- -3
+
       # Annotation: one row per Well, Treatment + Genotype columns
       ann_row <- data %>%
         dplyr::distinct(Well, Treatment, Genotype) %>%
@@ -1682,16 +1687,18 @@ create_mea_heatmaps_enhanced <- function(
         tibble::column_to_rownames("Well")
 
       # Align annotation rows to matrix rows
-      ann_row <- ann_row[rownames(mat), , drop = FALSE]
+      ann_row <- ann_row[rownames(mat_scaled), , drop = FALSE]
 
       combo_hmap <- pheatmap::pheatmap(
-        mat,
+        mat_scaled,
         annotation_row = ann_row,
         cluster_rows   = TRUE,
         cluster_cols   = TRUE,
-        show_rownames  = TRUE,
+        show_rownames  = FALSE,
         show_colnames  = TRUE,
-        main           = "MEA Heatmap - Treatment x Genotype",
+        main           = "MEA Heatmap \u2014 Treatment \u00d7 Genotype (Z-score)",
+        color          = colorRampPalette(c("#2166AC", "#F7F7F7", "#B2182B"))(100),
+        breaks         = seq(-3, 3, length.out = 101),
         silent         = TRUE
       )
 
