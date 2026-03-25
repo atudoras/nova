@@ -17,6 +17,7 @@ plot_pca_trajectories_general(
   line_size = 2,
   smooth_lines = FALSE,
   color_palette = NULL,
+  color_by = "group",
   save_plots = FALSE,
   output_dir = NULL,
   plot_prefix = "PCA_trajectories",
@@ -51,6 +52,11 @@ plot_pca_trajectories_general(
 \item{smooth_lines}{Logical indicating whether to apply smoothing (default: FALSE)}
 
 \item{color_palette}{Character vector of colors for groups}
+
+\item{color_by}{Character string controlling colour mapping. Use \code{"group"}
+(default) to colour by the full trajectory_grouping combination, or
+\code{"Treatment"} to colour by Treatment only with Genotype labels shown
+at each trajectory's end point via \code{ggrepel}.}
 
 \item{save_plots}{Logical indicating whether to save plots (default: FALSE)}
 
