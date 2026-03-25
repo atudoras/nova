@@ -35,7 +35,12 @@ create_mea_heatmaps_enhanced(
   return_data = TRUE,
   verbose = TRUE,
   quality_threshold = 0.8,
-  min_observations = 3
+  min_observations = 3,
+  use_raw = FALSE,
+  filter_timepoints = NULL,
+  filter_treatments = NULL,
+  filter_genotypes = NULL,
+  split_by = NULL
 )
 }
 \arguments{
@@ -103,6 +108,12 @@ Function will auto-detect which columns are available.}
 \item{quality_threshold}{Numeric value between 0-1 specifying minimum data completeness per variable (default: 0.8).}
 
 \item{min_observations}{Numeric value specifying minimum observations required per group (default: 3).}
+
+\item{split_by}{Character string controlling plot splitting. Use
+\code{"combination"} to render a single heatmap of all wells annotated
+by both Treatment and Genotype strips. Pass any column name (e.g.
+\code{"Treatment"} or \code{"Genotype"}) to produce one heatmap per
+level of that column. \code{NULL} (default) produces a single combined heatmap.}
 }
 \value{
 A list containing:

@@ -1478,6 +1478,11 @@ plot_pca_trajectories_general <- function(pca_results,
 #' @param verbose Logical indicating whether to print progress messages (default: TRUE).
 #' @param quality_threshold Numeric value between 0-1 specifying minimum data completeness per variable (default: 0.8).
 #' @param min_observations Numeric value specifying minimum observations required per group (default: 3).
+#' @param split_by Character string controlling plot splitting. Use
+#'   \code{"combination"} to render a single heatmap of all wells annotated
+#'   by both Treatment and Genotype strips. Pass any column name (e.g.
+#'   \code{"Treatment"} or \code{"Genotype"}) to produce one heatmap per
+#'   level of that column. \code{NULL} (default) produces a single combined heatmap.
 #'
 #' @return A list containing:
 #' \describe{
@@ -1643,7 +1648,7 @@ create_mea_heatmaps_enhanced <- function(
   if (nrow(data) == 0) stop("No data remaining after applying filters.")
 
   # ── combination heatmap (Treatment x Genotype) ────────────────────────────
-  if (!is.null(split_by) && tolower(split_by) == "combination") {
+  if (!is.null(split_by) && split_by == "combination") {
     if (!all(c("Treatment", "Genotype") %in% names(data))) {
       warning("split_by = 'combination' requires both 'Treatment' and 'Genotype' columns. Skipping.")
     } else {
@@ -1662,6 +1667,13 @@ create_mea_heatmaps_enhanced <- function(
                            values_fn   = mean) %>%
         tibble::column_to_rownames("Well") %>%
         as.matrix()
+
+      # Drop columns that are entirely NA (pheatmap/dist errors on all-NA columns)
+      mat <- mat[, colSums(!is.na(mat)) > 0, drop = FALSE]
+      if (ncol(mat) == 0) {
+        warning("combination heatmap: all variable columns are NA after aggregation. Skipping.")
+        return(result)
+      }
 
       # Annotation: one row per Well, Treatment + Genotype columns
       ann_row <- data %>%
