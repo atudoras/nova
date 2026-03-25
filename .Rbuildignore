@@ -4,3 +4,10 @@
 ^Example/.*\.RData$
 ^CRAN-SUBMISSION$
 ^cran-comments\.md$
+^\.claude(/|$)
+^docs(/|$)
+^scripts(/|$)
+^Rplots\.pdf$
+^tests/testthat/Rplots\.pdf$
+^tmp(/|$)
+^\.github(/|$)
