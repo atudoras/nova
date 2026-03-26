@@ -1,7 +1,7 @@
 # plots.R
 # Functions for visualizing MEA data and PCA results
 #' @importFrom dplyr filter mutate select group_by summarise arrange %>% n case_when bind_rows full_join rename distinct first last n_distinct row_number
-#' @importFrom ggplot2 ggplot aes aes_string geom_point geom_line geom_segment labs theme_minimal theme coord_fixed scale_color_manual scale_shape_manual guides guide_legend facet_wrap stat_ellipse
+#' @importFrom ggplot2 ggplot aes geom_point geom_line geom_segment labs theme_minimal theme coord_fixed scale_color_manual scale_shape_manual guides guide_legend facet_wrap stat_ellipse
 #' @importFrom ggrepel geom_text_repel
 #' @importFrom stringr str_to_title str_detect
 #' @importFrom rlang syms .data
@@ -58,7 +58,7 @@ NULL
 #' \code{\link{discover_mea_structure}} for automatic data structure detection
 #'
 #' @importFrom dplyr left_join mutate filter select
-#' @importFrom ggplot2 ggplot aes aes_string geom_point scale_color_manual scale_shape_manual
+#' @importFrom ggplot2 ggplot aes geom_point scale_color_manual scale_shape_manual
 #' @importFrom ggplot2 labs theme_minimal theme element_text element_rect element_blank element_line
 #' @importFrom ggplot2 coord_fixed guides guide_legend facet_wrap stat_ellipse unit margin
 #' @importFrom stringr str_to_title
@@ -303,7 +303,7 @@ pca_plots_enhanced <- function(pca_output = NULL,
   # ============================================================================
   
   plots_list <- list()
-  base_aes <- aes_string(x = pc1_col, y = pc2_col)
+  base_aes <- aes(x = .data[[pc1_col]], y = .data[[pc2_col]])
   
   # --- PLOT 1: Color + Shape (Primary combination) ---
   if (!is.null(color_variable) && !is.null(shape_variable)) {
@@ -314,8 +314,8 @@ pca_plots_enhanced <- function(pca_output = NULL,
       plot_subtitle <- paste0(plot_subtitle, " | ", gray_color_value, " in gray")
     }
     
-    p1 <- ggplot(plot_data, aes_string(x = pc1_col, y = pc2_col, 
-                                       color = color_variable, shape = shape_variable)) +
+    p1 <- ggplot(plot_data, aes(x = .data[[pc1_col]], y = .data[[pc2_col]],
+                                color = .data[[color_variable]], shape = .data[[shape_variable]])) +
       geom_point(size = 3.5, alpha = 0.8, stroke = 0.5) +
       scale_color_manual(values = color_palette, name = str_to_title(color_variable)) +
       scale_shape_manual(values = shape_palette, name = str_to_title(shape_variable)) +
@@ -334,7 +334,6 @@ pca_plots_enhanced <- function(pca_output = NULL,
       theme(legend.box = "vertical", legend.position = "right")
     
     plots_list[["primary_combination"]] <- p1
-    print(p1)
   }
   
   # --- PLOT 2: Color + Secondary Shape ---
@@ -354,8 +353,8 @@ pca_plots_enhanced <- function(pca_output = NULL,
       plot_subtitle <- paste0(plot_subtitle, " | ", gray_color_value, " in gray")
     }
     
-    p2 <- ggplot(plot_data, aes_string(x = pc1_col, y = pc2_col, 
-                                       color = color_variable, shape = secondary_shape_variable)) +
+    p2 <- ggplot(plot_data, aes(x = .data[[pc1_col]], y = .data[[pc2_col]],
+                                color = .data[[color_variable]], shape = .data[[secondary_shape_variable]])) +
       geom_point(size = 3.5, alpha = 0.8, stroke = 0.5) +
       scale_color_manual(values = color_palette, name = str_to_title(color_variable)) +
       scale_shape_manual(values = sec_shape_palette, name = str_to_title(secondary_shape_variable)) +
@@ -374,7 +373,6 @@ pca_plots_enhanced <- function(pca_output = NULL,
       theme(legend.box = "vertical", legend.position = "right")
     
     plots_list[["secondary_combination"]] <- p2
-    print(p2)
   }
   
   # --- PLOT 3: Color Only ---
@@ -386,7 +384,7 @@ pca_plots_enhanced <- function(pca_output = NULL,
       plot_subtitle <- paste0(plot_subtitle, " | ", gray_color_value, " in gray")
     }
     
-    p3 <- ggplot(plot_data, aes_string(x = pc1_col, y = pc2_col, color = color_variable)) +
+    p3 <- ggplot(plot_data, aes(x = .data[[pc1_col]], y = .data[[pc2_col]], color = .data[[color_variable]])) +
       geom_point(size = 4, alpha = 0.8) +
       scale_color_manual(values = color_palette, name = str_to_title(color_variable)) +
       labs(
@@ -401,7 +399,6 @@ pca_plots_enhanced <- function(pca_output = NULL,
       theme(legend.position = "right")
     
     plots_list[["color_only"]] <- p3
-    print(p3)
   }
   
   # --- PLOT 4: Color with Ellipses ---
@@ -413,7 +410,7 @@ pca_plots_enhanced <- function(pca_output = NULL,
       plot_subtitle <- paste0(plot_subtitle, " | ", gray_color_value, " in gray")
     }
     
-    p4 <- ggplot(plot_data, aes_string(x = pc1_col, y = pc2_col, color = color_variable)) +
+    p4 <- ggplot(plot_data, aes(x = .data[[pc1_col]], y = .data[[pc2_col]], color = .data[[color_variable]])) +
       stat_ellipse(type = "norm", level = 0.95, size = 1.2, alpha = 0.8) +
       geom_point(size = 2, alpha = 0.8) +
       scale_color_manual(values = color_palette, name = str_to_title(color_variable)) +
@@ -429,7 +426,6 @@ pca_plots_enhanced <- function(pca_output = NULL,
       theme(legend.position = "right")
     
     plots_list[["color_with_ellipses"]] <- p4
-    print(p4)
   }
   
   # --- PLOT 5: Faceted ---
@@ -442,7 +438,7 @@ pca_plots_enhanced <- function(pca_output = NULL,
       plot_subtitle <- paste0(plot_subtitle, " | ", gray_color_value, " in gray")
     }
     
-    p5 <- ggplot(plot_data, aes_string(x = pc1_col, y = pc2_col, color = color_variable)) +
+    p5 <- ggplot(plot_data, aes(x = .data[[pc1_col]], y = .data[[pc2_col]], color = .data[[color_variable]])) +
       geom_point(size = 3, alpha = 0.8) +
       scale_color_manual(values = color_palette, name = str_to_title(color_variable)) +
       facet_wrap(as.formula(paste("~", third_var))) +
@@ -462,7 +458,6 @@ pca_plots_enhanced <- function(pca_output = NULL,
       )
     
     plots_list[["faceted"]] <- p5
-    print(p5)
   }
   
   # ============================================================================
@@ -1428,7 +1423,6 @@ plot_pca_trajectories_general <- function(pca_results,
     if (verbose) cat("\n=== DISPLAYING PLOTS ===\n")
     for (plot_name in names(plot_list)) {
       cat("Displaying:", plot_name, "\n")
-      print(plot_list[[plot_name]])
     }
     return(results)
   } else {
@@ -2612,7 +2606,7 @@ analyze_pca_variable_importance_general <- function(pca_result = NULL,
     )
   
   p_heatmap <- ggplot(heatmap_data, aes(x = PC, y = Variable, fill = Loading)) +
-    geom_tile(color = "white", size = 0.5) +
+    geom_tile(color = "white", linewidth = 0.5) +
     scale_fill_gradient2(
       low = colors$heatmap[1], 
       mid = colors$heatmap[2], 
