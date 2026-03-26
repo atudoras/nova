@@ -61,7 +61,7 @@ discover_mea_structure <- function(main_dir,
     stop("Directory does not exist: ", main_dir)
   }
   
-  if (verbose) cat("=== DISCOVERING MEA DATA STRUCTURE ===\n")
+  if (verbose) message("=== DISCOVERING MEA DATA STRUCTURE ===")
   
   # Find experiment directories
   all_dirs <- list.dirs(main_dir, recursive = FALSE)
@@ -80,13 +80,13 @@ discover_mea_structure <- function(main_dir,
   # Process each experiment directory
   for (exp_dir in experiment_dirs) {
     exp_name <- basename(exp_dir)
-    if (verbose) cat("\n--- Analyzing experiment:", exp_name, "---\n")
+    if (verbose) message("\n--- Analyzing experiment: ", exp_name, " ---")
     
     # Find CSV files
     csv_files <- list.files(exp_dir, pattern = file_pattern, full.names = TRUE)
     
     if (length(csv_files) == 0) {
-      if (verbose) cat("  No CSV files found in", exp_name, "\n")
+      if (verbose) message("  No CSV files found in ", exp_name)
       next
     }
     
@@ -118,18 +118,18 @@ discover_mea_structure <- function(main_dir,
     
     if (length(extracted_timepoints) == 0) {
       extracted_timepoints <- file_basenames
-      if (verbose) cat("  Warning: Could not extract timepoints, using full filenames\n")
+      if (verbose) message("  Warning: Could not extract timepoints, using full filenames")
     }
     
     # Sample one file to analyze structure
     sample_file <- csv_files[1]
-    if (verbose) cat("  Sampling file:", basename(sample_file), "\n")
+    if (verbose) message("  Sampling file: ", basename(sample_file))
     
     tryCatch({
       raw_data <- readr::read_csv(sample_file, col_names = FALSE, show_col_types = FALSE)
       
       if (nrow(raw_data) < MEA_MIN_ROWS) {
-        if (verbose) cat("  Warning: File has fewer than expected rows (", nrow(raw_data), ")\n")
+        if (verbose) message("  Warning: File has fewer than expected rows (", nrow(raw_data), ")")
         next
       }
       
@@ -186,24 +186,24 @@ discover_mea_structure <- function(main_dir,
       
       # Print summary for this experiment
       if (verbose) {
-        cat("  Files found:", length(csv_files), "\n")
-        cat("  Timepoints:", paste(extracted_timepoints, collapse = ", "), "\n")
+        message("  Files found: ", length(csv_files))
+        message("  Timepoints: ", paste(extracted_timepoints, collapse = ", "))
         if (!is.null(metadata_info$n_wells)) {
-          cat("  Wells:", metadata_info$n_wells, "\n")
+          message("  Wells: ", metadata_info$n_wells)
         }
         if (!is.null(metadata_info$treatments)) {
-          cat("  Treatments:", paste(unique(metadata_info$treatments), collapse = ", "), "\n")
+          message("  Treatments: ", paste(unique(metadata_info$treatments), collapse = ", "))
         }
         if (!is.null(metadata_info$genotypes)) {
-          cat("  Genotypes:", paste(unique(metadata_info$genotypes), collapse = ", "), "\n")
+          message("  Genotypes: ", paste(unique(metadata_info$genotypes), collapse = ", "))
         }
         if (!is.null(metadata_info$n_variables)) {
-          cat("  Variables measured:", metadata_info$n_variables, "\n")
+          message("  Variables measured: ", metadata_info$n_variables)
         }
       }
       
     }, error = function(e) {
-      if (verbose) cat("  Error analyzing", basename(sample_file), ":", e$message, "\n")
+      if (verbose) message("  Error analyzing ", basename(sample_file), ": ", e$message)
     })
   }
   
@@ -227,13 +227,13 @@ discover_mea_structure <- function(main_dir,
   
   # Print overall summary
   if (verbose) {
-    cat("\n=== DISCOVERY SUMMARY ===\n")
-    cat("Experiments found:", length(experiment_info), "\n")
-    cat("Experiment names:", paste(names(experiment_info), collapse = ", "), "\n")
-    cat("Unique timepoints across all experiments:", paste(unique_timepoints, collapse = ", "), "\n")
-    cat("Total unique timepoints:", length(unique_timepoints), "\n")
-    cat("Potential baseline timepoints:", paste(potential_baselines, collapse = ", "), "\n")
-    cat("Total variables measured:", length(unique_variables), "\n")
+    message("\n=== DISCOVERY SUMMARY ===")
+    message("Experiments found: ", length(experiment_info))
+    message("Experiment names: ", paste(names(experiment_info), collapse = ", "))
+    message("Unique timepoints across all experiments: ", paste(unique_timepoints, collapse = ", "))
+    message("Total unique timepoints: ", length(unique_timepoints))
+    message("Potential baseline timepoints: ", paste(potential_baselines, collapse = ", "))
+    message("Total variables measured: ", length(unique_variables))
   }
   
   return(structure_summary)
@@ -289,7 +289,7 @@ process_mea_flexible <- function(main_dir,
                                  verbose = TRUE,
                                  output_path = NULL) {
   
-  if (verbose) cat("=== PROCESSING MEA DATA WITH USER PARAMETERS ===\n")
+  if (verbose) message("=== PROCESSING MEA DATA WITH USER PARAMETERS ===")
   
   # ============================================================================
   # TIMEPOINT FUSION SETUP
@@ -298,7 +298,7 @@ process_mea_flexible <- function(main_dir,
   # Validate and setup timepoint fusions
   fusion_map <- NULL
   if (!is.null(timepoint_fusions)) {
-    if (verbose) cat("Setting up timepoint fusions...\n")
+    if (verbose) message("Setting up timepoint fusions...")
     
     # Convert to standardized format if needed
     if (is.list(timepoint_fusions[[1]])) {
@@ -320,7 +320,7 @@ process_mea_flexible <- function(main_dir,
       source_names <- fusion_group[[2]]
       
       if (verbose) {
-        cat("  Fusion rule:", paste(source_names, collapse = ", "), "->", target_name, "\n")
+        message("  Fusion rule: ", paste(source_names, collapse = ", "), " -> ", target_name)
       }
       
       # Map each source name to target name
@@ -332,7 +332,7 @@ process_mea_flexible <- function(main_dir,
   
   # Auto-discover structure if selections not provided
   if (is.null(selected_experiments) || is.null(selected_timepoints)) {
-    if (verbose) cat("Auto-discovering data structure...\n")
+    if (verbose) message("Auto-discovering data structure...")
     discovery <- discover_mea_structure(main_dir, experiment_pattern, verbose = FALSE)
     
     if (is.null(selected_experiments)) {
@@ -358,19 +358,19 @@ process_mea_flexible <- function(main_dir,
     selected_timepoints <- unique(selected_timepoints)
     
     if (verbose) {
-      cat("Original timepoints:", paste(original_timepoints, collapse = ", "), "\n")
-      cat("After fusion:", paste(selected_timepoints, collapse = ", "), "\n")
+      message("Original timepoints: ", paste(original_timepoints, collapse = ", "))
+      message("After fusion: ", paste(selected_timepoints, collapse = ", "))
     }
   }
   
   # Print processing parameters
   if (verbose) {
-    cat("Processing experiments:", paste(selected_experiments, collapse = ", "), "\n")
-    cat("Including timepoints:", paste(selected_timepoints, collapse = ", "), "\n")
-    cat("Grouping variables:", paste(grouping_variables, collapse = ", "), "\n")
-    cat("Exclude std variables:", exclude_std_variables, "\n")
+    message("Processing experiments: ", paste(selected_experiments, collapse = ", "))
+    message("Including timepoints: ", paste(selected_timepoints, collapse = ", "))
+    message("Grouping variables: ", paste(grouping_variables, collapse = ", "))
+    message("Exclude std variables: ", exclude_std_variables)
     if (!is.null(baseline_timepoint)) {
-      cat("Baseline timepoint:", baseline_timepoint, "\n")
+      message("Baseline timepoint: ", baseline_timepoint)
     }
   }
   
@@ -385,7 +385,7 @@ process_mea_flexible <- function(main_dir,
     exp_dir <- file.path(main_dir, exp_name)
     
     if (!dir.exists(exp_dir)) {
-      if (verbose) cat("Warning: Experiment directory not found:", exp_dir, "\n")
+      if (verbose) message("Warning: Experiment directory not found: ", exp_dir)
       next
     }
     
@@ -420,16 +420,16 @@ process_mea_flexible <- function(main_dir,
       original_timepoint <- timepoint
       if (!is.null(fusion_map) && timepoint %in% names(fusion_map)) {
         timepoint <- fusion_map[[timepoint]]
-        if (verbose) cat("  Fusing timepoint:", original_timepoint, "->", timepoint, "\n")
+        if (verbose) message("  Fusing timepoint: ", original_timepoint, " -> ", timepoint)
       }
       
       # Skip files with timepoints not in selection (after fusion)
       if (!timepoint %in% selected_timepoints) {
-        if (verbose) cat("Skipping", filename, "- timepoint", timepoint, "not selected\n")
+        if (verbose) message("Skipping ", filename, " - timepoint ", timepoint, " not selected")
         next
       }
       
-      if (verbose) cat("Processing:", filename, "(timepoint:", timepoint, ")\n")
+      if (verbose) message("Processing: ", filename, " (timepoint: ", timepoint, ")")
       
       # Read and process individual file
       tryCatch({
@@ -477,9 +477,9 @@ process_mea_flexible <- function(main_dir,
           if (any(std_vars)) {
             excluded_var_names <- variable_names[std_vars]
             if (verbose) {
-              cat("  Excluding", sum(std_vars), "std variables:", 
-                  paste(head(excluded_var_names, 3), collapse = ", "), 
-                  ifelse(length(excluded_var_names) > 3, "...", ""), "\n")
+              message("  Excluding ", sum(std_vars), " std variables: ",
+                      paste(head(excluded_var_names, 3), collapse = ", "),
+                      ifelse(length(excluded_var_names) > 3, "...", ""))
             }
             
             # Keep only non-std variables
@@ -534,13 +534,13 @@ process_mea_flexible <- function(main_dir,
         
         # If this fused timepoint already exists, combine the data
         if (data_key %in% names(all_data)) {
-          if (verbose) cat("  Combining with existing data for timepoint:", timepoint, "\n")
+          if (verbose) message("  Combining with existing data for timepoint: ", timepoint)
           all_data[[data_key]] <- dplyr::bind_rows(all_data[[data_key]], data_full)
         } else {
           all_data[[data_key]] <- data_full
         }
         
-        if (verbose) cat("  Processed", nrow(data_full), "observations\n")
+        if (verbose) message("  Processed ", nrow(data_full), " observations")
         
       }, error = function(e) {
         warning("Error processing ", filename, ": ", e$message)
@@ -564,23 +564,23 @@ process_mea_flexible <- function(main_dir,
   
   # Print summary statistics
   if (verbose) {
-    cat("\n=== COMBINED DATA SUMMARY ===\n")
-    cat("Total observations:", nrow(final_data), "\n")
-    cat("Experiments:", paste(unique(final_data$Experiment), collapse = ", "), "\n")
-    cat("Timepoints:", paste(unique(final_data$Timepoint), collapse = ", "), "\n")
-    cat("Variables:", length(unique(final_data$Variable)), "\n")
-    cat("Wells:", length(unique(final_data$Well)), "\n")
+    message("\n=== COMBINED DATA SUMMARY ===")
+    message("Total observations: ", nrow(final_data))
+    message("Experiments: ", paste(unique(final_data$Experiment), collapse = ", "))
+    message("Timepoints: ", paste(unique(final_data$Timepoint), collapse = ", "))
+    message("Variables: ", length(unique(final_data$Variable)))
+    message("Wells: ", length(unique(final_data$Well)))
     
     for (var in grouping_variables) {
       if (var %in% colnames(final_data)) {
         unique_vals <- unique(final_data[[var]])
-        cat(paste0(var, ": "), paste(unique_vals, collapse = ", "), "\n")
+        message(paste0(var, ": "), paste(unique_vals, collapse = ", "))
       }
     }
     
     # Show fusion summary if fusions were applied
     if (!is.null(fusion_map)) {
-      cat("\n--- Timepoint Fusion Summary ---\n")
+      message("\n--- Timepoint Fusion Summary ---")
       fusion_summary <- final_data %>%
         dplyr::group_by(Timepoint, Original_Timepoint) %>%
         dplyr::summarise(n_obs = n(), .groups = "drop") %>%
@@ -589,7 +589,7 @@ process_mea_flexible <- function(main_dir,
       for (i in 1:nrow(fusion_summary)) {
         row <- fusion_summary[i, ]
         if (row$Timepoint != row$Original_Timepoint) {
-          cat("  ", row$Original_Timepoint, "->", row$Timepoint, "(", row$n_obs, "observations )\n")
+          message("  ", row$Original_Timepoint, " -> ", row$Timepoint, " (", row$n_obs, " observations )")
         }
       }
     }
@@ -602,7 +602,7 @@ process_mea_flexible <- function(main_dir,
   # Perform baseline normalization if requested
   normalized_data <- NULL
   if (!is.null(baseline_timepoint)) {
-    if (verbose) cat("\n--- Normalizing to baseline ---\n")
+    if (verbose) message("\n--- Normalizing to baseline ---")
     
     if (!baseline_timepoint %in% unique(final_data$Timepoint)) {
       warning("Baseline timepoint '", baseline_timepoint, "' not found in data. Available: ", 
@@ -640,7 +640,7 @@ process_mea_flexible <- function(main_dir,
       
       if (verbose) {
         n_normalized <- sum(!is.na(normalized_data$Normalized_Value))
-        cat("Successfully normalized", n_normalized, "observations\n")
+        message("Successfully normalized ", n_normalized, " observations")
       }
     }
   }
@@ -671,9 +671,9 @@ process_mea_flexible <- function(main_dir,
     writexl::write_xlsx(export_data, path = output_path)
     saved_path <- output_path
     
-    if (verbose) cat("\n [OK] Data saved to:", output_path, "\n")
+    if (verbose) message("\n [OK] Data saved to: ", output_path)
   } else {
-    if (verbose) cat("\n [INFO] No output file saved (output_path not specified)\n")
+    if (verbose) message("\n [INFO] No output file saved (output_path not specified)")
   }
   
   # ============================================================================
