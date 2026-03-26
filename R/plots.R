@@ -1,7 +1,8 @@
 # plots.R
 # Functions for visualizing MEA data and PCA results
 #' @importFrom dplyr filter mutate select group_by summarise arrange %>% n case_when bind_rows full_join rename distinct first last n_distinct row_number
-#' @importFrom ggplot2 ggplot aes aes_string geom_point geom_line geom_segment labs theme_minimal theme coord_fixed scale_color_manual scale_shape_manual guides guide_legend facet_wrap stat_ellipse
+#' @importFrom ggplot2 ggplot aes geom_point geom_line geom_segment labs theme_minimal theme coord_fixed scale_color_manual scale_shape_manual guides guide_legend facet_wrap stat_ellipse
+#' @importFrom ggrepel geom_text_repel
 #' @importFrom stringr str_to_title str_detect
 #' @importFrom rlang syms .data
 #' @importFrom tidyr pivot_wider gather unite
@@ -57,7 +58,7 @@ NULL
 #' \code{\link{discover_mea_structure}} for automatic data structure detection
 #'
 #' @importFrom dplyr left_join mutate filter select
-#' @importFrom ggplot2 ggplot aes aes_string geom_point scale_color_manual scale_shape_manual
+#' @importFrom ggplot2 ggplot aes geom_point scale_color_manual scale_shape_manual
 #' @importFrom ggplot2 labs theme_minimal theme element_text element_rect element_blank element_line
 #' @importFrom ggplot2 coord_fixed guides guide_legend facet_wrap stat_ellipse unit margin
 #' @importFrom stringr str_to_title
@@ -302,7 +303,7 @@ pca_plots_enhanced <- function(pca_output = NULL,
   # ============================================================================
   
   plots_list <- list()
-  base_aes <- aes_string(x = pc1_col, y = pc2_col)
+  base_aes <- aes(x = .data[[pc1_col]], y = .data[[pc2_col]])
   
   # --- PLOT 1: Color + Shape (Primary combination) ---
   if (!is.null(color_variable) && !is.null(shape_variable)) {
@@ -313,8 +314,8 @@ pca_plots_enhanced <- function(pca_output = NULL,
       plot_subtitle <- paste0(plot_subtitle, " | ", gray_color_value, " in gray")
     }
     
-    p1 <- ggplot(plot_data, aes_string(x = pc1_col, y = pc2_col, 
-                                       color = color_variable, shape = shape_variable)) +
+    p1 <- ggplot(plot_data, aes(x = .data[[pc1_col]], y = .data[[pc2_col]],
+                                color = .data[[color_variable]], shape = .data[[shape_variable]])) +
       geom_point(size = 3.5, alpha = 0.8, stroke = 0.5) +
       scale_color_manual(values = color_palette, name = str_to_title(color_variable)) +
       scale_shape_manual(values = shape_palette, name = str_to_title(shape_variable)) +
@@ -333,7 +334,6 @@ pca_plots_enhanced <- function(pca_output = NULL,
       theme(legend.box = "vertical", legend.position = "right")
     
     plots_list[["primary_combination"]] <- p1
-    print(p1)
   }
   
   # --- PLOT 2: Color + Secondary Shape ---
@@ -353,8 +353,8 @@ pca_plots_enhanced <- function(pca_output = NULL,
       plot_subtitle <- paste0(plot_subtitle, " | ", gray_color_value, " in gray")
     }
     
-    p2 <- ggplot(plot_data, aes_string(x = pc1_col, y = pc2_col, 
-                                       color = color_variable, shape = secondary_shape_variable)) +
+    p2 <- ggplot(plot_data, aes(x = .data[[pc1_col]], y = .data[[pc2_col]],
+                                color = .data[[color_variable]], shape = .data[[secondary_shape_variable]])) +
       geom_point(size = 3.5, alpha = 0.8, stroke = 0.5) +
       scale_color_manual(values = color_palette, name = str_to_title(color_variable)) +
       scale_shape_manual(values = sec_shape_palette, name = str_to_title(secondary_shape_variable)) +
@@ -373,7 +373,6 @@ pca_plots_enhanced <- function(pca_output = NULL,
       theme(legend.box = "vertical", legend.position = "right")
     
     plots_list[["secondary_combination"]] <- p2
-    print(p2)
   }
   
   # --- PLOT 3: Color Only ---
@@ -385,7 +384,7 @@ pca_plots_enhanced <- function(pca_output = NULL,
       plot_subtitle <- paste0(plot_subtitle, " | ", gray_color_value, " in gray")
     }
     
-    p3 <- ggplot(plot_data, aes_string(x = pc1_col, y = pc2_col, color = color_variable)) +
+    p3 <- ggplot(plot_data, aes(x = .data[[pc1_col]], y = .data[[pc2_col]], color = .data[[color_variable]])) +
       geom_point(size = 4, alpha = 0.8) +
       scale_color_manual(values = color_palette, name = str_to_title(color_variable)) +
       labs(
@@ -400,7 +399,6 @@ pca_plots_enhanced <- function(pca_output = NULL,
       theme(legend.position = "right")
     
     plots_list[["color_only"]] <- p3
-    print(p3)
   }
   
   # --- PLOT 4: Color with Ellipses ---
@@ -412,7 +410,7 @@ pca_plots_enhanced <- function(pca_output = NULL,
       plot_subtitle <- paste0(plot_subtitle, " | ", gray_color_value, " in gray")
     }
     
-    p4 <- ggplot(plot_data, aes_string(x = pc1_col, y = pc2_col, color = color_variable)) +
+    p4 <- ggplot(plot_data, aes(x = .data[[pc1_col]], y = .data[[pc2_col]], color = .data[[color_variable]])) +
       stat_ellipse(type = "norm", level = 0.95, size = 1.2, alpha = 0.8) +
       geom_point(size = 2, alpha = 0.8) +
       scale_color_manual(values = color_palette, name = str_to_title(color_variable)) +
@@ -428,7 +426,6 @@ pca_plots_enhanced <- function(pca_output = NULL,
       theme(legend.position = "right")
     
     plots_list[["color_with_ellipses"]] <- p4
-    print(p4)
   }
   
   # --- PLOT 5: Faceted ---
@@ -441,7 +438,7 @@ pca_plots_enhanced <- function(pca_output = NULL,
       plot_subtitle <- paste0(plot_subtitle, " | ", gray_color_value, " in gray")
     }
     
-    p5 <- ggplot(plot_data, aes_string(x = pc1_col, y = pc2_col, color = color_variable)) +
+    p5 <- ggplot(plot_data, aes(x = .data[[pc1_col]], y = .data[[pc2_col]], color = .data[[color_variable]])) +
       geom_point(size = 3, alpha = 0.8) +
       scale_color_manual(values = color_palette, name = str_to_title(color_variable)) +
       facet_wrap(as.formula(paste("~", third_var))) +
@@ -461,7 +458,6 @@ pca_plots_enhanced <- function(pca_output = NULL,
       )
     
     plots_list[["faceted"]] <- p5
-    print(p5)
   }
   
   # ============================================================================
@@ -580,6 +576,10 @@ pca_plots_enhanced <- function(pca_output = NULL,
 #' @param line_size Numeric value controlling line thickness (default: 2)
 #' @param smooth_lines Logical indicating whether to apply smoothing (default: FALSE)
 #' @param color_palette Character vector of colors for groups
+#' @param color_by Character string controlling colour mapping. Use \code{"group"}
+#'   (default) to colour by the full trajectory_grouping combination, or
+#'   \code{"Treatment"} to colour by Treatment only with Genotype labels shown
+#'   at each trajectory's end point via \code{ggrepel}.
 #' @param save_plots Logical indicating whether to save plots (default: FALSE)
 #' @param output_dir Character string specifying output directory (default: NULL)
 #' @param plot_prefix Character string prefix for filenames (default: "PCA_trajectories")
@@ -612,6 +612,7 @@ plot_pca_trajectories_general <- function(pca_results,
                                           line_size = 2,
                                           smooth_lines = FALSE,
                                           color_palette = NULL,
+                                          color_by = "group",
                                           save_plots = FALSE,
                                           output_dir = NULL,
                                           plot_prefix = "PCA_trajectories",
@@ -814,7 +815,51 @@ plot_pca_trajectories_general <- function(pca_results,
   
   unique_groups <- unique(plot_data_clean$group_id)
   n_groups <- length(unique_groups)
-  
+
+  # -- color_by: build active_palette + tp_subtitle -----------------------------
+  color_by <- match.arg(color_by, c("group", "Treatment"))
+  if (color_by == "Treatment" && !"Treatment" %in% names(plot_data)) {
+    warning("color_by = 'Treatment' requested but 'Treatment' column not found. Falling back to 'group'.")
+    color_by <- "group"
+  }
+
+  if (color_by == "Treatment" && "Treatment" %in% names(plot_data)) {
+    treatment_vals <- unique(plot_data$Treatment)
+    n_treat        <- length(treatment_vals)
+    treat_colors   <- if (!is.null(color_palette) && length(color_palette) >= n_treat) {
+      color_palette[seq_len(n_treat)]
+    } else {
+      colorRampPalette(c(
+        "#E31A1C","#FF7F00","#33A02C","#1F78B4",
+        "#6A3D9A","#B15928","#FB9A99","#A6CEE3"
+      ))(n_treat)
+    }
+    names(treat_colors) <- treatment_vals
+    group_treatment_map <- plot_data %>%
+      dplyr::distinct(group_id, Treatment) %>%
+      dplyr::mutate(plot_color = treat_colors[Treatment])
+    active_palette <- setNames(group_treatment_map$plot_color,
+                               group_treatment_map$group_id)
+  } else {
+    active_palette <- if (!is.null(color_palette)) {
+      if (length(color_palette) >= n_groups) {
+        setNames(color_palette[seq_len(n_groups)], unique_groups)
+      } else {
+        setNames(colorRampPalette(color_palette)(n_groups), unique_groups)
+      }
+    } else {
+      pal <- colorRampPalette(c(
+        "#E31A1C","#FF7F00","#FDBF6F","#33A02C","#1F78B4",
+        "#6A3D9A","#B15928","#FB9A99","#A6CEE3","#B2DF8A"
+      ))(n_groups)
+      setNames(pal, unique_groups)
+    }
+  }
+
+  tp_ordered  <- if (!is.null(timepoint_order)) timepoint_order else
+                   sort(unique(plot_data[[timepoint_var]]))
+  tp_subtitle <- paste0("Timepoints: ", paste(tp_ordered, collapse = " -> "))
+
   generate_colors <- function(n) {
     if (n <= 1) return("#E31A1C")
     gradient_colors <- c("#E31A1C", "#FF7F00", "#FDBF6F", "#33A02C", "#1F78B4", "#6A3D9A", "#B15928", "#FB9A99", "#A6CEE3", "#B2DF8A")
@@ -1008,7 +1053,8 @@ plot_pca_trajectories_general <- function(pca_results,
       scale_fill_manual(values = well_colors, name = "Well", guide = "none") +
       geom_text(data = label_df, aes(x = mean_x, y = mean_y, label = label_text), 
                 nudge_x = 0.02, nudge_y = 0.02, size = point_size * 0.7, fontface = 'bold') +
-      labs(title = paste('Individual Trajectories - Group:', group_name, '(', n_wells,')'), x = pc_x, y = pc_y) +
+      labs(title = paste('Individual Trajectories - Group:', group_name, '(', n_wells,')'),
+           subtitle = tp_subtitle, x = pc_x, y = pc_y) +
       coord_fixed() +
       theme_minimal() +
       theme(
@@ -1054,7 +1100,8 @@ plot_pca_trajectories_general <- function(pca_results,
                      height = 0.08, color = "gray60", alpha = 0.6, size = 0.5) +
       geom_text(data = label_df, aes(x = avg_x, y = avg_y, label = label_text), 
                 nudge_x = 0.02, nudge_y = 0.02, size = point_size * 0.9, fontface = 'bold') +
-      labs(title = paste('Avg Trajectory +/- SEM - Group:', group_name), x = pc_x, y = pc_y) +
+      labs(title = paste('Avg Trajectory +/- SEM - Group:', group_name),
+           subtitle = tp_subtitle, x = pc_x, y = pc_y) +
       coord_fixed() +
       theme_minimal() +
       theme(
@@ -1152,8 +1199,8 @@ plot_pca_trajectories_general <- function(pca_results,
                  size = line_size * 0.3, alpha = alpha * 0.6) +
     geom_point(data = individual_trajectories, aes(x = mean_x, y = mean_y, color = group_id),
                size = point_size * 0.2, alpha = 0.5) +
-    scale_color_manual(values = color_palette, name = "Group") +
-    labs(title = "Combined Individual Trajectories", x = pc_x, y = pc_y) +
+    scale_color_manual(values = active_palette, name = "Group") +
+    labs(title = "Combined Individual Trajectories", subtitle = tp_subtitle, x = pc_x, y = pc_y) +
     coord_fixed() +
     theme_minimal() +
     theme(
@@ -1178,7 +1225,7 @@ plot_pca_trajectories_general <- function(pca_results,
   
   p_combined <- p_combined +
     geom_point(data = first_last_combined, aes(x = first_x, y = first_y, color = group_id),
-               fill = "white", shape = 21, size = point_size * 0.5, stroke = 0.8) +
+               shape = 5, size = point_size * 0.5, stroke = 0.8) +
     geom_point(data = first_last_combined, aes(x = last_x, y = last_y, color = group_id),
                fill = "black", shape = 21, size = point_size * 0.5, stroke = 0.8)
   
@@ -1230,28 +1277,35 @@ plot_pca_trajectories_general <- function(pca_results,
   
   grad_avg_combined <- bind_rows(grad_avg_combined_list)
   
-  first_last_points <- group_average_trajectories %>%
-    group_by(group_id) %>%
-    arrange(time_rank) %>%
-    summarise(
-      first_x = first(avg_x),
-      first_y = first(avg_y),
-      first_label = "B",
-      last_x = last(avg_x),
-      last_y = last(avg_y),
-      last_label = last(as.character(.data[[timepoint_var]])),
-      .groups = "drop"
-    )
-  
-  professional_colors <- c(
-    "#E31A1C", "#FF7F00", "#FDBF6F", "#33A02C", "#1F78B4",
-    "#6A3D9A", "#B15928", "#FB9A99", "#A6CEE3", "#B2DF8A"
-  )
-  
-  if (n_groups > length(professional_colors)) {
-    professional_colors <- colorRampPalette(professional_colors)(n_groups)
+  # Pre-compute label column to avoid names(.) bug inside summarise
+  has_genotype_col <- "Genotype" %in% names(group_average_trajectories)
+  use_genotype_label <- (color_by == "Treatment" && has_genotype_col)
+
+  if (use_genotype_label) {
+    first_last_points <- group_average_trajectories %>%
+      dplyr::group_by(group_id) %>%
+      dplyr::arrange(time_rank) %>%
+      dplyr::summarise(
+        first_x    = dplyr::first(avg_x),
+        first_y    = dplyr::first(avg_y),
+        last_x     = dplyr::last(avg_x),
+        last_y     = dplyr::last(avg_y),
+        last_label = dplyr::last(as.character(Genotype)),
+        .groups    = "drop"
+      )
+  } else {
+    first_last_points <- group_average_trajectories %>%
+      dplyr::group_by(group_id) %>%
+      dplyr::arrange(time_rank) %>%
+      dplyr::summarise(
+        first_x    = dplyr::first(avg_x),
+        first_y    = dplyr::first(avg_y),
+        last_x     = dplyr::last(avg_x),
+        last_y     = dplyr::last(avg_y),
+        last_label = dplyr::last(as.character(.data[[timepoint_var]])),
+        .groups    = "drop"
+      )
   }
-  names(professional_colors) <- unique_groups
   
   p_comb_avg <- ggplot() +
     geom_segment(data = grad_avg_combined, aes(x, y, xend = xend, yend = yend, color = group_id),
@@ -1262,16 +1316,23 @@ plot_pca_trajectories_general <- function(pca_results,
                   width = 0.05, alpha = 0.5, size = 0.4) +
     geom_errorbarh(data = group_average_trajectories, aes(y = avg_y, xmin = avg_x - se_x, xmax = avg_x + se_x, color = group_id),
                    height = 0.05, alpha = 0.5, size = 0.4) +
-    geom_point(data = first_last_points, aes(x = first_x, y = first_y, color = group_id),
-               fill = "white", shape = 21, size = point_size * 1.2, stroke = 1.2) +
-    geom_point(data = first_last_points, aes(x = last_x, y = last_y, color = group_id),
-               fill = "black", shape = 21, size = point_size * 1.2, stroke = 1.2) +
-    geom_text(data = first_last_points, aes(x = last_x, y = last_y, label = last_label),
-              nudge_x = 0.08, nudge_y = 0.08, fontface = "bold", size = point_size * 1.1, color = "black") +
-    geom_text(data = first_last_points, aes(x = first_x, y = first_y, label = first_label),
-              nudge_x = -0.08, nudge_y = -0.08, fontface = "bold", size = point_size * 1.1, color = "black") +
-    scale_color_manual(values = professional_colors, name = "Group") +
-    labs(title = "Averaged PCA Trajectories", x = pc_x, y = pc_y) +
+    geom_point(data = first_last_points,
+               aes(x = first_x, y = first_y, color = group_id),
+               shape = 5, size = point_size * 1.4, stroke = 1.4) +
+    geom_point(data = first_last_points,
+               aes(x = last_x, y = last_y, color = group_id),
+               shape = 21, fill = "black", size = point_size * 1.2, stroke = 1.2) +
+    ggrepel::geom_text_repel(
+               data = first_last_points,
+               aes(x = last_x, y = last_y, label = last_label, color = group_id),
+               fontface = "bold", size = point_size * 0.9,
+               box.padding = 0.35, point.padding = 0.3,
+               show.legend = FALSE) +
+    annotate("text", x = -Inf, y = Inf,
+             label = "o = start   * = end",
+             hjust = -0.1, vjust = 1.4, size = 3, color = "gray40") +
+    scale_color_manual(values = active_palette, name = "Group") +
+    labs(title = "Averaged PCA Trajectories", subtitle = tp_subtitle, x = pc_x, y = pc_y) +
     coord_fixed() +
     theme_minimal() +
     theme(
@@ -1283,8 +1344,9 @@ plot_pca_trajectories_general <- function(pca_results,
       legend.position = "right"
     )
   
-  plot_list$combined_all <- p_combined
-  plot_list$combined_avg <- p_comb_avg
+  plot_list$combined_all     <- p_combined
+  plot_list$combined_avg     <- p_comb_avg
+  plot_list$combined_average <- p_comb_avg
   
   # ============================================================================
   # SAVE PLOTS (ONLY IF REQUESTED AND OUTPUT_DIR PROVIDED)
@@ -1361,7 +1423,6 @@ plot_pca_trajectories_general <- function(pca_results,
     if (verbose) cat("\n=== DISPLAYING PLOTS ===\n")
     for (plot_name in names(plot_list)) {
       cat("Displaying:", plot_name, "\n")
-      print(plot_list[[plot_name]])
     }
     return(results)
   } else {
@@ -1411,6 +1472,19 @@ plot_pca_trajectories_general <- function(pca_results,
 #' @param verbose Logical indicating whether to print progress messages (default: TRUE).
 #' @param quality_threshold Numeric value between 0-1 specifying minimum data completeness per variable (default: 0.8).
 #' @param min_observations Numeric value specifying minimum observations required per group (default: 3).
+#' @param use_raw Logical. If \code{TRUE}, plot raw electrode values instead of
+#'   normalized values. Default \code{FALSE}.
+#' @param filter_timepoints Character vector of timepoint names to include.
+#'   \code{NULL} (default) includes all timepoints.
+#' @param filter_treatments Character vector of treatment names to include.
+#'   \code{NULL} (default) includes all treatments.
+#' @param filter_genotypes Character vector of genotype names to include.
+#'   \code{NULL} (default) includes all genotypes.
+#' @param split_by Character string controlling plot splitting. Use
+#'   \code{"combination"} to render a single heatmap of all wells annotated
+#'   by both Treatment and Genotype strips. Pass any column name (e.g.
+#'   \code{"Treatment"} or \code{"Genotype"}) to produce one heatmap per
+#'   level of that column. \code{NULL} (default) produces a single combined heatmap.
 #'
 #' @return A list containing:
 #' \describe{
@@ -1481,7 +1555,12 @@ create_mea_heatmaps_enhanced <- function(
     return_data = TRUE,
     verbose = TRUE,
     quality_threshold = 0.8,
-    min_observations = 3
+    min_observations = 3,
+    use_raw = FALSE,
+    filter_timepoints  = NULL,
+    filter_treatments  = NULL,
+    filter_genotypes   = NULL,
+    split_by           = NULL
 ) {
   
   if (verbose) cat("\n=== ENHANCED MEA HEATMAP GENERATION ===\n")
@@ -1521,25 +1600,149 @@ create_mea_heatmaps_enhanced <- function(
   
   if (!is.null(processing_result)) {
     if (verbose) cat("Using data from processing result...\n")
-    
-    if (!is.null(processing_result$normalized_data)) {
-      data <- processing_result$normalized_data
-      if (verbose) cat("Using normalized data\n")
-    } else if (!is.null(processing_result$raw_data)) {
-      data <- processing_result$raw_data
-      value_column <- "Value"
-      if (verbose) cat("Using raw data (no normalization found)\n")
+
+    if (use_raw) {
+      if (!is.null(processing_result$raw_data)) {
+        data         <- processing_result$raw_data
+        value_column <- "Value"
+        if (verbose) cat("Using raw data (use_raw = TRUE)\n")
+      } else if (!is.null(processing_result$normalized_data)) {
+        data <- processing_result$normalized_data
+        if (verbose) cat("use_raw=TRUE but only normalized data found; using normalized\n")
+      } else {
+        stop("Processing result does not contain usable data")
+      }
     } else {
-      stop("Processing result does not contain usable data")
+      if (!is.null(processing_result$normalized_data)) {
+        data <- processing_result$normalized_data
+        if (verbose) cat("Using normalized data\n")
+      } else if (!is.null(processing_result$raw_data)) {
+        data         <- processing_result$raw_data
+        value_column <- "Value"
+        if (verbose) cat("Using raw data (normalized_data absent)\n")
+      } else {
+        stop("Processing result does not contain usable data")
+      }
     }
-    
+
     if (is.null(config) && !is.null(processing_result$config_used)) {
       config <- processing_result$config_used
     }
   } else if (is.null(data)) {
     stop("Must provide either 'data' or 'processing_result'")
   }
-  
+
+  data_label <- if (value_column == "Value") "Raw Value" else "Normalized Value"
+
+  # -- display-only filters ----------------------------------------------------
+  if (!is.null(filter_timepoints) && timepoint_column %in% names(data)) {
+    data <- data[data[[timepoint_column]] %in% filter_timepoints, , drop = FALSE]
+    if (verbose) cat("Filtered to timepoints:", paste(filter_timepoints, collapse=", "), "\n")
+  }
+  if (!is.null(filter_treatments) && "Treatment" %in% names(data)) {
+    data <- data[data$Treatment %in% filter_treatments, , drop = FALSE]
+    if (verbose) cat("Filtered to treatments:", paste(filter_treatments, collapse=", "), "\n")
+  }
+  if (!is.null(filter_genotypes) && "Genotype" %in% names(data)) {
+    data <- data[data$Genotype %in% filter_genotypes, , drop = FALSE]
+    if (verbose) cat("Filtered to genotypes:", paste(filter_genotypes, collapse=", "), "\n")
+  }
+  if (nrow(data) == 0) stop("No data remaining after applying filters.")
+
+  # -- combination heatmap (Treatment x Genotype) ------------------------------
+  if (!is.null(split_by) && split_by == "combination") {
+    if (!all(c("Treatment", "Genotype") %in% names(data))) {
+      warning("split_by = 'combination' requires both 'Treatment' and 'Genotype' columns. Skipping.")
+    } else {
+      # Resolve variable and value column names
+      var_col <- if (!is.null(variable_column) && variable_column %in% names(data))
+                   variable_column else "Variable"
+      val_col <- value_column
+
+      # Wide matrix: rows = Well, cols = Variable
+      mat <- data %>%
+        dplyr::select(Well,
+                      Variable = !!dplyr::sym(var_col),
+                      Value    = !!dplyr::sym(val_col)) %>%
+        tidyr::pivot_wider(names_from  = Variable,
+                           values_from = Value,
+                           values_fn   = mean) %>%
+        tibble::column_to_rownames("Well") %>%
+        as.matrix()
+
+      # Drop columns that are entirely NA (pheatmap/dist errors on all-NA columns)
+      mat <- mat[, colSums(!is.na(mat)) > 0, drop = FALSE]
+      if (ncol(mat) == 0) {
+        warning("combination heatmap: all variable columns are NA after aggregation. Skipping.")
+        return(result)
+      }
+
+      # Z-score per column (variable) so all variables are on a comparable scale
+      mat_scaled <- scale(mat)
+      mat_scaled[mat_scaled >  3] <-  3   # cap outliers at +/-3 SD
+      mat_scaled[mat_scaled < -3] <- -3
+
+      # Annotation: one row per Well, Treatment + Genotype columns
+      ann_row <- data %>%
+        dplyr::distinct(Well, Treatment, Genotype) %>%
+        dplyr::arrange(Treatment, Genotype) %>%
+        tibble::column_to_rownames("Well")
+
+      # Align annotation rows to matrix rows
+      ann_row <- ann_row[rownames(mat_scaled), , drop = FALSE]
+
+      combo_hmap <- pheatmap::pheatmap(
+        mat_scaled,
+        annotation_row = ann_row,
+        cluster_rows   = TRUE,
+        cluster_cols   = TRUE,
+        show_rownames  = FALSE,
+        show_colnames  = TRUE,
+        main           = "MEA Heatmap -- Treatment x Genotype (Z-score)",
+        color          = colorRampPalette(c("#2166AC", "#F7F7F7", "#B2182B"))(100),
+        breaks         = seq(-3, 3, length.out = 101),
+        silent         = TRUE
+      )
+
+      results <- list()
+      results[["combination_result"]] <- list(
+        heatmap    = combo_hmap,
+        data       = mat,
+        annotation = ann_row
+      )
+      return(results)
+    }
+  }
+
+  # -- split_by: run once per level, return list -------------------------------
+  if (!is.null(split_by) && split_by %in% names(data)) {
+    levels_to_split <- sort(unique(data[[split_by]]))
+    if (verbose) cat("split_by =", split_by, "->", length(levels_to_split), "groups\n")
+    split_results <- lapply(stats::setNames(levels_to_split, levels_to_split), function(lvl) {
+      sub_data <- data[data[[split_by]] == lvl, , drop = FALSE]
+      create_mea_heatmaps_enhanced(
+        data               = sub_data,
+        value_column       = value_column,
+        variable_column    = variable_column,
+        grouping_columns   = grouping_columns,
+        sample_id_columns  = sample_id_columns,
+        timepoint_column   = timepoint_column,
+        scale_method       = scale_method,
+        aggregation_method = aggregation_method,
+        cluster_rows       = cluster_rows,
+        cluster_cols       = cluster_cols,
+        create_individual_heatmaps  = create_individual_heatmaps,
+        create_combined_heatmap     = create_combined_heatmap,
+        create_variable_correlation = create_variable_correlation,
+        save_plots         = save_plots,
+        output_dir         = if (!is.null(output_dir)) file.path(output_dir, lvl) else NULL,
+        verbose            = FALSE,
+        return_data        = return_data
+      )
+    })
+    return(list(split_by = split_by, split_results = split_results))
+  }
+
   # Validate required columns
   required_cols <- c(value_column, variable_column)
   missing_cols <- required_cols[!required_cols %in% names(data)]
@@ -2026,7 +2229,8 @@ create_mea_heatmaps_enhanced <- function(
     scaling_method = scale_method,
     aggregation_method = aggregation_method,
     creation_time = Sys.time(),
-    output_directory = if(save_plots && !is.null(output_dir)) output_dir else NULL
+    output_directory = if(save_plots && !is.null(output_dir)) output_dir else NULL,
+    value_column = value_column
   )
   
   return(results)
@@ -2137,11 +2341,6 @@ analyze_pca_variable_importance_general <- function(pca_result = NULL,
   # Load required libraries
   required_packages <- c("ggplot2", "dplyr", "viridis", "RColorBrewer", "gridExtra", 
                          "tidyr", "knitr", "DT")
-  # Helper function for null coalescing
-  null_coalesce <- function(lhs, rhs) {
-    if (!is.null(lhs)) lhs else rhs
-  }
-  
   if (verbose) cat("=== PCA VARIABLE IMPORTANCE ANALYSIS ===\n")
   
   # ============================================================================
@@ -2407,7 +2606,7 @@ analyze_pca_variable_importance_general <- function(pca_result = NULL,
     )
   
   p_heatmap <- ggplot(heatmap_data, aes(x = PC, y = Variable, fill = Loading)) +
-    geom_tile(color = "white", size = 0.5) +
+    geom_tile(color = "white", linewidth = 0.5) +
     scale_fill_gradient2(
       low = colors$heatmap[1], 
       mid = colors$heatmap[2], 

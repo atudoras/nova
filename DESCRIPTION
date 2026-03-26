@@ -11,9 +11,9 @@ Authors@R: person(given = "Alex",
                   family = "Tudoras", 
                   role = c("aut", "cre"),
                   email = "alex.tudorasmiravet@ucsf.edu")
-License: GPL-3
+License: GPL (>= 3) + file LICENSE
 Encoding: UTF-8
-LazyData: true
+Language: en-US
 RoxygenNote: 7.3.3
 Depends: R (>= 3.6.0)
 Imports:
@@ -33,7 +33,8 @@ Imports:
     RColorBrewer (>= 1.1.0),
     viridis (>= 0.5.0),
     pheatmap (>= 1.0.0),
-    gridExtra (>= 2.3.0)
+    gridExtra (>= 2.3.0),
+    ggrepel (>= 0.9.0)
 Suggests: 
     utils,
     testthat (>= 3.0.0),

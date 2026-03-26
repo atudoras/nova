@@ -9,7 +9,7 @@
 #'
 #' @importFrom grDevices dev.off rainbow colorRampPalette
 #' @importFrom stats as.formula complete.cases cor prcomp sd var approx
-#' @importFrom stats median mad predict smooth.spline
+#' @importFrom stats median mad predict smooth.spline qt setNames
 #' @importFrom utils head write.csv
 #' @importFrom rlang sym
 #' @importFrom dplyr rename_with
@@ -28,7 +28,8 @@ if (getRversion() >= "2.15.1") {
       "yend", "first_x", "first_y", "last_x", "last_y", "label_text",
       "last_label", "first_label", "tfrac", "coid", "n_obs", "completeness",
       "raw_n", "filtered_n", "Baseline_Value", "Original_Timepoint",
-      "Timepoint_clean", "Sample", "Value"
+      "Timepoint_clean", "Sample", "Value",
+      ".value", "Genotype", "Treatment", "Well", "err", "mean_val", "result"
     )
   )
 }
