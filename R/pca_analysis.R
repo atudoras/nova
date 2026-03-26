@@ -17,8 +17,11 @@
 #'
 #' @export
 perform_mea_pca <- function(data, variables = NULL, scale = TRUE, center = TRUE, ...) {
-  # Template function - implement your PCA logic here
-  stop("This is a template function. Please implement the PCA analysis logic.")
+  stop(
+    "perform_mea_pca() is not implemented. ",
+    "Use pca_analysis_enhanced() instead - it accepts a data frame, ",
+    "a processing result, or a file path. See ?pca_analysis_enhanced."
+  )
 }
 
 #' Enhanced PCA Analysis for MEA Data
@@ -162,22 +165,31 @@ pca_analysis_enhanced <- function(normalized_data = NULL,
   else if (!is.null(data_path)) {
     if (verbose) cat("Loading data from Excel file:", data_path, "\n")
     if (!file.exists(data_path)) stop("Data file not found: ", data_path)
-    
-    # Try to load normalized data first, then raw data if not available
-    tryCatch({
-      normalized_data <- readxl::read_excel(data_path, sheet = "normalized_data")
-    }, error = function(e) {
-      if (verbose) cat("No normalized_data sheet found, trying raw_data sheet...\n")
-      tryCatch({
-        normalized_data <- readxl::read_excel(data_path, sheet = "raw_data")
-        # Update value column for raw data
-        if (!"Normalized_Value" %in% names(normalized_data) && "Value" %in% names(normalized_data)) {
+
+    sheets_to_try <- c("normalized_data", "raw_data")
+    loaded <- NULL
+
+    for (sheet in sheets_to_try) {
+      loaded <- tryCatch(
+        readxl::read_excel(data_path, sheet = sheet),
+        error = function(e) NULL
+      )
+      if (!is.null(loaded)) {
+        if (verbose) cat("Loaded sheet:", sheet, "\n")
+        if (sheet == "raw_data" &&
+            !"Normalized_Value" %in% names(loaded) &&
+            "Value" %in% names(loaded)) {
           value_column <- "Value"
         }
-      }, error = function(e2) {
-        stop("Could not load data from either 'normalized_data' or 'raw_data' sheets in: ", data_path)
-      })
-    })
+        break
+      }
+    }
+
+    if (is.null(loaded)) {
+      stop("Could not load data from 'normalized_data' or 'raw_data' sheets in: ", data_path)
+    }
+
+    normalized_data <- loaded
   }
   
   # Option 3: Use provided normalized_data directly
@@ -205,9 +217,6 @@ pca_analysis_enhanced <- function(normalized_data = NULL,
   # ============================================================================
   # CONFIG SYSTEM INTEGRATION WITH SMART DEFAULTS
   # ============================================================================
-  
-  # Define null_c operator for NULL coalescing if not already defined
-  null_coalesce <- function(x, y) if (is.null(x)) y else x
   
   # Set config-based defaults if config provided
   if (!is.null(config)) {
@@ -422,14 +431,14 @@ pca_analysis_enhanced <- function(normalized_data = NULL,
   )
   
   elbow_plot <- ggplot(elbow_data, aes(x = PC)) +
-    geom_line(aes(y = Individual_Variance), color = "blue", size = 1) +
+    geom_line(aes(y = Individual_Variance), color = "blue", linewidth = 1) +
     geom_point(aes(y = Individual_Variance), color = "blue", size = 2) +
-    geom_line(aes(y = Cumulative_Variance), color = "red", size = 1) +
+    geom_line(aes(y = Cumulative_Variance), color = "red", linewidth = 1) +
     geom_point(aes(y = Cumulative_Variance), color = "red", size = 2) +
     geom_hline(yintercept = 70, linetype = "dotted", color = "gray50", alpha = 0.7) +
     geom_hline(yintercept = 80, linetype = "dotted", color = "gray50", alpha = 0.7) +
     geom_hline(yintercept = 90, linetype = "dotted", color = "gray50", alpha = 0.7) +
-    geom_hline(yintercept = variance_cutoff, linetype = "dashed", color = "black", size = 1) +
+    geom_hline(yintercept = variance_cutoff, linetype = "dashed", color = "black", linewidth = 1) +
     annotate("text", x = max(elbow_data$PC) * 0.8, y = 72, label = "70%", hjust = 0) +
     annotate("text", x = max(elbow_data$PC) * 0.8, y = 82, label = "80%", hjust = 0) +
     annotate("text", x = max(elbow_data$PC) * 0.8, y = 92, label = "90%", hjust = 0) +
