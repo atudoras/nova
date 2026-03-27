@@ -411,7 +411,7 @@ pca_plots_enhanced <- function(pca_output = NULL,
     }
     
     p4 <- ggplot(plot_data, aes(x = .data[[pc1_col]], y = .data[[pc2_col]], color = .data[[color_variable]])) +
-      stat_ellipse(type = "norm", level = 0.95, size = 1.2, alpha = 0.8) +
+      stat_ellipse(type = "norm", level = 0.95, linewidth = 1.2, alpha = 0.8) +
       geom_point(size = 2, alpha = 0.8) +
       scale_color_manual(values = color_palette, name = str_to_title(color_variable)) +
       labs(
@@ -1094,10 +1094,10 @@ plot_pca_trajectories_general <- function(pca_results,
       scale_color_viridis_c(guide = 'none') +
       geom_point(data = label_df, aes(x = avg_x, y = avg_y), 
                  shape = 21, fill = 'white', size = point_size) +
-      geom_errorbar(data = group_data, aes(x = avg_x, ymin = avg_y - se_y, ymax = avg_y + se_y), 
-                    width = 0.08, color = "gray60", alpha = 0.6, size = 0.5) +
-      geom_errorbarh(data = group_data, aes(y = avg_y, xmin = avg_x - se_x, xmax = avg_x + se_x), 
-                     height = 0.08, color = "gray60", alpha = 0.6, size = 0.5) +
+      geom_errorbar(data = group_data, aes(x = avg_x, ymin = avg_y - se_y, ymax = avg_y + se_y),
+                    width = 0.08, color = "gray60", alpha = 0.6, linewidth = 0.5) +
+      geom_errorbarh(data = group_data, aes(y = avg_y, xmin = avg_x - se_x, xmax = avg_x + se_x),
+                     height = 0.08, color = "gray60", alpha = 0.6, linewidth = 0.5) +
       geom_text(data = label_df, aes(x = avg_x, y = avg_y, label = label_text), 
                 nudge_x = 0.02, nudge_y = 0.02, size = point_size * 0.9, fontface = 'bold') +
       labs(title = paste('Avg Trajectory +/- SEM - Group:', group_name),
@@ -1313,9 +1313,9 @@ plot_pca_trajectories_general <- function(pca_results,
     geom_point(data = group_average_trajectories, aes(x = avg_x, y = avg_y, color = group_id),
                size = point_size * 0.5, alpha = 0.8) +
     geom_errorbar(data = group_average_trajectories, aes(x = avg_x, ymin = avg_y - se_y, ymax = avg_y + se_y, color = group_id),
-                  width = 0.05, alpha = 0.5, size = 0.4) +
+                  width = 0.05, alpha = 0.5, linewidth = 0.4) +
     geom_errorbarh(data = group_average_trajectories, aes(y = avg_y, xmin = avg_x - se_x, xmax = avg_x + se_x, color = group_id),
-                   height = 0.05, alpha = 0.5, size = 0.4) +
+                   height = 0.05, alpha = 0.5, linewidth = 0.4) +
     geom_point(data = first_last_points,
                aes(x = first_x, y = first_y, color = group_id),
                shape = 5, size = point_size * 1.4, stroke = 1.4) +
