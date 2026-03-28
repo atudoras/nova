@@ -1316,6 +1316,7 @@ plot_pca_trajectories_general <- function(pca_results,
                   width = 0.05, alpha = 0.5, linewidth = 0.4) +
     geom_errorbarh(data = group_average_trajectories, aes(y = avg_y, xmin = avg_x - se_x, xmax = avg_x + se_x, color = group_id),
                    height = 0.05, alpha = 0.5, linewidth = 0.4) +
+                   height = 0.05, alpha = 0.5, size = 0.4) +
     geom_point(data = first_last_points,
                aes(x = first_x, y = first_y, color = group_id),
                shape = 5, size = point_size * 1.4, stroke = 1.4) +
@@ -1423,6 +1424,7 @@ plot_pca_trajectories_general <- function(pca_results,
     if (verbose) message("\n=== DISPLAYING PLOTS ===")
     for (plot_name in names(plot_list)) {
       message("Displaying: ", plot_name)
+      cat("Displaying:", plot_name, "\n")
     }
     return(results)
   } else {
@@ -1600,6 +1602,7 @@ create_mea_heatmaps_enhanced <- function(
   
   if (!is.null(processing_result)) {
     if (verbose) message("Using data from processing result...")
+    if (verbose) cat("Using data from processing result...\n")
 
     if (use_raw) {
       if (!is.null(processing_result$raw_data)) {
@@ -1609,6 +1612,10 @@ create_mea_heatmaps_enhanced <- function(
       } else if (!is.null(processing_result$normalized_data)) {
         data <- processing_result$normalized_data
         if (verbose) message("use_raw=TRUE but only normalized data found; using normalized")
+        if (verbose) cat("Using raw data (use_raw = TRUE)\n")
+      } else if (!is.null(processing_result$normalized_data)) {
+        data <- processing_result$normalized_data
+        if (verbose) cat("use_raw=TRUE but only normalized data found; using normalized\n")
       } else {
         stop("Processing result does not contain usable data")
       }
@@ -1620,6 +1627,11 @@ create_mea_heatmaps_enhanced <- function(
         data         <- processing_result$raw_data
         value_column <- "Value"
         if (verbose) message("Using raw data (normalized_data absent)")
+        if (verbose) cat("Using normalized data\n")
+      } else if (!is.null(processing_result$raw_data)) {
+        data         <- processing_result$raw_data
+        value_column <- "Value"
+        if (verbose) cat("Using raw data (normalized_data absent)\n")
       } else {
         stop("Processing result does not contain usable data")
       }
@@ -1646,6 +1658,15 @@ create_mea_heatmaps_enhanced <- function(
   if (!is.null(filter_genotypes) && "Genotype" %in% names(data)) {
     data <- data[data$Genotype %in% filter_genotypes, , drop = FALSE]
     if (verbose) message("Filtered to genotypes: ", paste(filter_genotypes, collapse=", "))
+    if (verbose) cat("Filtered to timepoints:", paste(filter_timepoints, collapse=", "), "\n")
+  }
+  if (!is.null(filter_treatments) && "Treatment" %in% names(data)) {
+    data <- data[data$Treatment %in% filter_treatments, , drop = FALSE]
+    if (verbose) cat("Filtered to treatments:", paste(filter_treatments, collapse=", "), "\n")
+  }
+  if (!is.null(filter_genotypes) && "Genotype" %in% names(data)) {
+    data <- data[data$Genotype %in% filter_genotypes, , drop = FALSE]
+    if (verbose) cat("Filtered to genotypes:", paste(filter_genotypes, collapse=", "), "\n")
   }
   if (nrow(data) == 0) stop("No data remaining after applying filters.")
 
@@ -1718,6 +1739,7 @@ create_mea_heatmaps_enhanced <- function(
   if (!is.null(split_by) && split_by %in% names(data)) {
     levels_to_split <- sort(unique(data[[split_by]]))
     if (verbose) message("split_by = ", split_by, " -> ", length(levels_to_split), " groups")
+    if (verbose) cat("split_by =", split_by, "->", length(levels_to_split), "groups\n")
     split_results <- lapply(stats::setNames(levels_to_split, levels_to_split), function(lvl) {
       sub_data <- data[data[[split_by]] == lvl, , drop = FALSE]
       create_mea_heatmaps_enhanced(
@@ -2342,6 +2364,7 @@ analyze_pca_variable_importance_general <- function(pca_result = NULL,
   required_packages <- c("ggplot2", "dplyr", "viridis", "RColorBrewer", "gridExtra", 
                          "tidyr", "knitr", "DT")
   if (verbose) message("=== PCA VARIABLE IMPORTANCE ANALYSIS ===")
+  if (verbose) cat("=== PCA VARIABLE IMPORTANCE ANALYSIS ===\n")
   
   # ============================================================================
   # INPUT VALIDATION AND PCA OBJECT EXTRACTION
