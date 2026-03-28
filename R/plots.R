@@ -84,14 +84,14 @@ pca_plots_enhanced <- function(pca_output = NULL,
                                dpi = 300,
                                verbose = TRUE) {
   
-  if (verbose) cat("=== ENHANCED PCA PLOTTING ===\n")
+  if (verbose) message("=== ENHANCED PCA PLOTTING ===")
   
   # ============================================================================
   # FLEXIBLE INPUT HANDLING
   # ============================================================================
   
   if (!is.null(pca_output)) {
-    if (verbose) cat("Using complete PCA output object...\n")
+    if (verbose) message("Using complete PCA output object...")
     plot_data <- pca_output$plot_data
     pca_result <- pca_output$pca_result
     if (is.null(grouping_variables) && !is.null(pca_output$config_used$grouping_variables)) {
@@ -101,7 +101,7 @@ pca_plots_enhanced <- function(pca_output = NULL,
       output_dir <- getwd()
     }
   } else if (!is.null(processing_result)) {
-    if (verbose) cat("Extracting PCA data from processing result...\n")
+    if (verbose) message("Extracting PCA data from processing result...")
     if (is.null(plot_data) || is.null(pca_result)) {
       stop("When using processing_result, you must also run PCA first and provide plot_data and pca_result")
     }
@@ -112,7 +112,7 @@ pca_plots_enhanced <- function(pca_output = NULL,
     if (is.null(plot_data) || is.null(pca_result)) {
       stop("Must provide either pca_output, or both plot_data and pca_result")
     }
-    if (verbose) cat("Using manually provided plot_data and pca_result...\n")
+    if (verbose) message("Using manually provided plot_data and pca_result...")
   }
   
   if (is.null(output_dir)) output_dir <- getwd()
@@ -120,12 +120,12 @@ pca_plots_enhanced <- function(pca_output = NULL,
   if (is.null(grouping_variables)) grouping_variables <- c("Treatment", "Genotype", "Timepoint")
   
   if (verbose) {
-    cat("Output directory:", output_dir, "\n")
-    cat("Experiment name:", experiment_name, "\n")
-    cat("Available grouping variables:", paste(grouping_variables, collapse = ", "), "\n")
-    cat("Plot dimensions:", nrow(plot_data), "samples\n")
+    message("Output directory: ", output_dir)
+    message("Experiment name: ", experiment_name)
+    message("Available grouping variables: ", paste(grouping_variables, collapse = ", "))
+    message("Plot dimensions: ", nrow(plot_data), " samples")
     if (!is.null(gray_color_value)) {
-      cat("Gray color value specified:", gray_color_value, "\n")
+      message("Gray color value specified: ", gray_color_value)
     }
   }
   
@@ -137,21 +137,21 @@ pca_plots_enhanced <- function(pca_output = NULL,
   valid_grouping_vars <- grouping_variables[grouping_variables %in% available_columns]
   
   if (verbose) {
-    cat("Available columns in plot_data:", paste(available_columns, collapse = ", "), "\n")
-    cat("Valid grouping variables:", paste(valid_grouping_vars, collapse = ", "), "\n")
+    message("Available columns in plot_data: ", paste(available_columns, collapse = ", "))
+    message("Valid grouping variables: ", paste(valid_grouping_vars, collapse = ", "))
   }
   
   if (!color_variable %in% available_columns) {
     if (length(valid_grouping_vars) > 0) {
       old_color_variable <- color_variable
       color_variable <- valid_grouping_vars[1]
-      if (verbose) cat("Requested color variable '", old_color_variable, "' not available, using:", color_variable, "\n")
+      if (verbose) message("Requested color variable '", old_color_variable, "' not available, using: ", color_variable)
     } else {
       color_variable <- NULL
-      if (verbose) cat("No suitable color variable found\n")
+      if (verbose) message("No suitable color variable found")
     }
   } else {
-    if (verbose) cat("Using requested color variable:", color_variable, "\n")
+    if (verbose) message("Using requested color variable: ", color_variable)
   }
   
   if (!shape_variable %in% available_columns) {
@@ -159,13 +159,13 @@ pca_plots_enhanced <- function(pca_output = NULL,
     if (length(available_alternatives) > 0) {
       old_shape_variable <- shape_variable
       shape_variable <- available_alternatives[1]
-      if (verbose) cat("Requested shape variable '", old_shape_variable, "' not available, using:", shape_variable, "\n")
+      if (verbose) message("Requested shape variable '", old_shape_variable, "' not available, using: ", shape_variable)
     } else {
       shape_variable <- NULL
-      if (verbose) cat("No suitable shape variable found\n")
+      if (verbose) message("No suitable shape variable found")
     }
   } else {
-    if (verbose) cat("Using requested shape variable:", shape_variable, "\n")
+    if (verbose) message("Using requested shape variable: ", shape_variable)
   }
   
   if (!secondary_shape_variable %in% available_columns) {
@@ -173,13 +173,13 @@ pca_plots_enhanced <- function(pca_output = NULL,
     if (length(available_alternatives) > 0) {
       old_secondary_shape_variable <- secondary_shape_variable
       secondary_shape_variable <- available_alternatives[1]
-      if (verbose) cat("Requested secondary shape variable '", old_secondary_shape_variable, "' not available, using:", secondary_shape_variable, "\n")
+      if (verbose) message("Requested secondary shape variable '", old_secondary_shape_variable, "' not available, using: ", secondary_shape_variable)
     } else {
       secondary_shape_variable <- NULL
-      if (verbose) cat("No suitable secondary shape variable found\n")
+      if (verbose) message("No suitable secondary shape variable found")
     }
   } else {
-    if (verbose) cat("Using requested secondary shape variable:", secondary_shape_variable, "\n")
+    if (verbose) message("Using requested secondary shape variable: ", secondary_shape_variable)
   }
   
   pc_cols <- paste0("PC", components)
@@ -228,16 +228,16 @@ pca_plots_enhanced <- function(pca_output = NULL,
       color_palette[gray_color_value] <- "gray50"
       
       if (verbose) {
-        cat("Color mapping (", color_variable, ") with gray option:\n")
+        message("Color mapping (", color_variable, ") with gray option:")
         for (i in seq_along(color_palette)) {
           gray_indicator <- if(names(color_palette)[i] == gray_color_value) " (GRAY)" else ""
-          cat("  ", names(color_palette)[i], ": ", color_palette[i], gray_indicator, "\n", sep = "")
+          message("  ", names(color_palette)[i], ": ", color_palette[i], gray_indicator)
         }
       }
     } else {
       color_palette <- scientific_colors[1:min(n_colors, length(scientific_colors))]
       names(color_palette) <- unique_color_vals
-      if (verbose) cat("Color mapping (", color_variable, "):", paste(names(color_palette), collapse = ", "), "\n")
+      if (verbose) message("Color mapping (", color_variable, "): ", paste(names(color_palette), collapse = ", "))
     }
   }
   
@@ -248,7 +248,7 @@ pca_plots_enhanced <- function(pca_output = NULL,
     n_shapes <- length(unique_shape_vals)
     shape_palette <- basic_shapes[1:min(n_shapes, length(basic_shapes))]
     names(shape_palette) <- unique_shape_vals
-    if (verbose) cat("Shape mapping (", shape_variable, "):", paste(names(shape_palette), "=", shape_palette, collapse = ", "), "\n")
+    if (verbose) message("Shape mapping (", shape_variable, "): ", paste(names(shape_palette), "=", shape_palette, collapse = ", "))
   }
   
   if (!is.null(secondary_shape_variable) && secondary_shape_variable == "Timepoint") {
@@ -307,7 +307,7 @@ pca_plots_enhanced <- function(pca_output = NULL,
   
   # --- PLOT 1: Color + Shape (Primary combination) ---
   if (!is.null(color_variable) && !is.null(shape_variable)) {
-    if (verbose) cat("Creating Plot 1: Color =", color_variable, ", Shape =", shape_variable, "\n")
+    if (verbose) message("Creating Plot 1: Color = ", color_variable, ", Shape = ", shape_variable)
     
     plot_subtitle <- paste0("Experiment: ", experiment_name, " | Components ", components[1], " & ", components[2])
     if (!is.null(gray_color_value)) {
@@ -338,7 +338,7 @@ pca_plots_enhanced <- function(pca_output = NULL,
   
   # --- PLOT 2: Color + Secondary Shape ---
   if (!is.null(color_variable) && !is.null(secondary_shape_variable)) {
-    if (verbose) cat("Creating Plot 2: Color =", color_variable, ", Shape =", secondary_shape_variable, "\n")
+    if (verbose) message("Creating Plot 2: Color = ", color_variable, ", Shape = ", secondary_shape_variable)
     
     if (secondary_shape_variable == "Timepoint" && exists("timepoint_shape_palette")) {
       sec_shape_palette <- timepoint_shape_palette
@@ -377,7 +377,7 @@ pca_plots_enhanced <- function(pca_output = NULL,
   
   # --- PLOT 3: Color Only ---
   if (!is.null(color_variable)) {
-    if (verbose) cat("Creating Plot 3: Color =", color_variable, " only\n")
+    if (verbose) message("Creating Plot 3: Color = ", color_variable, " only")
     
     plot_subtitle <- paste0("Experiment: ", experiment_name, " | Components ", components[1], " & ", components[2])
     if (!is.null(gray_color_value)) {
@@ -403,7 +403,7 @@ pca_plots_enhanced <- function(pca_output = NULL,
   
   # --- PLOT 4: Color with Ellipses ---
   if (!is.null(color_variable)) {
-    if (verbose) cat("Creating Plot 4: Color =", color_variable, " with ellipses\n")
+    if (verbose) message("Creating Plot 4: Color = ", color_variable, " with ellipses")
     
     plot_subtitle <- paste0("Experiment: ", experiment_name, " | Components ", components[1], " & ", components[2], " | With 95% confidence ellipses")
     if (!is.null(gray_color_value)) {
@@ -411,7 +411,7 @@ pca_plots_enhanced <- function(pca_output = NULL,
     }
     
     p4 <- ggplot(plot_data, aes(x = .data[[pc1_col]], y = .data[[pc2_col]], color = .data[[color_variable]])) +
-      stat_ellipse(type = "norm", level = 0.95, size = 1.2, alpha = 0.8) +
+      stat_ellipse(type = "norm", level = 0.95, linewidth = 1.2, alpha = 0.8) +
       geom_point(size = 2, alpha = 0.8) +
       scale_color_manual(values = color_palette, name = str_to_title(color_variable)) +
       labs(
@@ -431,7 +431,7 @@ pca_plots_enhanced <- function(pca_output = NULL,
   # --- PLOT 5: Faceted ---
   if (!is.null(pannels_var)) {
     third_var <- valid_grouping_vars[3]
-    if (verbose) cat("Creating Plot 5: Faceted by", third_var, "\n")
+    if (verbose) message("Creating Plot 5: Faceted by ", third_var)
     
     plot_subtitle <- paste0("Experiment: ", experiment_name, " | Components ", components[1], " & ", components[2])
     if (!is.null(gray_color_value)) {
@@ -466,7 +466,7 @@ pca_plots_enhanced <- function(pca_output = NULL,
   
   saved_files <- NULL
   if (save_plots && !is.null(output_dir)) {
-    if (verbose) cat("\nSaving plots to:", output_dir, "\n")
+    if (verbose) message("\nSaving plots to: ", output_dir)
     
     if (!dir.exists(output_dir)) {
       dir.create(output_dir, recursive = TRUE)
@@ -486,13 +486,13 @@ pca_plots_enhanced <- function(pca_output = NULL,
     }
     
     if (verbose) {
-      cat("[OK] Saved", length(saved_files), "PCA plots:\n")
+      message("[OK] Saved ", length(saved_files), " PCA plots:")
       for (file in saved_files) {
-        cat("  -", file, "\n")
+        message("  - ", file)
       }
     }
   } else if (save_plots && is.null(output_dir)) {
-    if (verbose) cat("\n[INFO] save_plots=TRUE but no output_dir provided, plots not saved\n")
+    if (verbose) message("\n[INFO] save_plots=TRUE but no output_dir provided, plots not saved")
   }
   
   # ============================================================================
@@ -500,38 +500,38 @@ pca_plots_enhanced <- function(pca_output = NULL,
   # ============================================================================
   
   if (verbose) {
-    cat("\n", strrep("=", 60), "\n")
-    cat("PCA PLOTTING SUMMARY for", experiment_name, "\n")
-    cat(strrep("=", 60), "\n")
-    
-    cat("Variance explained by selected components:\n")
+    message("\n", paste(rep("=", 60), collapse = ""))
+    message("PCA PLOTTING SUMMARY for ", experiment_name)
+    message(paste(rep("=", 60), collapse = ""))
+
+    message("Variance explained by selected components:")
     for (i in seq_along(components)) {
       comp_num <- components[i]
       if (comp_num <= length(var_explained)) {
-        cat(sprintf("  PC%d: %.2f%%\n", comp_num, var_explained[comp_num] * 100))
+        message(sprintf("  PC%d: %.2f%%", comp_num, var_explained[comp_num] * 100))
       }
     }
-    
-    cat("\nCumulative variance (PC1-PC", max(components), "): ", 
-        round(sum(var_explained[1:max(components)]) * 100, 2), "%\n", sep = "")
-    
-    cat("\nData summary:\n")
-    cat("  Total samples plotted:", nrow(plot_data), "\n")
-    
+
+    message("\nCumulative variance (PC1-PC", max(components), "): ",
+        round(sum(var_explained[1:max(components)]) * 100, 2), "%")
+
+    message("\nData summary:")
+    message("  Total samples plotted: ", nrow(plot_data))
+
     for (var in valid_grouping_vars) {
       unique_vals <- unique(plot_data[[var]])
-      cat("  ", str_to_title(var), ":", length(unique_vals), "levels -", 
-          paste(sort(unique_vals), collapse = ", "), "\n")
+      message("  ", str_to_title(var), ": ", length(unique_vals), " levels - ",
+          paste(sort(unique_vals), collapse = ", "))
     }
-    
-    cat("\nPlot configuration:\n")
-    cat("  Components plotted: PC", components[1], " vs PC", components[2], "\n")
-    if (!is.null(color_variable)) cat("  Primary color variable:", color_variable, "\n")
-    if (!is.null(shape_variable)) cat("  Primary shape variable:", shape_variable, "\n")
-    if (!is.null(secondary_shape_variable)) cat("  Secondary shape variable:", secondary_shape_variable, "\n")
-    if (!is.null(gray_color_value)) cat("  Gray color value:", gray_color_value, "\n")
-    
-    cat(strrep("=", 60), "\n")
+
+    message("\nPlot configuration:")
+    message("  Components plotted: PC", components[1], " vs PC", components[2])
+    if (!is.null(color_variable)) message("  Primary color variable: ", color_variable)
+    if (!is.null(shape_variable)) message("  Primary shape variable: ", shape_variable)
+    if (!is.null(secondary_shape_variable)) message("  Secondary shape variable: ", secondary_shape_variable)
+    if (!is.null(gray_color_value)) message("  Gray color value: ", gray_color_value)
+
+    message(paste(rep("=", 60), collapse = ""))
   }
   
   # ============================================================================
@@ -622,7 +622,7 @@ plot_pca_trajectories_general <- function(pca_results,
                                           return_list = TRUE,
                                           verbose = TRUE) {
   
-  if (verbose) cat("=== GENERALIZED PCA TRAJECTORY PLOTTING ===\n")
+  if (verbose) message("=== GENERALIZED PCA TRAJECTORY PLOTTING ===")
   
   # ============================================================================
   # FLEXIBLE DATA EXTRACTION
@@ -632,10 +632,10 @@ plot_pca_trajectories_general <- function(pca_results,
   
   if (is.list(pca_results) && "plot_data" %in% names(pca_results)) {
     plot_data <- pca_results$plot_data
-    if (verbose) cat("Found plot_data in PCA results\n")
+    if (verbose) message("Found plot_data in PCA results")
   } else if (is.data.frame(pca_results)) {
     plot_data <- pca_results
-    if (verbose) cat("Using PCA results directly as data frame\n")
+    if (verbose) message("Using PCA results directly as data frame")
   } else {
     stop("Cannot extract plottable data from pca_results. Expected either data.frame or list with 'plot_data' component.")
   }
@@ -670,8 +670,8 @@ plot_pca_trajectories_general <- function(pca_results,
   }
   
   if (verbose) {
-    cat("Using timepoint variable:", timepoint_var, "\n")
-    cat("Variable for individual trajectories:", individual_var, "\n")
+    message("Using timepoint variable: ", timepoint_var)
+    message("Variable for individual trajectories: ", individual_var)
   }
   
   # ============================================================================
@@ -695,7 +695,7 @@ plot_pca_trajectories_general <- function(pca_results,
     trajectory_grouping <- available_grouping[1:min(2, length(available_grouping))]
     
     if (verbose) {
-      cat("Auto-detected trajectory grouping variables:", paste(trajectory_grouping, collapse = ", "), "\n")
+      message("Auto-detected trajectory grouping variables: ", paste(trajectory_grouping, collapse = ", "))
     }
   } else {
     missing_vars <- setdiff(trajectory_grouping, available_cols)
@@ -749,7 +749,7 @@ plot_pca_trajectories_general <- function(pca_results,
       sort(unique_timepoints)
     })
     
-    if (verbose) cat("Auto-detected timepoint order:", paste(timepoint_order, collapse = " --> "), "\n")
+    if (verbose) message("Auto-detected timepoint order: ", paste(timepoint_order, collapse = " --> "))
   }
   
   plot_data[[timepoint_var]] <- factor(plot_data[[timepoint_var]], levels = timepoint_order)
@@ -801,11 +801,11 @@ plot_pca_trajectories_general <- function(pca_results,
     )
   
   if (verbose) {
-    cat("\n=== GROUP TRAJECTORY SUMMARY ===\n")
+    message("\n=== GROUP TRAJECTORY SUMMARY ===")
     for (i in seq_len(nrow(well_trajectory_counts))) {
       row <- well_trajectory_counts[i, ]
-      cat("Group:", row$group_id, "\n")
-      cat("  - Number of individual trajectories:", row$n_wells, "\n")
+      message("Group: ", row$group_id)
+      message("  - Number of individual trajectories: ", row$n_wells)
     }
   }
   
@@ -935,7 +935,7 @@ plot_pca_trajectories_general <- function(pca_results,
             well_id = tv$well_id[1]
           )
         }, error = function(e) {
-          if (verbose) cat("Warning: Could not create gradient for", combos$group_id[i], combos$well_id[i], "\n")
+          if (verbose) message("Warning: Could not create gradient for ", combos$group_id[i], " ", combos$well_id[i])
         })
       }
     } else {
@@ -986,7 +986,7 @@ plot_pca_trajectories_general <- function(pca_results,
             group_id = group
           )
         }, error = function(e) {
-          if (verbose) cat("Warning: Could not create gradient for group", group, "\n")
+          if (verbose) message("Warning: Could not create gradient for group ", group)
           return(data.frame())
         })
       }
@@ -1094,10 +1094,10 @@ plot_pca_trajectories_general <- function(pca_results,
       scale_color_viridis_c(guide = 'none') +
       geom_point(data = label_df, aes(x = avg_x, y = avg_y), 
                  shape = 21, fill = 'white', size = point_size) +
-      geom_errorbar(data = group_data, aes(x = avg_x, ymin = avg_y - se_y, ymax = avg_y + se_y), 
-                    width = 0.08, color = "gray60", alpha = 0.6, size = 0.5) +
-      geom_errorbarh(data = group_data, aes(y = avg_y, xmin = avg_x - se_x, xmax = avg_x + se_x), 
-                     height = 0.08, color = "gray60", alpha = 0.6, size = 0.5) +
+      geom_errorbar(data = group_data, aes(x = avg_x, ymin = avg_y - se_y, ymax = avg_y + se_y),
+                    width = 0.08, color = "gray60", alpha = 0.6, linewidth = 0.5) +
+      geom_errorbarh(data = group_data, aes(y = avg_y, xmin = avg_x - se_x, xmax = avg_x + se_x),
+                     height = 0.08, color = "gray60", alpha = 0.6, linewidth = 0.5) +
       geom_text(data = label_df, aes(x = avg_x, y = avg_y, label = label_text), 
                 nudge_x = 0.02, nudge_y = 0.02, size = point_size * 0.9, fontface = 'bold') +
       labs(title = paste('Avg Trajectory +/- SEM - Group:', group_name),
@@ -1188,7 +1188,7 @@ plot_pca_trajectories_general <- function(pca_results,
           group_id = tv$group_id[1]
         )
       }, error = function(e) {
-        if (verbose) cat("Warning: Could not create gradient for", group, combos$well_id[i], "\n")
+        if (verbose) message("Warning: Could not create gradient for ", group, " ", combos$well_id[i])
       })
     }
   }
@@ -1313,8 +1313,9 @@ plot_pca_trajectories_general <- function(pca_results,
     geom_point(data = group_average_trajectories, aes(x = avg_x, y = avg_y, color = group_id),
                size = point_size * 0.5, alpha = 0.8) +
     geom_errorbar(data = group_average_trajectories, aes(x = avg_x, ymin = avg_y - se_y, ymax = avg_y + se_y, color = group_id),
-                  width = 0.05, alpha = 0.5, size = 0.4) +
+                  width = 0.05, alpha = 0.5, linewidth = 0.4) +
     geom_errorbarh(data = group_average_trajectories, aes(y = avg_y, xmin = avg_x - se_x, xmax = avg_x + se_x, color = group_id),
+                   height = 0.05, alpha = 0.5, linewidth = 0.4) +
                    height = 0.05, alpha = 0.5, size = 0.4) +
     geom_point(data = first_last_points,
                aes(x = first_x, y = first_y, color = group_id),
@@ -1353,30 +1354,30 @@ plot_pca_trajectories_general <- function(pca_results,
   # ============================================================================
   
   if (save_plots && !is.null(output_dir)) {
-    if (verbose) cat("\n=== SAVING PLOTS ===\n")
-    
+    if (verbose) message("\n=== SAVING PLOTS ===")
+
     if (!dir.exists(output_dir)) {
       dir.create(output_dir, recursive = TRUE)
-      if (verbose) cat("Created output directory:", output_dir, "\n")
+      if (verbose) message("Created output directory: ", output_dir)
     }
-    
+
     for (plot_name in names(plot_list)) {
       filename <- file.path(output_dir, paste0(plot_prefix, "_", plot_name, ".png"))
-      
+
       tryCatch({
-        ggsave(filename = filename, 
-               plot = plot_list[[plot_name]], 
-               width = width, 
-               height = height, 
+        ggsave(filename = filename,
+               plot = plot_list[[plot_name]],
+               width = width,
+               height = height,
                dpi = dpi,
                bg = "white")
-        if (verbose) cat("Saved:", filename, "\n")
+        if (verbose) message("Saved: ", filename)
       }, error = function(e) {
         warning("Failed to save ", filename, ": ", e$message)
       })
     }
   } else if (save_plots && is.null(output_dir)) {
-    if (verbose) cat("\n[INFO] save_plots=TRUE but no output_dir provided, plots not saved\n")
+    if (verbose) message("\n[INFO] save_plots=TRUE but no output_dir provided, plots not saved")
   }
   
   # ============================================================================
@@ -1384,16 +1385,16 @@ plot_pca_trajectories_general <- function(pca_results,
   # ============================================================================
   
   if (verbose) {
-    cat("\n=== PLOTTING COMPLETED ===\n")
-    cat("Generated plots:", length(plot_list), "\n")
-    cat("Plot names:", paste(names(plot_list), collapse = ", "), "\n")
+    message("\n=== PLOTTING COMPLETED ===")
+    message("Generated plots: ", length(plot_list))
+    message("Plot names: ", paste(names(plot_list), collapse = ", "))
     if (smooth_lines) {
-      cat("Smoothing: Enabled (gentle curves - 75% linear + 25% smooth)\n")
+      message("Smoothing: Enabled (gentle curves - 75% linear + 25% smooth)")
     } else {
-      cat("Smoothing: Disabled (direct line connections)\n")
+      message("Smoothing: Disabled (direct line connections)")
     }
     if (save_plots && !is.null(output_dir)) {
-      cat("Plots saved to:", output_dir, "\n")
+      message("Plots saved to: ", output_dir)
     }
   }
   
@@ -1420,8 +1421,9 @@ plot_pca_trajectories_general <- function(pca_results,
   )
   
   if (return_list) {
-    if (verbose) cat("\n=== DISPLAYING PLOTS ===\n")
+    if (verbose) message("\n=== DISPLAYING PLOTS ===")
     for (plot_name in names(plot_list)) {
+      message("Displaying: ", plot_name)
       cat("Displaying:", plot_name, "\n")
     }
     return(results)
@@ -1563,7 +1565,7 @@ create_mea_heatmaps_enhanced <- function(
     split_by           = NULL
 ) {
   
-  if (verbose) cat("\n=== ENHANCED MEA HEATMAP GENERATION ===\n")
+  if (verbose) message("\n=== ENHANCED MEA HEATMAP GENERATION ===")
   
   # ============================================================================
   # ENHANCED COLOR PALETTES (matching R Markdown)
@@ -1599,12 +1601,17 @@ create_mea_heatmaps_enhanced <- function(
   # ============================================================================
   
   if (!is.null(processing_result)) {
+    if (verbose) message("Using data from processing result...")
     if (verbose) cat("Using data from processing result...\n")
 
     if (use_raw) {
       if (!is.null(processing_result$raw_data)) {
         data         <- processing_result$raw_data
         value_column <- "Value"
+        if (verbose) message("Using raw data (use_raw = TRUE)")
+      } else if (!is.null(processing_result$normalized_data)) {
+        data <- processing_result$normalized_data
+        if (verbose) message("use_raw=TRUE but only normalized data found; using normalized")
         if (verbose) cat("Using raw data (use_raw = TRUE)\n")
       } else if (!is.null(processing_result$normalized_data)) {
         data <- processing_result$normalized_data
@@ -1615,6 +1622,11 @@ create_mea_heatmaps_enhanced <- function(
     } else {
       if (!is.null(processing_result$normalized_data)) {
         data <- processing_result$normalized_data
+        if (verbose) message("Using normalized data")
+      } else if (!is.null(processing_result$raw_data)) {
+        data         <- processing_result$raw_data
+        value_column <- "Value"
+        if (verbose) message("Using raw data (normalized_data absent)")
         if (verbose) cat("Using normalized data\n")
       } else if (!is.null(processing_result$raw_data)) {
         data         <- processing_result$raw_data
@@ -1637,6 +1649,15 @@ create_mea_heatmaps_enhanced <- function(
   # -- display-only filters ----------------------------------------------------
   if (!is.null(filter_timepoints) && timepoint_column %in% names(data)) {
     data <- data[data[[timepoint_column]] %in% filter_timepoints, , drop = FALSE]
+    if (verbose) message("Filtered to timepoints: ", paste(filter_timepoints, collapse=", "))
+  }
+  if (!is.null(filter_treatments) && "Treatment" %in% names(data)) {
+    data <- data[data$Treatment %in% filter_treatments, , drop = FALSE]
+    if (verbose) message("Filtered to treatments: ", paste(filter_treatments, collapse=", "))
+  }
+  if (!is.null(filter_genotypes) && "Genotype" %in% names(data)) {
+    data <- data[data$Genotype %in% filter_genotypes, , drop = FALSE]
+    if (verbose) message("Filtered to genotypes: ", paste(filter_genotypes, collapse=", "))
     if (verbose) cat("Filtered to timepoints:", paste(filter_timepoints, collapse=", "), "\n")
   }
   if (!is.null(filter_treatments) && "Treatment" %in% names(data)) {
@@ -1717,6 +1738,7 @@ create_mea_heatmaps_enhanced <- function(
   # -- split_by: run once per level, return list -------------------------------
   if (!is.null(split_by) && split_by %in% names(data)) {
     levels_to_split <- sort(unique(data[[split_by]]))
+    if (verbose) message("split_by = ", split_by, " -> ", length(levels_to_split), " groups")
     if (verbose) cat("split_by =", split_by, "->", length(levels_to_split), "groups\n")
     split_results <- lapply(stats::setNames(levels_to_split, levels_to_split), function(lvl) {
       sub_data <- data[data[[split_by]] == lvl, , drop = FALSE]
@@ -1755,15 +1777,15 @@ create_mea_heatmaps_enhanced <- function(
   available_grouping <- available_grouping[!available_grouping %in% c("Experiment", "experiment", "Exp")]
   
   if (verbose) {
-    cat("Data dimensions:", nrow(data), "rows x", ncol(data), "columns\n")
-    cat("All column names:", paste(names(data), collapse = ", "), "\n")
-    cat("Requested grouping columns:", paste(grouping_columns, collapse = ", "), "\n")
-    cat("Found grouping columns:", paste(available_grouping, collapse = ", "), "\n")
-    
+    message("Data dimensions: ", nrow(data), " rows x ", ncol(data), " columns")
+    message("All column names: ", paste(names(data), collapse = ", "))
+    message("Requested grouping columns: ", paste(grouping_columns, collapse = ", "))
+    message("Found grouping columns: ", paste(available_grouping, collapse = ", "))
+
     # Show which requested columns are missing
     missing_grouping <- grouping_columns[!grouping_columns %in% names(data)]
     if (length(missing_grouping) > 0) {
-      cat("Missing grouping columns:", paste(missing_grouping, collapse = ", "), "\n")
+      message("Missing grouping columns: ", paste(missing_grouping, collapse = ", "))
     }
   }
   
@@ -1773,13 +1795,13 @@ create_mea_heatmaps_enhanced <- function(
                                                  "Experiment", "experiment", "Exp", timepoint_column))
     available_grouping <- potential_grouping
     if (verbose) {
-      cat("Using potential grouping columns:", paste(available_grouping, collapse = ", "), "\n")
+      message("Using potential grouping columns: ", paste(available_grouping, collapse = ", "))
     }
   }
   
   if (verbose) {
-    cat("Final grouping columns to use:", paste(available_grouping, collapse = ", "), "\n")
-    cat("Scaling method:", scale_method, "\n")
+    message("Final grouping columns to use: ", paste(available_grouping, collapse = ", "))
+    message("Scaling method: ", scale_method)
   }
   
   # ============================================================================
@@ -1791,14 +1813,14 @@ create_mea_heatmaps_enhanced <- function(
     if (method == "remove") {
       original_rows <- nrow(data)
       data <- data[!is.na(data[[value_col]]), ]
-      if (verbose) cat("Removed", original_rows - nrow(data), "rows with missing values\n")
+      if (verbose) message("Removed ", original_rows - nrow(data), " rows with missing values")
     } else if (method == "impute_mean") {
       mean_val <- mean(data[[value_col]], na.rm = TRUE)
       data[[value_col]][is.na(data[[value_col]])] <- mean_val
-      if (verbose) cat("Imputed missing values with mean:", round(mean_val, 3), "\n")
+      if (verbose) message("Imputed missing values with mean: ", round(mean_val, 3))
     } else if (method == "impute_zero") {
       data[[value_col]][is.na(data[[value_col]])] <- 0
-      if (verbose) cat("Imputed missing values with zero\n")
+      if (verbose) message("Imputed missing values with zero")
     }
     return(data)
   }
@@ -1831,7 +1853,7 @@ create_mea_heatmaps_enhanced <- function(
     
     if (verbose) {
       final_vars <- length(unique(data[[var_col]]))
-      cat("Quality filtering: kept", final_vars, "of", original_vars, "variables\n")
+      message("Quality filtering: kept ", final_vars, " of ", original_vars, " variables")
     }
     
     return(data)
@@ -1841,7 +1863,7 @@ create_mea_heatmaps_enhanced <- function(
   apply_scaling <- function(matrix_data, method = scale_method, verbose = FALSE) {
     if (is.null(matrix_data)) return(NULL)
     
-    if (verbose) cat("    Applying", method, "scaling...\n")
+    if (verbose) message("    Applying ", method, " scaling...")
     
     tryCatch({
       scaled_matrix <- switch(method,
@@ -1866,7 +1888,7 @@ create_mea_heatmaps_enhanced <- function(
       
       return(scaled_matrix)
     }, error = function(e) {
-      if (verbose) cat("    x Scaling error:", e$message, "\n")
+      if (verbose) message("    x Scaling error: ", e$message)
       return(matrix_data)
     })
   }
@@ -2033,7 +2055,7 @@ create_mea_heatmaps_enhanced <- function(
       ))
       
     }, error = function(e) {
-      if (verbose) cat("    x Heatmap creation error:", e$message, "\n")
+      if (verbose) message("    x Heatmap creation error: ", e$message)
       try(dev.off(), silent = TRUE)
       return(NULL)
     })
@@ -2068,7 +2090,7 @@ create_mea_heatmaps_enhanced <- function(
   if (create_individual_heatmaps) {
     for (i in seq_along(available_grouping)) {
       group_var <- available_grouping[i]
-      if (verbose) cat("\n--- Creating", group_var, "Heatmap ---\n")
+      if (verbose) message("\n--- Creating ", group_var, " Heatmap ---")
       
       heatmap_result <- create_heatmap(
         data = data,
@@ -2090,7 +2112,7 @@ create_mea_heatmaps_enhanced <- function(
     primary_group <- available_grouping[1]
     secondary_group <- available_grouping[2]
     
-    if (verbose) cat("\n--- Creating Combined", primary_group, "x", secondary_group, "Heatmap ---\n")
+    if (verbose) message("\n--- Creating Combined ", primary_group, " x ", secondary_group, " Heatmap ---")
     
     heatmap_result <- create_heatmap(
       data = data,
@@ -2108,7 +2130,7 @@ create_mea_heatmaps_enhanced <- function(
   
   # 3. VARIABLE CORRELATION HEATMAP (with R Markdown aesthetics)
   if (create_variable_correlation) {
-    if (verbose) cat("\n--- Creating Variable Correlation Heatmap ---\n")
+    if (verbose) message("\n--- Creating Variable Correlation Heatmap ---")
     
     tryCatch({
       # Prepare data for correlation - more robust approach
@@ -2123,9 +2145,9 @@ create_mea_heatmaps_enhanced <- function(
         mutate(sample_id = paste0(sample_id, "_", row_number()))
       
       if (verbose) {
-        cat("Correlation prep dimensions:", nrow(cor_prep), "rows\n")
-        cat("Number of variables:", length(unique(cor_prep[[variable_column]])), "\n")
-        cat("Number of samples:", length(unique(cor_prep$sample_id)), "\n")
+        message("Correlation prep dimensions: ", nrow(cor_prep), " rows")
+        message("Number of variables: ", length(unique(cor_prep[[variable_column]])))
+        message("Number of samples: ", length(unique(cor_prep$sample_id)))
       }
       
       # Create wide format
@@ -2145,7 +2167,7 @@ create_mea_heatmaps_enhanced <- function(
       })
       
       if (sum(valid_cols) < 2) {
-        if (verbose) cat("Insufficient valid variables for correlation analysis\n")
+        if (verbose) message("Insufficient valid variables for correlation analysis")
         return(results)
       }
       
@@ -2187,13 +2209,13 @@ create_mea_heatmaps_enhanced <- function(
           correlation_matrix = cor_matrix
         )
         
-        if (verbose) cat("Variable correlation heatmap created successfully\n")
+        if (verbose) message("Variable correlation heatmap created successfully")
       } else {
-        if (verbose) cat("Invalid correlation matrix - contains NAs or infinite values\n")
+        if (verbose) message("Invalid correlation matrix - contains NAs or infinite values")
       }
       
     }, error = function(e) {
-      if (verbose) cat("Error creating correlation heatmap:", e$message, "\n")
+      if (verbose) message("Error creating correlation heatmap: ", e$message)
     })
   }
   
@@ -2202,24 +2224,24 @@ create_mea_heatmaps_enhanced <- function(
   # ============================================================================
   # Final summary
   if (verbose) {
-    cat("\n=== HEATMAP GENERATION SUMMARY ===\n")
+    message("\n=== HEATMAP GENERATION SUMMARY ===")
     success_count <- length(results)
-    cat("Successfully created", success_count, "heatmap analyses\n")
-    
+    message("Successfully created ", success_count, " heatmap analyses")
+
     for (name in names(results)) {
       if (!is.null(results[[name]]$scaled_data)) {
         dims <- dim(results[[name]]$scaled_data)
-        cat(paste0("[OK] ", gsub("_", " ", name), ": ", dims[1], " groups x ", dims[2], " variables\n"))
+        message(paste0("[OK] ", gsub("_", " ", name), ": ", dims[1], " groups x ", dims[2], " variables"))
       } else if (!is.null(results[[name]]$correlation_matrix)) {
         dims <- dim(results[[name]]$correlation_matrix)
-        cat(paste0("[OK] ", gsub("_", " ", name), ": ", dims[1], "x", dims[2], " correlation matrix\n"))
+        message(paste0("[OK] ", gsub("_", " ", name), ": ", dims[1], "x", dims[2], " correlation matrix"))
       }
     }
-    
+
     if (save_plots && !is.null(output_dir)) {
-      cat("Plots saved to:", output_dir, "\n")
+      message("Plots saved to: ", output_dir)
     } else if (save_plots && is.null(output_dir)) {
-      cat("[INFO] save_plots=TRUE but no output_dir provided, plots not saved\n")
+      message("[INFO] save_plots=TRUE but no output_dir provided, plots not saved")
     }
   }
   
@@ -2341,6 +2363,7 @@ analyze_pca_variable_importance_general <- function(pca_result = NULL,
   # Load required libraries
   required_packages <- c("ggplot2", "dplyr", "viridis", "RColorBrewer", "gridExtra", 
                          "tidyr", "knitr", "DT")
+  if (verbose) message("=== PCA VARIABLE IMPORTANCE ANALYSIS ===")
   if (verbose) cat("=== PCA VARIABLE IMPORTANCE ANALYSIS ===\n")
   
   # ============================================================================
@@ -2375,16 +2398,16 @@ analyze_pca_variable_importance_general <- function(pca_result = NULL,
   var_explained_pct <- round(var_explained * 100, 1)
   
   if (verbose) {
-    cat("PCA Analysis Summary:\n")
-    cat("- Total Variables:", n_vars, "\n")
-    cat("- Total Principal Components:", n_pcs, "\n")
-    cat("- Top 5 PCs explain:", sum(var_explained_pct[1:min(5, n_pcs)]), "% of variance\n")
+    message("PCA Analysis Summary:")
+    message("- Total Variables: ", n_vars)
+    message("- Total Principal Components: ", n_pcs)
+    message("- Top 5 PCs explain: ", sum(var_explained_pct[1:min(5, n_pcs)]), "% of variance")
   }
   
   # Create output directory
   if (save_plots && !dir.exists(output_dir)) {
     dir.create(output_dir, recursive = TRUE)
-    if (verbose) cat("Created output directory:", output_dir, "\n")
+    if (verbose) message("Created output directory: ", output_dir)
   }
   
   # ============================================================================
@@ -2432,9 +2455,9 @@ analyze_pca_variable_importance_general <- function(pca_result = NULL,
   pc_y_var <- var_explained_pct[pc_y_num]
   
   if (verbose) {
-    cat("Analysis of", pc_x, "vs", pc_y, "\n")
-    cat("Variance explained:", pc_x, "=", pc_x_var, "%,", pc_y, "=", pc_y_var, "%\n")
-    cat("Combined variance explained:", round(pc_x_var + pc_y_var, 1), "%\n")
+    message("Analysis of ", pc_x, " vs ", pc_y)
+    message("Variance explained: ", pc_x, " = ", pc_x_var, "%, ", pc_y, " = ", pc_y_var, "%")
+    message("Combined variance explained: ", round(pc_x_var + pc_y_var, 1), "%")
   }
   
   # ============================================================================
@@ -2658,7 +2681,7 @@ analyze_pca_variable_importance_general <- function(pca_result = NULL,
         plot = plots[[i]],
         width = 12, height = 10, dpi = 300
       )
-      if (verbose) cat("Saved:", plot_names[i], "to", filename, "\n")
+      if (verbose) message("Saved: ", plot_names[i], " to ", filename)
     }
   }
   
@@ -2696,9 +2719,9 @@ analyze_pca_variable_importance_general <- function(pca_result = NULL,
     write.csv(summary_report, summary_file, row.names = FALSE)
     
     if (verbose) {
-      cat("Results exported to:", results_file, "\n")
-      cat("Selected variables exported to:", selected_file, "\n")
-      cat("Analysis summary exported to:", summary_file, "\n")
+      message("Results exported to: ", results_file)
+      message("Selected variables exported to: ", selected_file)
+      message("Analysis summary exported to: ", summary_file)
     }
   }
   
@@ -2707,25 +2730,25 @@ analyze_pca_variable_importance_general <- function(pca_result = NULL,
   # ============================================================================
   
   if (verbose) {
-    cat("\n=== FINAL ANALYSIS SUMMARY ===\n")
-    cat("Experiment:", experiment_name, "\n")
-    cat("Principal Components Analyzed:", pc_x, "vs", pc_y, "\n")
-    cat("Variance Explained:", pc_x_var, "% +", pc_y_var, "% =", round(pc_x_var + pc_y_var, 1), "%\n")
-    cat("Total Variables:", n_vars, "\n")
-    cat("Variables in Analysis:", nrow(selected_variables), "\n")
-    if (save_plots) cat("Output Directory:", output_dir, "\n")
-    
-    cat("\nVariable Importance Statistics:\n")
-    cat("Maximum Combined Importance:", round(max(variable_importance$Combined_Importance), 3), "\n")
-    cat("Mean Combined Importance:", round(mean(variable_importance$Combined_Importance), 3), "\n")
-    cat("Variables above threshold (", min_loading_threshold, "):", 
-        sum(variable_importance$Combined_Importance > min_loading_threshold), "\n")
-    
-    cat("\nTop 5 Most Important Variables:\n")
+    message("\n=== FINAL ANALYSIS SUMMARY ===")
+    message("Experiment: ", experiment_name)
+    message("Principal Components Analyzed: ", pc_x, " vs ", pc_y)
+    message("Variance Explained: ", pc_x_var, "% + ", pc_y_var, "% = ", round(pc_x_var + pc_y_var, 1), "%")
+    message("Total Variables: ", n_vars)
+    message("Variables in Analysis: ", nrow(selected_variables))
+    if (save_plots) message("Output Directory: ", output_dir)
+
+    message("\nVariable Importance Statistics:")
+    message("Maximum Combined Importance: ", round(max(variable_importance$Combined_Importance), 3))
+    message("Mean Combined Importance: ", round(mean(variable_importance$Combined_Importance), 3))
+    message("Variables above threshold (", min_loading_threshold, "): ",
+        sum(variable_importance$Combined_Importance > min_loading_threshold))
+
+    message("\nTop 5 Most Important Variables:")
     for (i in 1:5) {
-      cat(sprintf("%d. %s (Importance: %.3f)\n", 
-                  i, 
-                  variable_importance$Variable[i], 
+      message(sprintf("%d. %s (Importance: %.3f)",
+                  i,
+                  variable_importance$Variable[i],
                   variable_importance$Combined_Importance[i]))
     }
   }
