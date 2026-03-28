@@ -176,7 +176,7 @@ The guide includes example figures, annotated code, and recommendations for comm
 
 If you use NOVA in published research, please cite:
 
-> Tudoras, A. (2025). *NOVA: Neural Output Visualization and Analysis* (R package version 0.1.1). https://github.com/atudoras/nova
+> Escoubas CC, Guney E, Tudoras Miravet À, Magee N, Phua R, Ruggero D, Molofsky AV, Weiss WA (2025). *NOVA: a novel R-package enabling multi-parameter analysis and visualization of neural activity in MEA recordings.* bioRxiv. https://doi.org/10.1101/2025.10.01.679841
 
 ---
 
