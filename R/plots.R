@@ -1316,7 +1316,6 @@ plot_pca_trajectories_general <- function(pca_results,
                   width = 0.05, alpha = 0.5, linewidth = 0.4) +
     geom_errorbarh(data = group_average_trajectories, aes(y = avg_y, xmin = avg_x - se_x, xmax = avg_x + se_x, color = group_id),
                    height = 0.05, alpha = 0.5, linewidth = 0.4) +
-                   height = 0.05, alpha = 0.5, size = 0.4) +
     geom_point(data = first_last_points,
                aes(x = first_x, y = first_y, color = group_id),
                shape = 5, size = point_size * 1.4, stroke = 1.4) +
