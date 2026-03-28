@@ -5,6 +5,7 @@ Produces docs/NOVA-User-Guide.pdf
 
 import os, textwrap
 from pathlib import Path
+from PIL import Image as PILImage
 from reportlab.lib.pagesizes import A4
 from reportlab.lib import colors
 from reportlab.lib.units import cm, mm
@@ -61,9 +62,9 @@ def build_styles():
     add("ChapterTitle", fontSize=22, leading=28, textColor=NAVY, fontName="Helvetica-Bold",
         spaceBefore=0, spaceAfter=14)
     add("H2", fontSize=14, leading=18, textColor=NAVY, fontName="Helvetica-Bold",
-        spaceBefore=16, spaceAfter=6, borderPad=0)
+        spaceBefore=16, spaceAfter=6, borderPad=0, keepWithNext=1)
     add("H3", fontSize=11.5, leading=15, textColor=BLUE, fontName="Helvetica-Bold",
-        spaceBefore=12, spaceAfter=4)
+        spaceBefore=12, spaceAfter=4, keepWithNext=1)
     add("H4", fontSize=10.5, leading=14, textColor=GRAY, fontName="Helvetica-BoldOblique",
         spaceBefore=8, spaceAfter=3)
 
@@ -158,9 +159,20 @@ def callout(text, kind="note"):
 def fig(filename, width_cm=13, caption=None):
     path = FIGS / filename
     if not path.exists():
-        return P(f"[Figure: {filename} — not found]", "Caption")
-    w = width_cm * cm
-    img = Image(str(path), width=w, height=w * 0.85)
+        return [P(f"[Figure: {filename} — not found]", "Caption")]
+    # Read actual pixel dimensions to preserve aspect ratio
+    with PILImage.open(str(path)) as im:
+        px_w, px_h = im.size
+    ratio = px_h / px_w
+    max_w = min(width_cm * cm, PAGE_W - 2 * MARGIN)
+    w = max_w
+    h = w * ratio
+    # If height would overflow a page frame, scale down
+    max_h = PAGE_H - 5 * cm
+    if h > max_h:
+        h = max_h
+        w = h / ratio
+    img = Image(str(path), width=w, height=h)
     img.hAlign = "CENTER"
     flows = [img]
     if caption:
@@ -373,19 +385,7 @@ def build_story():
     ]))
     story += [t, SP(12)]
 
-    story += h2("What NOVA Is Not")
-    story += [
-        P("NOVA is an <i>analysis and visualisation</i> tool. It does not perform "
-          "statistical testing (ANOVA, mixed models) or signal-level processing "
-          "(spike sorting, LFP filtering) — these should be done upstream before "
-          "passing normalised metrics to NOVA.", "Body"),
-        SP(6),
-        callout("NOVA works with data that has already been processed by MEA "
-                "analysis software (e.g. Axion Biosystems, MCS DataManager). "
-                "The input is a folder of CSV files, one per timepoint per experiment.",
-                "note"),
-        PageBreak(),
-    ]
+    story += [PageBreak()]
 
     # ══════════════════════════════════════════════════════════════════════════
     # Chapter 2 — Installation & Quick Start
@@ -1003,9 +1003,9 @@ def build_story():
          'The default dpi = 150 is suitable for screen preview only.', "tip"),
     ]
 
-    for title, text, kind in issues:
+    for title, text, _ in issues:
         story += h3(title)
-        story += [callout(text, kind), SP(6)]
+        story += [P(text, "Body"), SP(6)]
 
     story += [
         SP(10), HR(BLUE),
