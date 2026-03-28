@@ -16,12 +16,27 @@ A comprehensive R toolkit for analyzing and visualizing Multi-Electrode Array (M
 - ⚡ **Zero-code quickstart** — one script (`Example/nova_quickstart.R`) to change a single path and generate all figures automatically
 - 📖 **Full user guide** — illustrated HTML guide with step-by-step walkthroughs for every major function
 
+<br>
+
+<p align="center">
+  <img src="docs/user-guide/figures/readme_trajectory.png" width="72%" alt="NOVA PCA trajectory analysis">
+</p>
+<p align="center">
+  <em>Four treatment groups traced through PCA space over 7 timepoints (MEA Neuronal Agonists dataset).<br>
+  PBS control remains near the origin; KA, Gabazine and NMDA each drive distinct network-level responses.</em>
+</p>
+
+<br>
+
 ---
 
 ## Installation
 
 ```r
-# Install the development version from GitHub (recommended)
+# Install from GitHub
+remotes::install_github("atudoras/nova")
+
+# Or using devtools
 # install.packages("devtools")
 devtools::install_github("atudoras/nova")
 
