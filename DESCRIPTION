@@ -1,7 +1,7 @@
 Package: NOVA
 Type: Package
 Title: Neural Output Visualization and Analysis
-Version: 0.1.1
+Version: 0.1.2
 Description: A comprehensive toolkit for analyzing and visualizing neural data 
     outputs, including Principal Component Analysis (PCA) trajectory plotting, 
     Multi-Electrode Array (MEA) heatmap generation, and variable importance 
@@ -15,7 +15,7 @@ License: GPL (>= 3) + file LICENSE
 Encoding: UTF-8
 Language: en-US
 RoxygenNote: 7.3.3
-Depends: R (>= 3.6.0)
+Depends: R (>= 4.1.0)
 Imports:
     readr,
     tibble,
