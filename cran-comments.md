@@ -1,4 +1,4 @@
-# NOVA 0.1.1 — CRAN submission comments
+# NOVA 0.1.2 — CRAN resubmission comments
 
 ## R CMD check results
 
@@ -32,9 +32,13 @@ and loads correctly (all `** testing if installed package can be loaded` steps p
 the crash occurs in R-devel's internal `* creating tarball` step. Linux R-devel,
 Windows R-devel, and Ubuntu R-release all pass cleanly.
 
-## New submission
+## Resubmission (0.1.2)
 
-This is a new CRAN submission.
+Changes from 0.1.1 in response to CRAN automated check feedback:
+
+* Bumped version to 0.1.2 (0.1.1 was already registered from first submission attempt)
+* Added `Depends: R (>= 4.1.0)` — metric_plots.R uses the native pipe `|>` which requires R 4.1.0
+* Fixed invalid file URI in README.md — changed `docs/user-guide/NOVA-User-Guide.html` (not shipped) to `docs/NOVA-User-Guide.pdf` (present in package)
 
 NOVA provides tools for analysing Multi-Electrode Array (MEA) neuronal
 recordings: PCA-based trajectory analysis, heatmap visualisation, and

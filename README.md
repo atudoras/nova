@@ -1,7 +1,7 @@
 # NOVA
 **Neural Output Visualization and Analysis**
 
-[![License: GPL-3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0) [![R >= 3.6.0](https://img.shields.io/badge/R-%3E%3D%203.6.0-brightgreen)](https://cran.r-project.org/) [![Lifecycle: experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental)
+[![License: GPL-3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0) [![R >= 4.1.0](https://img.shields.io/badge/R-%3E%3D%204.1.0-brightgreen)](https://cran.r-project.org/) [![Lifecycle: experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental)
 
 A comprehensive R toolkit for analyzing and visualizing Multi-Electrode Array (MEA) neural data — from raw CSV discovery through PCA trajectory analysis, heatmap generation, and per-metric plotting — with publication-ready figures in a few lines of code.
 
@@ -166,7 +166,7 @@ No other configuration is needed.
 
 A full illustrated guide covering all functions, parameters, and interpretation of outputs is available at:
 
-[`docs/user-guide/NOVA-User-Guide.html`](docs/user-guide/NOVA-User-Guide.html)
+[`docs/NOVA-User-Guide.pdf`](docs/NOVA-User-Guide.pdf)
 
 The guide includes example figures, annotated code, and recommendations for common experimental designs.
 
