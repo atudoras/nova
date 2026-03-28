@@ -16,9 +16,21 @@
 
 ## Test environments
 
-* macOS 14 (local), R 4.4.3 — 0 errors, 0 warnings, 2 notes (as above)
-* R-hub: ubuntu-latest (R-release) — checked via rhub::check_for_cran()
-* R-hub: windows-latest (R-release) — checked via rhub::check_for_cran()
+* macOS 14 (local), R 4.5.x — 0 errors, 0 warnings, 2 notes (as above)
+* R-hub: linux R-devel (ubuntu-latest) — Status: OK
+* R-hub: windows R-devel (windows-latest) — Status: OK
+* R-hub: ubuntu-release (R-release) — Status: OK
+
+### Note on macOS ARM R-devel failure
+
+R-hub macOS ARM (aarch64, R-devel r89717) reports an installation ERROR:
+`Error in if (custom.bin) { : argument is of length zero`
+
+This is a known R-devel regression in R's own binary package infrastructure on
+aarch64-apple-darwin23 at this revision, not caused by NOVA. The package compiles
+and loads correctly (all `** testing if installed package can be loaded` steps pass);
+the crash occurs in R-devel's internal `* creating tarball` step. Linux R-devel,
+Windows R-devel, and Ubuntu R-release all pass cleanly.
 
 ## New submission
 
