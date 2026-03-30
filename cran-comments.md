@@ -1,4 +1,4 @@
-# NOVA 0.1.2 — CRAN resubmission comments
+# NOVA 0.1.3 — CRAN resubmission comments
 
 ## R CMD check results
 
@@ -7,12 +7,14 @@
 ### Notes
 
 * checking for hidden files and directories: NOTE
-  The `.claude/` directory is a local development workspace and is excluded
-  from the build tarball via `.Rbuildignore`.
+  `.git` is flagged in the pre-test but is not present in the submitted
+  tarball — `R CMD build` excludes it automatically. `.claude/` (local
+  development workspace) is excluded via `.Rbuildignore`.
 
-* checking for future file timestamps: NOTE
-  File timestamps reflect the local development machine clock. These are
-  not present in the submitted tarball and will not affect CRAN users.
+* License components with restrictions: NOTE
+  Informational only. The `LICENSE` file contains the standard copyright
+  notice (`YEAR: 2024-2026 / COPYRIGHT HOLDER: Alex Tudoras`) as required
+  by GPL (>= 3).
 
 ## Test environments
 
@@ -28,17 +30,15 @@ R-hub macOS ARM (aarch64, R-devel r89717) reports an installation ERROR:
 
 This is a known R-devel regression in R's own binary package infrastructure on
 aarch64-apple-darwin23 at this revision, not caused by NOVA. The package compiles
-and loads correctly (all `** testing if installed package can be loaded` steps pass);
-the crash occurs in R-devel's internal `* creating tarball` step. Linux R-devel,
-Windows R-devel, and Ubuntu R-release all pass cleanly.
+and loads correctly; the crash occurs in R-devel's internal tarball creation step.
+Linux R-devel, Windows R-devel, and Ubuntu R-release all pass cleanly.
 
-## Resubmission (0.1.2)
+## Resubmission (0.1.3)
 
-Changes from 0.1.1 in response to CRAN automated check feedback:
+Changes from 0.1.2 in response to CRAN pre-test feedback:
 
-* Bumped version to 0.1.2 (0.1.1 was already registered from first submission attempt)
-* Added `Depends: R (>= 4.1.0)` — metric_plots.R uses the native pipe `|>` which requires R 4.1.0
-* Fixed invalid file URI in README.md — changed `docs/user-guide/NOVA-User-Guide.html` (not shipped) to `docs/NOVA-User-Guide.pdf` (present in package)
+* Fixed invalid file URI in README.md — `docs/NOVA-User-Guide.pdf` replaced
+  with full GitHub URL so CRAN's checker can resolve it
 
 NOVA provides tools for analysing Multi-Electrode Array (MEA) neuronal
 recordings: PCA-based trajectory analysis, heatmap visualisation, and
