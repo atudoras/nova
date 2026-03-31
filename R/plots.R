@@ -1328,9 +1328,6 @@ plot_pca_trajectories_general <- function(pca_results,
                fontface = "bold", size = point_size * 0.9,
                box.padding = 0.35, point.padding = 0.3,
                show.legend = FALSE) +
-    annotate("text", x = -Inf, y = Inf,
-             label = "o = start   * = end",
-             hjust = -0.1, vjust = 1.4, size = 3, color = "gray40") +
     scale_color_manual(values = active_palette, name = "Group") +
     labs(title = "Averaged PCA Trajectories", subtitle = tp_subtitle, x = pc_x, y = pc_y) +
     coord_fixed() +
