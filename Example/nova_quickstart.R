@@ -27,7 +27,15 @@ SHOW_TREATMENTS  <- NULL
 SHOW_GENOTYPES   <- NULL
 SHOW_TIMEPOINTS  <- NULL
 
-# -- STEP 4: Figure appearance ------------------------------------------------
+# -- STEP 4: Confidence ellipses ----------------------------------------------
+# Set to TRUE to add 95% CI ellipses to your PCA scatter plot.
+# Each group gets a filled ellipse showing where 95% of its samples fall.
+# Great for seeing whether treatment groups are truly separated.
+SHOW_ELLIPSES <- TRUE    # TRUE / FALSE
+ELLIPSE_LEVEL <- 0.95   # 0.95 = 95% CI, 0.68 = ±1 SD (tighter), 0.99 = wider
+ELLIPSE_ALPHA <- 0.12   # fill transparency: 0 = invisible, 1 = solid
+
+# -- STEP 5: Figure appearance ------------------------------------------------
 FIGURE_WIDTH  <- 12   # inches
 FIGURE_HEIGHT <- 10   # inches
 DPI           <- 300  # 300 for publication, 150 for quick preview
@@ -107,12 +115,36 @@ save_plot <- function(p, path, w = FIGURE_WIDTH, h = FIGURE_HEIGHT) {
   invisible(p)
 }
 
-# PCA
+# PCA scatter
 if (!is.null(pca_results$plots$scatter)) {
   save_plot(pca_results$plots$scatter, file.path(OUT_DIR, "pca", "pca_scatter.pdf"))
 }
+
+# PCA with 95% confidence ellipses
+if (SHOW_ELLIPSES && !is.null(pca_results$plot_data)) {
+  pd <- pca_results$plot_data
+  p_ell <- ggplot2::ggplot(
+    pd,
+    ggplot2::aes(x = .data[["PC1"]], y = .data[["PC2"]],
+                 colour = .data[[grouping_cols[1]]], fill = .data[[grouping_cols[1]]])
+  ) +
+    ggplot2::stat_ellipse(type = "norm", level = ELLIPSE_LEVEL,
+                          geom = "polygon", alpha = ELLIPSE_ALPHA, linewidth = 0) +
+    ggplot2::stat_ellipse(type = "norm", level = ELLIPSE_LEVEL, linewidth = 1.1) +
+    ggplot2::geom_point(size = 2.5, alpha = 0.5, shape = 16) +
+    ggplot2::stat_summary(fun = mean, geom = "point", size = 4, shape = 18) +
+    ggplot2::labs(
+      x       = paste0("PC1 (", round(pca_results$variance_explained[1], 1), "% variance)"),
+      y       = paste0("PC2 (", round(pca_results$variance_explained[2], 1), "% variance)"),
+      caption = paste0(ELLIPSE_LEVEL * 100, "% confidence ellipses  ·  diamond = group centroid")
+    ) +
+    ggplot2::coord_fixed() +
+    ggplot2::theme_minimal(base_size = 13)
+  save_plot(p_ell, file.path(OUT_DIR, "pca", "pca_ellipses.pdf"))
+}
+
 if (!is.null(pca_results$plots$elbow)) {
-  save_plot(pca_results$plots$elbow,   file.path(OUT_DIR, "pca", "pca_elbow.pdf"))
+  save_plot(pca_results$plots$elbow, file.path(OUT_DIR, "pca", "pca_elbow.pdf"))
 }
 
 # Trajectories
