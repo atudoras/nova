@@ -26,6 +26,22 @@ COLOR_BY <- "Treatment"    # variable mapped to point/line color
 SHAPE_BY <- "Genotype"     # variable mapped to point shape (or NULL)
 FACET_BY <- NULL           # variable for panel faceting (or NULL)
 
+# --- 95% Confidence ellipses -------------------------------------------------
+# Ellipses show the spread of each group in PCA space — one of the most useful
+# ways to see whether treatment groups are truly separated.
+#
+# SHOW_ELLIPSES = TRUE/FALSE — whether to draw them at all
+# ELLIPSE_LEVEL = confidence level (0.95 = 95% CI, 0.68 = 1 SD, 0.99 = wider)
+# ELLIPSE_ALPHA = fill transparency: 0 = fully transparent, 1 = fully opaque
+#                 (0.10–0.15 works well for 4+ overlapping groups)
+# ELLIPSE_LINE  = border linewidth (1.0–1.5 is clean for publication)
+#
+# Tip: set ELLIPSE_LEVEL <- 0.68 to show ±1 SD regions (tighter, less overlap)
+SHOW_ELLIPSES <- TRUE
+ELLIPSE_LEVEL <- 0.95
+ELLIPSE_ALPHA <- 0.12
+ELLIPSE_LINE  <- 1.1
+
 # --- Colors ------------------------------------------------------------------
 # NULL = automatic scientific palette based on number of groups.
 # To override, provide a named vector matching your group values exactly:
@@ -170,6 +186,66 @@ for (plot_name in names(pca_plots_out$plots)) {
     print(p)
     save_plot(p, file.path(OUTPUT_DIR, "pca", paste0(plot_name, ".pdf")))
   }
+}
+
+# --- Ellipse plot (generated here for full customization control) -----------
+# pca_plots_enhanced also generates a 'color_with_ellipses' plot automatically,
+# but this version lets you tune level, alpha, and line weight from the TUNE block.
+if (SHOW_ELLIPSES && !is.null(COLOR_BY)) {
+  p_ell <- ggplot2::ggplot(
+    plot_data,
+    ggplot2::aes(
+      x      = .data[["PC1"]],
+      y      = .data[["PC2"]],
+      colour = .data[[COLOR_BY]],
+      fill   = .data[[COLOR_BY]]
+    )
+  ) +
+    # Filled ellipse polygon
+    ggplot2::stat_ellipse(
+      type      = "norm",
+      level     = ELLIPSE_LEVEL,
+      geom      = "polygon",
+      alpha     = ELLIPSE_ALPHA,
+      linewidth = 0
+    ) +
+    # Ellipse border
+    ggplot2::stat_ellipse(
+      type      = "norm",
+      level     = ELLIPSE_LEVEL,
+      linewidth = ELLIPSE_LINE
+    ) +
+    # Individual points
+    ggplot2::geom_point(
+      size  = POINT_SIZE,
+      alpha = 0.5,
+      shape = 16
+    ) +
+    # Group centroids
+    ggplot2::stat_summary(
+      fun   = mean,
+      geom  = "point",
+      size  = POINT_SIZE * 1.5,
+      shape = 18
+    ) +
+    ggplot2::labs(
+      x      = paste0("PC1 (", round(nova$pca$variance_explained[1], 1), "% variance)"),
+      y      = paste0("PC2 (", round(nova$pca$variance_explained[2], 1), "% variance)"),
+      colour = COLOR_BY,
+      fill   = COLOR_BY,
+      caption = paste0(ELLIPSE_LEVEL * 100, "% confidence ellipses  ·  diamond = group centroid")
+    ) +
+    ggplot2::coord_fixed()
+
+  if (!is.null(CUSTOM_COLORS)) {
+    p_ell <- p_ell +
+      ggplot2::scale_colour_manual(values = CUSTOM_COLORS) +
+      ggplot2::scale_fill_manual(values = CUSTOM_COLORS)
+  }
+
+  p_ell <- apply_theme(p_ell)
+  print(p_ell)
+  save_plot(p_ell, file.path(OUTPUT_DIR, "pca", "pca_ellipses.pdf"))
 }
 
 # Elbow plot
