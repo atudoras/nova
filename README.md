@@ -18,13 +18,18 @@ A comprehensive R toolkit for analyzing and visualizing Multi-Electrode Array (M
 
 <br>
 
-<p align="center">
-  <img src="docs/user-guide/figures/readme_trajectory.png" width="72%" alt="NOVA PCA trajectory analysis">
-</p>
-<p align="center">
-  <em>Four treatment groups traced through PCA space over 7 timepoints (MEA Neuronal Agonists dataset).<br>
-  PBS control remains near the origin; KA, Gabazine and NMDA each drive distinct network-level responses.</em>
-</p>
+<table align="center" width="100%" border="0" cellspacing="0" cellpadding="12">
+<tr>
+<td align="center" width="50%">
+  <img src="docs/user-guide/figures/readme_trajectory.png" width="100%" alt="NOVA PCA trajectory analysis">
+  <br><em>Treatment groups traced through PCA space over 7 timepoints.<br>Each group follows a distinct neural trajectory.</em>
+</td>
+<td align="center" width="50%">
+  <img src="docs/user-guide/figures/readme_ellipses.png" width="100%" alt="NOVA 95% confidence ellipses">
+  <br><em>95% CI ellipses reveal complete separation of network states<br>driven by each pharmacological treatment.</em>
+</td>
+</tr>
+</table>
 
 <br>
 
@@ -166,7 +171,7 @@ No other configuration is needed.
 
 A full illustrated guide covering all functions, parameters, and interpretation of outputs is available at:
 
-[`docs/NOVA-User-Guide.pdf`](docs/NOVA-User-Guide.pdf)
+[`docs/NOVA-User-Guide.pdf`](https://github.com/atudoras/nova/blob/main/docs/NOVA-User-Guide.pdf)
 
 The guide includes example figures, annotated code, and recommendations for common experimental designs.
 
