@@ -74,14 +74,15 @@ cat("========================================\n\n")
 
 VARIABLE_ROLES <- list(
   treatment = "Treatment",   # main experimental condition  (row 122 in CSV)
-  genotype  = "Genotype",    # strain / genotype            (row 123 in CSV)
+  genotype  = NULL,          # NULL for WT-only datasets; set to "Genotype" if multi-genotype
   group     = NULL           # any extra grouping variable, or NULL
 )
 
 # Timepoint order for trajectory plots (edit to match your experiment)
 # Leave as discovery$all_timepoints to use auto-detected order.
-TIMEPOINTS_ORDER <- discovery$all_timepoints
-# Example: TIMEPOINTS_ORDER <- c("baseline", "0min", "15min", "30min", "1h", "2h")
+TIMEPOINTS_ORDER <- c("baseline", "0min", "15min", "30min", "45min",
+                      "1h", "1h15", "1h30", "1h45", "2h")
+# Adjust to whichever timepoints exist in your data; missing ones are skipped.
 
 # Timepoint to use for fold-change normalization.
 # Set to NULL to skip normalization and work with raw values.

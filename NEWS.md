@@ -1,3 +1,18 @@
+# NOVA 0.1.6
+
+## Example Dataset Update
+
+* Replaced private example data (MEA022b/MEA022c, Mavs KO genotypes) with
+  publicly available WT neuron data (MEA012, MEA013)
+* Example dataset now uses WT neurons with neuronal agonist treatments:
+  PBS, KCl, DHPG, Gabazine (MEA012) and PBS, AMPA, KA, DHPG, Gabazine (MEA013)
+* Updated all example scripts (nova_quickstart.R, 01_compute.R, 02_plot.R,
+  mea-analysis-example.Rmd) to reflect WT-only dataset structure
+* GENOTYPE_COLUMN now defaults to NULL in quickstart for WT-only datasets
+* Removed compiled HTML and figure outputs generated from private dataset
+
+---
+
 # NOVA 0.1.1
 
 ## CRAN Resubmission Fixes
