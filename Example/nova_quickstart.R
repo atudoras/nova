@@ -13,18 +13,16 @@ DATA_DIR <- "path/to/your/MEA/data"   # <<< CHANGE THIS
 
 # -- STEP 2: Optional -- name what your columns represent ---------------------
 # If your CSV rows are labelled differently, change these strings to match.
-# Leave as NULL if you don't have that metadata column.
+# Set GENOTYPE_COLUMN to NULL if all wells share the same genotype (WT-only datasets).
 TREATMENT_COLUMN <- "Treatment"   # or NULL
-GENOTYPE_COLUMN  <- "Genotype"    # or NULL
+GENOTYPE_COLUMN  <- NULL          # set to "Genotype" if your data has multiple genotypes
 
 # -- STEP 3: Optional -- narrow what gets plotted -----------------------------
 # Leave as NULL to include everything; fill in to filter.
 # Examples:
 #   SHOW_TREATMENTS  <- c("PBS", "KA")
-#   SHOW_GENOTYPES   <- c("Mavs fl/fl")
 #   SHOW_TIMEPOINTS  <- c("baseline", "1h", "2h")
 SHOW_TREATMENTS  <- NULL
-SHOW_GENOTYPES   <- NULL
 SHOW_TIMEPOINTS  <- NULL
 
 # -- STEP 4: Confidence ellipses ----------------------------------------------
@@ -103,7 +101,6 @@ heatmaps     <- create_mea_heatmaps_enhanced(
                   use_raw            = !use_norm,
                   filter_timepoints  = SHOW_TIMEPOINTS,
                   filter_treatments  = SHOW_TREATMENTS,
-                  filter_genotypes   = SHOW_GENOTYPES,
                   save_plots         = FALSE,
                   verbose            = FALSE)
 

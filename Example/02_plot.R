@@ -18,12 +18,11 @@ OUTPUT_DIR     <- "figures/"          # root folder for saved figures
 # --- Filter what to display (NULL = show all) --------------------------------
 # These filters are display-only - the .rds file is never modified.
 SHOW_TIMEPOINTS <- NULL    # e.g. c("baseline", "1h", "2h")
-SHOW_TREATMENTS <- NULL    # e.g. c("Control", "Drug_A")
-SHOW_GENOTYPES  <- NULL    # e.g. c("WT", "KO")
+SHOW_TREATMENTS <- NULL    # e.g. c("PBS", "KA")
 
 # --- Aesthetic mapping -------------------------------------------------------
 COLOR_BY <- "Treatment"    # variable mapped to point/line color
-SHAPE_BY <- "Genotype"     # variable mapped to point shape (or NULL)
+SHAPE_BY <- NULL           # set to "Genotype" if your data has multiple genotypes
 FACET_BY <- NULL           # variable for panel faceting (or NULL)
 
 # --- 95% Confidence ellipses -------------------------------------------------

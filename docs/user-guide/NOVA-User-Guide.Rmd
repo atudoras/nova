@@ -107,10 +107,9 @@ discovery <- discover_mea_structure(
 
 ```
 === DISCOVERING MEA DATA STRUCTURE ===
-Found 2 experiment(s): MEA022b, MEA022c
-Timepoints: baseline, 30min, 1h, 2h, 4h, 24h, 48h
-Treatments: PBS, Gabazine, KA, NMDA
-Genotypes:  Mavs fl/fl, Mavs ko
+Found 2 experiment(s): MEA012, MEA013
+Timepoints: baseline, 0min, 15min, 30min, 45min, 1h, 1h15, 1h30, 1h45, 2h
+Treatments: PBS, KCl, DHPG, Gabazine, AMPA, KA
 Variables:  22 MEA metrics (Mean Firing Rate, Burst Rate, ...)
 ```
 
@@ -124,7 +123,7 @@ normalisation.
 ```{r}
 processed <- process_mea_flexible(
   main_dir           = DATA_DIR,
-  grouping_variables = c("Treatment", "Genotype"),
+  grouping_variables = c("Treatment"),   # add "Genotype" for multi-genotype datasets
   timepoints_order   = discovery$all_timepoints,
   baseline_timepoint = "baseline"     # or NULL for developmental experiments
 )
@@ -140,23 +139,25 @@ processed <- process_mea_flexible(
 ```{r}
 pca_results <- pca_analysis_enhanced(
   processed$normalized_data,
-  grouping_variables = c("Treatment", "Genotype")
+  grouping_variables = c("Treatment")   # add "Genotype" for multi-genotype datasets
 )
 ```
 
-### PCA scatter -- Treatment colour, Genotype shape
+### PCA scatter -- colour by Treatment
 
-```{r, echo=FALSE, eval=TRUE}
-knitr::include_graphics("figures/pca_primary_combination.png")
+```{r, eval=FALSE}
+pca_plots_enhanced(
+  pca_output      = pca_results,
+  color_variable  = "Treatment",
+  shape_variable  = NULL,
+  experiment_name = "WT_Agonists"
+)
 ```
-
-*PC1 explains 40.3 % of variance, PC2 explains 25.3 % (224 samples from
-MEA022b + MEA022c combined).*
 
 ### Elbow plot -- how many PCs to retain?
 
-```{r, echo=FALSE, eval=TRUE}
-knitr::include_graphics("figures/pca_elbow.png")
+```{r, eval=FALSE}
+print(pca_results$elbow_plot)
 ```
 
 ---
