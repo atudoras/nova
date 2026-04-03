@@ -61,10 +61,10 @@ discovery <- discover_mea_structure("path/to/your/MEA_data")
 
 # Step 2: Process MEA data across timepoints and grouping variables
 processed <- process_mea_flexible(
-  main_dir       = "path/to/your/MEA_data",
-  selected_timepoints  = c("baseline", "0min", "15min", "30min", "1h", "2h"),
-  grouping_variables   = c("Experiment", "Treatment", "Genotype", "Well"),
-  baseline_timepoint   = "baseline"
+  main_dir            = "path/to/your/MEA_data",
+  selected_timepoints = c("baseline", "0min", "15min", "30min", "1h", "2h"),
+  grouping_variables  = c("Experiment", "Treatment"),
+  baseline_timepoint  = "baseline"
 )
 
 # Step 3: Run enhanced PCA
@@ -72,36 +72,32 @@ pca_results <- pca_analysis_enhanced(processing_result = processed)
 
 # Step 4: Generate PCA plots (scatter, ellipses, loadings)
 pca_plots <- pca_plots_enhanced(
-  pca_output      = pca_results,
-  color_variable  = "Treatment",
-  shape_variable  = "Genotype"
+  pca_output     = pca_results,
+  color_variable = "Treatment"
 )
 
 # Step 5: Plot PCA trajectories across timepoints
 trajectories <- plot_pca_trajectories_general(
   pca_results,
-  timepoint_order      = c("baseline", "0min", "15min", "30min", "1h", "2h"),
-  trajectory_grouping  = c("Genotype", "Treatment")
+  timepoint_order     = c("baseline", "0min", "15min", "30min", "1h", "2h"),
+  trajectory_grouping = "Treatment"
 )
 
-# Step 6: Create MEA heatmaps (split by genotype, filter to specific treatments)
+# Step 6: Create MEA heatmaps
 heatmaps <- create_mea_heatmaps_enhanced(
-  processing_result   = processed,
-  grouping_columns    = c("Genotype", "Treatment"),
-  split_by            = "Genotype",
-  filter_treatments   = c("Vehicle", "Drug_A")
+  processing_result = processed,
+  grouping_columns  = "Treatment",
+  filter_treatments = c("PBS", "KA", "Gabazine", "NMDA")
 )
 
 # Step 7: Plot a single metric across groups
 plot_mea_metric(
-  data       = processed$processed_data,
-  metric     = "MeanFiringRate",
-  plot_type  = "violin",
-  facet_by   = "Timepoint"
+  data      = processed$processed_data,
+  metric    = "MeanFiringRate",
+  plot_type = "violin",
+  facet_by  = "Timepoint"
 )
 ```
-
-![NOVA PCA analysis](docs/user-guide/figures/pca_primary_combination.png)
 
 ---
 
@@ -127,8 +123,8 @@ plot_mea_metric(
 | `pca_analysis_enhanced` | Runs PCA on the processed feature matrix; returns scores, loadings, and variance explained | `processing_result`, `scale`, `center` |
 | `pca_plots_enhanced` | Generates a suite of PCA visualizations (scatter, ellipses, loadings, variance) | `pca_output`, `color_variable`, `shape_variable` |
 | `plot_pca_trajectories_general` | Draws mean PCA trajectories across timepoints for each experimental group | `pca_output`, `timepoint_order`, `trajectory_grouping` |
-| `create_mea_heatmaps_enhanced` | Creates heatmaps of MEA metrics by treatment and/or genotype; supports raw or normalized data | `processing_result`, `grouping_columns`, `split_by`, `filter_treatments`, `filter_genotypes`, `use_raw` |
-| `plot_mea_metric` | Bar, box, violin, or line plot for a single MEA variable with optional faceting and filtering | `data`, `metric`, `plot_type`, `facet_by`, `filter_treatments`, `filter_genotypes`, `error_type` |
+| `create_mea_heatmaps_enhanced` | Creates heatmaps of MEA metrics grouped by any experimental variable; supports raw or normalized data | `processing_result`, `grouping_columns`, `split_by`, `filter_treatments`, `use_raw` |
+| `plot_mea_metric` | Bar, box, violin, or line plot for a single MEA variable with optional faceting and filtering | `data`, `metric`, `plot_type`, `facet_by`, `filter_treatments`, `error_type` |
 
 ---
 
@@ -136,9 +132,9 @@ plot_mea_metric(
 
 NOVA expects a straightforward directory layout that mirrors how Axion BioSystems software exports data:
 
-- **Top-level folder**: one directory per MEA plate, named `MEA` followed by digits (e.g., `MEA001`, `MEA016a`)
-- **CSV files**: one file per timepoint inside each folder, named `<plate>_<timepoint>.csv` (e.g., `MEA001_baseline.csv`, `MEA001_1h.csv`)
-- **Metadata rows**: well identifiers and experimental variables (Treatment, Genotype, etc.) are located starting from the row containing the label "Treatment" — NOVA finds this row automatically with `find_mea_metadata_row()`
+- **Top-level folder**: one subfolder per MEA plate (any name, e.g. `MEA001`, `Plate_A`, `Recording_01`)
+- **CSV files**: one file per timepoint inside each folder (e.g., `MEA001_baseline.csv`, `MEA001_1h.csv`)
+- **Metadata rows**: well identifiers and experimental variables (Treatment, etc.) are located automatically — NOVA scans for the "Treatment" label with `find_mea_metadata_row()`
 - **Timepoint names**: any string after the underscore is accepted — `baseline`, `1h`, `DIV7`, or any custom label
 
 ```
