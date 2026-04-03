@@ -9,7 +9,7 @@ output:
     toc_depth: 3
     theme: flatly
     highlight: tango
-    self_contained: true
+    self_contained: false
 ---
 
 ```{r setup, include=FALSE}
