@@ -1,24 +1,9 @@
----
-title: "NOVA User Guide"
-subtitle: "Neural Output Visualization and Analysis"
-date: "`r Sys.Date()`"
-output:
-  html_document:
-    toc: true
-    toc_float: true
-    toc_depth: 3
-    theme: flatly
-    highlight: tango
-    self_contained: false
----
-
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE, eval = FALSE, warning = FALSE, message = FALSE)
-```
+# NOVA User Guide
+**Neural Output Visualization and Analysis**
 
 ---
 
-# Overview
+## Overview
 
 NOVA is an R package for analyzing **Multi-Electrode Array (MEA)** recordings. It covers the full pipeline from raw Axion Biosystems CSV exports to publication-ready figures:
 
@@ -29,9 +14,9 @@ NOVA is an R package for analyzing **Multi-Electrode Array (MEA)** recordings. I
 
 ---
 
-# Installation
+## Installation
 
-```{r}
+```r
 # Install from GitHub (recommended)
 if (!requireNamespace("devtools", quietly = TRUE)) install.packages("devtools")
 devtools::install_github("atudoras/nova")
@@ -42,18 +27,18 @@ install.packages("NOVA")
 
 Once installed:
 
-```{r}
+```r
 library(NOVA)
 DATA_DIR <- "/path/to/your/MEA/exports"
 ```
 
 ---
 
-# Quickstart (no coding required)
+## Quickstart (no coding required)
 
 Open `Example/nova_quickstart.R`. Set `DATA_DIR` to your MEA data folder and run the whole script — that's it.
 
-```{r}
+```r
 DATA_DIR <- "~/MyMEAExperiments"
 ```
 
@@ -61,11 +46,11 @@ NOVA will automatically detect the folder structure, normalize to baseline, run 
 
 ---
 
-# Step-by-step Workflow
+## Step-by-step Workflow
 
-## 1. Discover your data
+### 1. Discover your data
 
-```{r}
+```r
 discovery <- discover_mea_structure(main_dir = DATA_DIR)
 ```
 
@@ -83,14 +68,14 @@ Use `discovery$potential_baselines` to confirm which timepoint NOVA recommends f
 
 ---
 
-## 2. Process your data
+### 2. Process your data
 
-```{r}
+```r
 processed <- process_mea_flexible(
-  main_dir           = DATA_DIR,
-  grouping_variables = c("Experiment", "Treatment", "Well"),
+  main_dir            = DATA_DIR,
+  grouping_variables  = c("Experiment", "Treatment", "Well"),
   selected_timepoints = c("baseline", "0min", "15min", "30min", "1h", "1h30", "2h"),
-  baseline_timepoint = "baseline"
+  baseline_timepoint  = "baseline"
 )
 ```
 
@@ -100,15 +85,15 @@ The result is a list with `processed$processed_data` (long-format data frame) re
 
 ---
 
-## 3. PCA
+### 3. PCA
 
-```{r}
+```r
 pca_results <- pca_analysis_enhanced(processing_result = processed)
 ```
 
-### PCA scatter — color by Treatment
+**PCA scatter — color by Treatment**
 
-```{r}
+```r
 pca_plots_enhanced(
   pca_output     = pca_results,
   color_variable = "Treatment",
@@ -116,41 +101,35 @@ pca_plots_enhanced(
 )
 ```
 
-```{r, echo=FALSE, eval=TRUE}
-knitr::include_graphics("figures/pca_color_only.png")
-```
+![PCA scatter colored by treatment](figures/pca_color_only.png)
 
-### PCA scatter with 95% confidence ellipses
+**PCA scatter with 95% confidence ellipses**
 
-```{r}
+```r
 pca_plots_enhanced(
-  pca_output      = pca_results,
-  color_variable  = "Treatment",
-  add_ellipses    = TRUE
+  pca_output     = pca_results,
+  color_variable = "Treatment",
+  add_ellipses   = TRUE
 )
 ```
 
-```{r, echo=FALSE, eval=TRUE}
-knitr::include_graphics("figures/pca_color_with_ellipses.png")
-```
+![PCA with 95% confidence ellipses](figures/pca_color_with_ellipses.png)
 
-### Elbow plot — how many PCs to retain?
+**Elbow plot — how many PCs to retain?**
 
-```{r}
+```r
 print(pca_results$elbow_plot)
 ```
 
-```{r, echo=FALSE, eval=TRUE}
-knitr::include_graphics("figures/pca_elbow.png")
-```
+![PCA elbow plot](figures/pca_elbow.png)
 
 ---
 
-## 4. PCA Trajectories
+### 4. PCA Trajectories
 
 Track how neural activity evolves over time for each treatment group.
 
-```{r}
+```r
 trajectories <- plot_pca_trajectories_general(
   pca_results,
   timepoint_order     = c("baseline", "0min", "15min", "30min", "1h", "1h30", "2h"),
@@ -158,32 +137,28 @@ trajectories <- plot_pca_trajectories_general(
 )
 ```
 
-```{r, echo=FALSE, eval=TRUE}
-knitr::include_graphics("figures/readme_trajectory.png")
-```
+![PCA trajectories by treatment](figures/readme_trajectory.png)
 
 Each group traces a distinct path through PCA space. The open circle marks the start (baseline) and the filled circle marks the end of the recording.
 
 ---
 
-## 5. Heatmaps
+### 5. Heatmaps
 
-### All treatments (Z-score, clustered)
+**All treatments (Z-score, clustered)**
 
-```{r}
+```r
 heatmaps <- create_mea_heatmaps_enhanced(
   processing_result = processed,
   grouping_columns  = c("Treatment")
 )
 ```
 
-```{r, echo=FALSE, eval=TRUE}
-knitr::include_graphics("figures/heatmap_treatment.png")
-```
+![MEA heatmap by treatment](figures/heatmap_treatment.png)
 
-### Filter to a subset of treatments
+**Filter to a subset of treatments**
 
-```{r}
+```r
 create_mea_heatmaps_enhanced(
   processing_result = processed,
   grouping_columns  = c("Treatment"),
@@ -191,9 +166,9 @@ create_mea_heatmaps_enhanced(
 )
 ```
 
-### Raw data (no normalization)
+**Raw data (no normalization)**
 
-```{r}
+```r
 # For developmental experiments without a baseline timepoint
 create_mea_heatmaps_enhanced(
   processing_result = processed,
@@ -203,11 +178,11 @@ create_mea_heatmaps_enhanced(
 
 ---
 
-## 6. Per-metric plots
+### 6. Per-metric plots
 
-### Bar plot — Mean Firing Rate over time
+**Bar plot — Mean Firing Rate over time**
 
-```{r}
+```r
 plot_mea_metric(
   data      = processed$processed_data,
   metric    = "MeanFiringRate",
@@ -216,13 +191,11 @@ plot_mea_metric(
 )
 ```
 
-```{r, echo=FALSE, eval=TRUE}
-knitr::include_graphics("figures/metric_bar_firing_rate.png")
-```
+![Mean firing rate bar plot](figures/metric_bar_firing_rate.png)
 
-### Box plot
+**Box plot**
 
-```{r}
+```r
 plot_mea_metric(
   data      = processed$processed_data,
   metric    = "MeanFiringRate",
@@ -231,13 +204,11 @@ plot_mea_metric(
 )
 ```
 
-```{r, echo=FALSE, eval=TRUE}
-knitr::include_graphics("figures/metric_box_firing_rate.png")
-```
+![Mean firing rate box plot](figures/metric_box_firing_rate.png)
 
-### Filter to specific treatments
+**Filter to specific treatments**
 
-```{r}
+```r
 plot_mea_metric(
   data              = processed$processed_data,
   metric            = "MeanFiringRate",
@@ -249,7 +220,7 @@ plot_mea_metric(
 
 ---
 
-# Customizing Figures
+## Customizing Figures
 
 All plot functions share a common set of optional arguments:
 
@@ -267,7 +238,7 @@ The `02_plot.R` workflow script in `Example/` provides a `TUNE` block at the top
 
 ---
 
-# Data Format
+## Data Format
 
 NOVA expects the standard Axion BioSystems directory layout:
 
@@ -289,7 +260,7 @@ MEA_data/
 
 ---
 
-# Function Reference
+## Function Reference
 
 | Function | Description | Key Parameters |
 |---|---|---|
@@ -303,7 +274,7 @@ MEA_data/
 
 ---
 
-# Troubleshooting
+## Troubleshooting
 
 | Problem | Solution |
 |---|---|
@@ -314,7 +285,7 @@ MEA_data/
 
 ---
 
-# Citation
+## Citation
 
 If you use NOVA in published research, please cite:
 

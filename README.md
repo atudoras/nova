@@ -181,7 +181,7 @@ No other configuration is needed.
 
 A full illustrated guide covering all functions, parameters, and interpretation of outputs is available at:
 
-[`docs/user-guide/NOVA-User-Guide.html`](https://github.com/atudoras/nova/blob/main/docs/user-guide/NOVA-User-Guide.html)
+[`docs/user-guide/NOVA-User-Guide.md`](https://github.com/atudoras/nova/blob/main/docs/user-guide/NOVA-User-Guide.md)
 
 The guide includes example figures, annotated code, and recommendations for common experimental designs.
 
