@@ -18,6 +18,21 @@ A comprehensive R toolkit for analyzing and visualizing Multi-Electrode Array (M
 
 <br>
 
+<table align="center" width="100%" border="0" cellspacing="0" cellpadding="12">
+<tr>
+<td align="center" width="50%">
+  <img src="docs/user-guide/figures/readme_trajectory.png" width="100%" alt="NOVA PCA trajectory analysis">
+  <br><em>Treatment groups traced through PCA space over multiple timepoints.<br>Each group follows a distinct neural trajectory.</em>
+</td>
+<td align="center" width="50%">
+  <img src="docs/user-guide/figures/readme_ellipses.png" width="100%" alt="NOVA 95% confidence ellipses">
+  <br><em>95% CI ellipses reveal complete separation of network states<br>driven by each pharmacological treatment.</em>
+</td>
+</tr>
+</table>
+
+<br>
+
 ---
 
 ## Installation
@@ -84,6 +99,19 @@ plot_mea_metric(
   facet_by   = "Timepoint"
 )
 ```
+
+<table align="center" width="100%" border="0" cellspacing="0" cellpadding="12">
+<tr>
+<td align="center" width="50%">
+  <img src="docs/user-guide/figures/heatmap_treatment.png" width="100%" alt="NOVA MEA heatmap by treatment">
+  <br><em>Clustered heatmap of all MEA metrics (Z-score) across treatment groups.</em>
+</td>
+<td align="center" width="50%">
+  <img src="docs/user-guide/figures/metric_bar_firing_rate.png" width="100%" alt="NOVA per-metric bar plot">
+  <br><em>Mean firing rate across timepoints, plotted per treatment with individual data points.</em>
+</td>
+</tr>
+</table>
 
 ---
 
