@@ -4,3 +4,4 @@
 .Ruserdata
 inst/doc
 .claude/worktrees/
+.DS_Store
