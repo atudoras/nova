@@ -5,6 +5,8 @@
 ^CRAN-SUBMISSION$
 ^cran-comments\.md$
 ^\.claude(/|$)
+^\.claire(/|$)
+^ROADMAP\.md$
 ^docs(/|$)
 ^scripts(/|$)
 ^Rplots\.pdf$
