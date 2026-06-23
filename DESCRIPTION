@@ -1,12 +1,17 @@
 Package: NOVA
 Type: Package
 Title: Neural Output Visualization and Analysis
-Version: 0.1.5
-Description: A comprehensive toolkit for analyzing and visualizing neural data 
-    outputs, including Principal Component Analysis (PCA) trajectory plotting, 
-    Multi-Electrode Array (MEA) heatmap generation, and variable importance 
-    analysis. Provides publication-ready visualizations with flexible 
-    customization options for neuroscience research applications.
+Version: 0.2.0
+Description: A dynamical-systems toolkit for neuronal network state analysis from
+    Multi-Electrode Array (MEA) recordings. Builds on Principal Component
+    Analysis (PCA) trajectory plotting, heatmap generation, and variable
+    importance analysis with a 'nova_dynamics' module that quantifies how
+    networks move through latent state space: trajectory geometry (velocity,
+    tortuosity, directional persistence), state-transition matrices, trajectory
+    similarity (Dynamic Time Warping and Frechet distance), dynamical-regime
+    detection, occupancy landscapes, and a rule-based natural-language
+    interpretation layer. Provides publication-ready visualizations with
+    flexible customization options for neuroscience research applications.
 Authors@R: person(given = "Alex",
                   family = "Tudoras", 
                   role = c("aut", "cre"),
@@ -34,10 +39,18 @@ Imports:
     viridis (>= 0.5.0),
     pheatmap (>= 1.0.0),
     gridExtra (>= 2.3.0),
-    ggrepel (>= 0.9.0)
-Suggests: 
-    utils,
+    ggrepel (>= 0.9.0),
+    grid,
+    stats,
+    grDevices,
+    utils
+Suggests:
     testthat (>= 3.0.0),
-    rmarkdown (>= 2.0)
+    rmarkdown (>= 2.0),
+    MASS,
+    patchwork,
+    dtw,
+    igraph
+VignetteBuilder: knitr
 URL: https://github.com/atudoras/NOVA
 BugReports: https://github.com/atudoras/NOVA/issues
