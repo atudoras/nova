@@ -1,16 +1,14 @@
 Package: NOVA
 Type: Package
 Title: Neural Output Visualization and Analysis
-Version: 0.2.0
-Description: A dynamical-systems toolkit for neuronal network state analysis from
-    Multi-Electrode Array (MEA) recordings. Builds on Principal Component
-    Analysis (PCA) trajectory plotting, heatmap generation, and variable
-    importance analysis with a 'nova_dynamics' module that quantifies how
-    networks move through latent state space: trajectory geometry (velocity,
-    tortuosity, directional persistence), state-transition matrices, trajectory
-    similarity (Dynamic Time Warping and Frechet distance), dynamical-regime
-    detection, occupancy landscapes, and a rule-based natural-language
-    interpretation layer. Provides publication-ready visualizations with
+Version: 0.3.0
+Description: A toolkit for analyzing and visualizing Multi-Electrode Array (MEA)
+    neural recordings, from raw CSV discovery through Principal Component
+    Analysis (PCA), heatmaps, per-metric plots, and trajectory visualization.
+    A lightweight trajectory-summary layer describes how experimental conditions
+    move through state space relative to baseline (distance travelled, path
+    directness, and timing), with robust timepoint ordering and a plain-language
+    interpretation helper. Provides publication-ready visualizations with
     flexible customization options for neuroscience research applications.
 Authors@R: person(given = "Alex",
                   family = "Tudoras", 
@@ -46,11 +44,7 @@ Imports:
     utils
 Suggests:
     testthat (>= 3.0.0),
-    rmarkdown (>= 2.0),
-    MASS,
-    patchwork,
-    dtw,
-    igraph
+    rmarkdown (>= 2.0)
 VignetteBuilder: knitr
 URL: https://github.com/atudoras/NOVA
 BugReports: https://github.com/atudoras/NOVA/issues
