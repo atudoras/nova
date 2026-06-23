@@ -95,7 +95,7 @@ nova_dynamical_regime <- function(x,
                                   timepoint_order = NULL,
                                   thresholds = NULL,
                                   verbose = TRUE) {
-  th <- modifyList(.nova_regime_thresholds, thresholds %||% list())
+  th <- utils::modifyList(.nova_regime_thresholds, thresholds %||% list())
 
   tr <- if (inherits(x, "nova_trajectories")) x else
     nova_extract_trajectories(x, dims = dims, group_var = group_var,
