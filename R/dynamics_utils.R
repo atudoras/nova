@@ -133,6 +133,13 @@ nova_order_timepoints <- function(timepoints, baseline_first = TRUE) {
   hit[1]
 }
 
+# Internal: axis label with variance-explained, when available.
+.nova_axis_label <- function(dim, var_exp) {
+  if (!is.null(var_exp) && dim %in% names(var_exp)) {
+    sprintf("%s (%.1f%%)", dim, as.numeric(var_exp[[dim]]))
+  } else dim
+}
+
 #' Extract ordered state-space trajectories from a PCA (or embedding) result
 #'
 #' Converts a NOVA PCA result (or any data frame carrying embedding coordinates,

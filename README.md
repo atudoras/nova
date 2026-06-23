@@ -1,11 +1,9 @@
 # NOVA
-**Neural Output Visualization and Analysis** — a dynamical-systems toolkit for neuronal network state analysis.
+**Neural Output Visualization and Analysis** — turn MEA recordings into interpretable state-space figures.
 
-[![License: GPL-3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0) [![Version](https://img.shields.io/badge/version-0.2.0-1F78B4.svg)](https://github.com/atudoras/nova/releases) [![R >= 4.1.0](https://img.shields.io/badge/R-%3E%3D%204.1.0-brightgreen)](https://cran.r-project.org/) [![Lifecycle: experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental)
+[![License: GPL-3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0) [![Version](https://img.shields.io/badge/version-0.3.0-1F78B4.svg)](https://github.com/atudoras/nova/releases) [![R >= 4.1.0](https://img.shields.io/badge/R-%3E%3D%204.1.0-brightgreen)](https://cran.r-project.org/) [![Lifecycle: experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental)
 
-NOVA turns high-dimensional Multi-Electrode Array (MEA) recordings into interpretable **neuronal state-space representations** — and then analyses how those networks *move* through state space over time. From raw Axion CSVs to publication-ready figures in a few lines of code.
-
-> **Where is the network? → Where is it moving, what state is it approaching, and how stable is that state?**
+NOVA turns high-dimensional Multi-Electrode Array (MEA) recordings into interpretable **neuronal state-space representations** — from raw Axion CSV discovery through PCA, heatmaps, per-metric plots, and trajectory analysis — with publication-ready figures in a few lines of code.
 
 <table align="center" width="100%" border="0" cellspacing="0" cellpadding="10">
 <tr>
@@ -14,22 +12,21 @@ NOVA turns high-dimensional Multi-Electrode Array (MEA) recordings into interpre
   <br><em>Treatment groups traced through PCA state space over time.</em>
 </td>
 <td align="center" width="50%">
-  <img src="docs/user-guide/figures/dyn_landscape.png" width="100%" alt="State-occupancy landscape">
-  <br><em><b>New in 0.2.0:</b> the state-occupancy landscape — where networks spend their time.</em>
+  <img src="docs/user-guide/figures/summary_displacement.png" width="100%" alt="Distance from baseline over time">
+  <br><em><b>New in 0.3.0:</b> how far each condition moved from baseline over time (mean ± SEM).</em>
 </td>
 </tr>
 </table>
 
 ---
 
-## What NOVA gives you
+## Key features
 
-NOVA has two layers that share one workflow — you never re-run PCA to do dynamics.
-
-| Layer | What it answers | Functions |
-|---|---|---|
-| **State-space visualization** | *Where* is each network? | `process_mea_flexible`, `pca_analysis_enhanced`, `pca_plots_enhanced`, `plot_pca_trajectories_general`, `create_mea_heatmaps_enhanced`, `plot_mea_metric` |
-| **Dynamics** *(new in 0.2.0)* | *Where is it going, and how stable is it?* | `nova_state_geometry`, `nova_transition_matrix`, `nova_trajectory_similarity`, `nova_dynamical_regime`, `nova_landscape`, `nova_describe`, `nova_dynamics` |
+- 🔍 **Smart data discovery** — auto-detects MEA folder structure and CSV metadata rows
+- 📊 **PCA + trajectories** — track how neural populations evolve over time, with publication-ready scatter, ellipse, and trajectory plots
+- 🔥 **Heatmaps & per-metric plots** — raw or normalized, with flexible faceting and filtering
+- ⏱️ **Correct timepoint ordering** — baseline first, and `min` / `h` / `s` / `1h30` / `DIV7` labels sorted by real elapsed time
+- 🧭 **Trajectory summary** *(new)* — a simple, honest description of how each condition moves away from baseline
 
 ---
 
@@ -44,7 +41,7 @@ Already using NOVA? This is a **drop-in update** — every existing function kee
 
 ---
 
-## Quick start — from raw data to state space
+## Quick start
 
 ```r
 library(NOVA)
@@ -69,61 +66,57 @@ plot_pca_trajectories_general(
 
 ---
 
-## Dynamics — analyse how networks move
+## Trajectory summary — how conditions move from baseline
 
-The whole dynamics layer runs on the PCA you already computed (or any embedding: UMAP, latent spaces). Run it all in one call:
+`nova_trajectory_summary()` takes the PCA you already computed (or any embedding) and describes, simply and robustly, how each condition's network moved relative to its baseline — *how far*, *how directly*, and *when*. It reports only what this kind of data supports: distance travelled, path directness, and timing — no over-fitted velocities or regimes.
 
 ```r
-dyn <- nova_dynamics(pca, group_var = "Treatment")
-nova_describe(dyn)        # plain-English interpretation of every result
-dyn$regime$plots$overlay  # or pull any individual figure
+s <- nova_trajectory_summary(pca, group_var = "Treatment")
+s$metrics          # net displacement, path length, directness, peak timepoint
+s$plots$displacement   # distance-from-baseline over time (mean ± SEM across wells)
+s$plots$map            # the trajectory map in PC space
+nova_describe(s)   # a plain-language summary
 ```
 
 <table align="center" width="100%" border="0" cellspacing="0" cellpadding="10">
 <tr>
 <td align="center" width="50%">
-  <img src="docs/user-guide/figures/dyn_geometry_velocity.png" width="100%" alt="Velocity along trajectories">
-  <br><em><code>nova_state_geometry()</code> — speed along each path (real elapsed time). The vehicle barely moves; agonists jump fast, then settle.</em>
+  <img src="docs/user-guide/figures/summary_displacement.png" width="100%" alt="Distance from baseline over time">
+  <br><em>The vehicle stays near baseline; agonists jump quickly and plateau.</em>
 </td>
 <td align="center" width="50%">
-  <img src="docs/user-guide/figures/dyn_state_flow.png" width="100%" alt="State-flow diagram">
-  <br><em><code>nova_transition_matrix()</code> — discrete network states and the probabilities of moving between them.</em>
+  <img src="docs/user-guide/figures/summary_map.png" width="100%" alt="State-space trajectory map">
+  <br><em>The same trajectories drawn in PC space (square = baseline).</em>
 </td>
 </tr>
 </table>
 
-Each function returns metric tables **and** ggplot figures, and feeds `nova_describe()`:
-
-| Function | Quantifies | Key outputs |
-|---|---|---|
-| `nova_state_geometry()` | Path length, displacement, velocity, acceleration, tortuosity, directional persistence | overlay · velocity · displacement plots |
-| `nova_transition_matrix()` | k-means network states; empirical transition probabilities; occupancy; recurrent vs transient | transition heatmap · state-flow diagram |
-| `nova_trajectory_similarity()` | Trajectory distance (Dynamic Time Warping, Fréchet, Euclidean, cosine) + clustering | distance matrix · dendrogram |
-| `nova_dynamical_regime()` | stable / convergent / divergent / oscillatory / transitional + confidence | classification · regime overlay |
-| `nova_landscape()` | State-occupancy density; pseudo-potential *U = −log p* | density · potential · occupancy maps |
-| `nova_describe()` | Rule-based natural-language interpretation (no AI/API) | character summary |
-| `nova_dynamics()` | One-call wrapper for the whole pipeline | combined result object |
-
 > `nova_describe()` example output:
-> *"Treatment 'PBS' remains near a fixed configuration (little net movement), consistent with a network at or near an attractor. 'KA' moves in a directed fashion and then decelerates, consistent with approach toward a stable network state."*
+> *"Across 4 conditions, 'gabazine' moved farthest from baseline (7.00 PC units) and 'pbs' moved least (0.34). 'ka' moved 3.24 PC units from baseline via a moderately direct path, with most of the change by 15min."*
 
-**Try it now** — `Example/nova_dynamics_quickstart.R` runs end-to-end on bundled demo data:
-
-```r
-library(NOVA)
-source("Example/nova_dynamics_quickstart.R")   # set your data folder, or run as-is to demo
-```
-
-A full walkthrough is in the [**NOVA Dynamics tutorial**](vignettes/NOVA_Dynamics_Tutorial.Rmd).
+| Reported quantity | Meaning |
+|---|---|
+| `net_displacement` | Final distance from baseline (how far it ended up) |
+| `path_length` | Total distance travelled along the trajectory |
+| `directness` | `net / path` in [0,1] — 1 = straight out, low = wandering |
+| `peak_timepoint` / `peak_displacement` | When (and how far) the network was most displaced |
 
 ---
 
-## What's new in 0.2.0
+## Function reference
 
-- **`nova_dynamics` module** — trajectory geometry, state transitions, trajectory similarity, dynamical-regime detection, occupancy landscapes, and a rule-based interpretation layer.
-- **Smarter timepoint ordering** — `nova_order_timepoints()` / `nova_time_to_minutes()` parse `min` / `h` / `s` / `day` / `DIV` / compound (`1h30`) labels, always put **baseline first**, and order by real elapsed time (fixes `1h15` sorting before `1h`).
-- **No new required dependencies** — Dynamic Time Warping and Fréchet distance are implemented in base R; `dtw`, `igraph`, `MASS`, `patchwork` are optional.
-- **Fully backward compatible** — no existing function changed. ([full release notes](https://github.com/atudoras/nova/releases/tag/v0.2.0))
+| Function | Description |
+|---|---|
+| `discover_mea_structure` | Scan a directory and report detected MEA experiments and timepoints |
+| `process_mea_flexible` | Read and merge CSVs across experiments and timepoints; normalize to baseline |
+| `pca_analysis_enhanced` | Run PCA on the processed feature matrix |
+| `pca_plots_enhanced` | PCA scatter, ellipses, loadings, variance plots |
+| `plot_pca_trajectories_general` | Mean PCA trajectories across timepoints per group |
+| `create_mea_heatmaps_enhanced` | Heatmaps of MEA metrics (raw or normalized) |
+| `plot_mea_metric` | Bar/box/violin/line plot for a single MEA variable |
+| `nova_trajectory_summary` | Describe how conditions move from baseline (distance, directness, timing) |
+| `nova_order_timepoints` / `nova_time_to_minutes` | Robust, baseline-first timepoint ordering |
+| `nova_describe` | Plain-language summary of a trajectory result |
 
 ---
 
@@ -150,10 +143,9 @@ MEA_data/
 
 ## Documentation
 
-- **Dynamics tutorial** — [`vignettes/NOVA_Dynamics_Tutorial.Rmd`](vignettes/NOVA_Dynamics_Tutorial.Rmd)
+- **Quickstart script** — `Example/nova_quickstart.R` (set `DATA_DIR`, run, get all figures)
+- **Trajectory tutorial** — [`vignettes/NOVA_Trajectory_Summary.Rmd`](vignettes/NOVA_Trajectory_Summary.Rmd)
 - **Illustrated user guide** — [`docs/user-guide/NOVA-User-Guide.md`](https://github.com/atudoras/nova/blob/main/docs/user-guide/NOVA-User-Guide.md)
-- **Quickstart scripts** — `Example/nova_quickstart.R` (visualization) and `Example/nova_dynamics_quickstart.R` (dynamics)
-- **Roadmap** — [`ROADMAP.md`](ROADMAP.md) (attractors, resilience, criticality, learning, closed-loop benchmarking)
 
 ---
 

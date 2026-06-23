@@ -1,0 +1,140 @@
+---
+title: "NOVA: summarising how conditions move through state space"
+author: "NOVA"
+date: "`r Sys.Date()`"
+output:
+  rmarkdown::html_vignette:
+    toc: true
+    toc_depth: 2
+    fig_width: 7
+    fig_height: 4.6
+vignette: >
+  %\VignetteIndexEntry{NOVA Trajectory Summary}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE, comment = "#>",
+  fig.align = "center", dpi = 110,
+  warning = FALSE, message = FALSE
+)
+set.seed(20260622)
+```
+
+## 1. The idea
+
+After PCA, each MEA culture is a point in state space, and a timecourse is a path
+through it. NOVA's `nova_trajectory_summary()` describes that path **simply and
+honestly**: how far each condition moved away from baseline, how directly, and
+when — using the replicate wells to put error bands on the key figure.
+
+It deliberately stops there. A typical MEA experiment has only a handful of
+timepoints and a few wells per condition: enough to say *"this drug moved the
+network far and fast and it held"*, but **not** enough to fit velocities,
+"stable vs unstable" regimes, or transition models without turning noise into
+false precision. So those are intentionally out of scope.
+
+```{r load}
+library(NOVA)
+library(ggplot2)
+```
+
+## 2. Get a PCA result (real data if available, else simulated)
+
+This runs the standard NOVA workflow on the bundled MEA agonist data when it is
+present, and otherwise falls back to a small simulated dataset with the same
+shape, so the vignette always builds.
+
+```{r data}
+example_dir <- system.file("extdata", "MEA Neuronal Agonists", package = "NOVA")
+if (!nzchar(example_dir)) {
+  alt <- file.path("..", "Example", "MEA Neuronal Agonists")
+  if (dir.exists(alt)) example_dir <- alt
+}
+
+pca <- NULL
+if (nzchar(example_dir) && dir.exists(example_dir)) {
+  proc <- tryCatch(process_mea_flexible(
+    main_dir = example_dir, selected_experiments = c("MEA012", "MEA013"),
+    grouping_variables = c("Experiment", "Treatment", "Well"),
+    baseline_timepoint = "baseline", verbose = FALSE), error = function(e) NULL)
+  if (!is.null(proc))
+    pca <- tryCatch(pca_analysis_enhanced(processing_result = proc,
+      grouping_variables = c("Treatment", "Well"), verbose = FALSE), error = function(e) NULL)
+}
+
+if (is.null(pca)) {
+  timepoints <- c("baseline", "0min", "15min", "30min", "1h", "1h30", "2h")
+  tnum <- nova_time_to_minutes(timepoints); tnum[1] <- -10
+  s <- (tnum - min(tnum)) / (max(tnum) - min(tnum))
+  proto <- list(PBS = function(s) cbind(0 * s, 0 * s),
+                KA  = function(s) cbind(5 * (1 - exp(-3 * s)), 2 * (1 - exp(-3 * s))),
+                Gabazine = function(s) cbind(-6 * s, 4 * s))
+  rows <- list()
+  for (tr in names(proto)) for (w in paste0("W", 1:6)) {
+    xy <- proto[[tr]](s) + matrix(rnorm(length(s) * 2, 0, 0.4), ncol = 2)
+    xy[1, ] <- xy[1, ] * 0
+    rows[[paste(tr, w)]] <- data.frame(PC1 = xy[, 1], PC2 = xy[, 2],
+      Treatment = tr, Well = w, Timepoint = timepoints)
+  }
+  pca <- list(plot_data = do.call(rbind, rows),
+              variance_explained = c(PC1 = 40, PC2 = 22))
+}
+cat("Timepoints:", paste(nova_order_timepoints(pca$plot_data$Timepoint), collapse = " -> "), "\n")
+```
+
+## 3. Trajectories (standard NOVA)
+
+```{r traj, fig.height = 4.4}
+plot_pca_trajectories_general(
+  pca, trajectory_grouping = "Treatment",
+  timepoint_order = nova_order_timepoints(pca$plot_data$Timepoint),
+  color_by = "Treatment", save_plots = FALSE, verbose = FALSE)$plots$combined_average
+```
+
+## 4. Trajectory summary
+
+```{r summary}
+s <- nova_trajectory_summary(pca, group_var = "Treatment", verbose = FALSE)
+s$metrics
+```
+
+The key figure — distance from baseline over time, with a mean ± SEM band across
+replicate wells:
+
+```{r disp, fig.height = 4.6}
+s$plots$displacement
+```
+
+The same paths drawn in PC space:
+
+```{r map, fig.height = 4.6}
+s$plots$map
+```
+
+## 5. Plain-language summary
+
+```{r describe, results = "asis"}
+invisible(nova_describe(s))
+```
+
+## 6. How to read it
+
+- **`net_displacement`** — how far the condition ended up from baseline.
+- **`directness`** (`net / path`, 0–1) — close to 1 means the network moved
+  straight out and stayed; low values mean it wandered or returned.
+- **`peak_timepoint`** — when the displacement was largest, a simple readout of
+  response kinetics (fast vs slow) without claiming a velocity.
+
+In an acute neuronal-agonist experiment this lines up with the biology: a vehicle
+control barely leaves baseline, while an excitatory agonist moves the network far
+and early and then holds — exactly the comparison a drug or genotype screen needs,
+described without over-interpreting the dynamics.
+
+## Session info
+
+```{r session, echo = FALSE}
+sessionInfo()
+```
