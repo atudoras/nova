@@ -1,7 +1,14 @@
+# --- RStudio / R session state (per-machine, never commit) ---
 .Rproj.user
 .Rhistory
-.RData
 .Ruserdata
+*.RData
+Rplots.pdf
 inst/doc
+
+# --- agent / worktree tooling (kept local) ---
 .claude/worktrees/
+.claire/
+
+# --- macOS ---
 .DS_Store
