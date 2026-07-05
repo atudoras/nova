@@ -46,5 +46,5 @@ Suggests:
     testthat (>= 3.0.0),
     rmarkdown (>= 2.0)
 VignetteBuilder: knitr
-URL: https://github.com/atudoras/NOVA
-BugReports: https://github.com/atudoras/NOVA/issues
+URL: https://github.com/atudoras/nova
+BugReports: https://github.com/atudoras/nova/issues
