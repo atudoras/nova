@@ -53,8 +53,8 @@ too rich for typical MEA timecourse data.
 
 ## Example Dataset Update
 
-* Replaced private example data (MEA022b/MEA022c, Mavs KO genotypes) with
-  publicly available WT neuron data (MEA012, MEA013)
+* Replaced private example data with publicly shareable WT neuron data
+  (MEA012, MEA013)
 * Example dataset now uses WT neurons with neuronal agonist treatments:
   PBS, KCl, DHPG, Gabazine (MEA012) and PBS, AMPA, KA, DHPG, Gabazine (MEA013)
 * Updated all example scripts (nova_quickstart.R, 01_compute.R, 02_plot.R,

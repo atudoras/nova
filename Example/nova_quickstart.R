@@ -3,7 +3,7 @@
 # =============================================================================
 # HOW TO USE:
 #   1. Set DATA_DIR below to the folder that contains your MEA experiment
-#      folders (each folder should be named like "MEA001", "MEA022b", etc.)
+#      folders (each folder should be named like "MEA001", "MEA002", etc.)
 #   2. Run the entire script (Ctrl+A -> Run, or source())
 #   3. Figures are saved in DATA_DIR/nova_output/ and shown in the Viewer
 # =============================================================================

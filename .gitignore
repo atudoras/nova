@@ -12,3 +12,6 @@ inst/doc
 
 # --- macOS ---
 .DS_Store
+
+# --- private data, never commit ---
+Example/MEA Neuronal Agonists/MEA022*/

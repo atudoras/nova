@@ -56,7 +56,7 @@ Long-format columns include: `Well`, `Treatment`, `Genotype`, `Timepoint`, `Vari
 |--------|---------|
 | `PC1`, `PC2`, … | State-space coordinates (the latent state `state(t)`). |
 | `Sample` | Unique sample id (`Well_Timepoint_Treatment_Genotype`). |
-| `Experiment` | MEA plate id (e.g. `MEA022b`). |
+| `Experiment` | MEA plate id (e.g. `MEA012`). |
 | `Treatment`, `Genotype`, `Well` | Grouping / replicate identifiers. |
 | `Timepoint` | Time label (`baseline`, `0min`, `15min`, `30min`, `1h`, `1h30min`, `2h`, …). |
 
