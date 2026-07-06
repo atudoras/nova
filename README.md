@@ -30,6 +30,35 @@ NOVA turns high-dimensional Multi-Electrode Array (MEA) recordings into interpre
 
 ---
 
+## Gallery
+
+Trajectories are just one view. Each of these is a single function call on the same processed data — the state-space, per-metric, and clustered-heatmap figures you actually put in a paper.
+
+<table align="center" width="100%" border="0" cellspacing="0" cellpadding="10">
+<tr>
+<td align="center" width="50%">
+  <img src="docs/user-guide/figures/readme_ellipses.png" width="100%" alt="PCA with 95% confidence ellipses">
+  <br><em>PCA state space with 95% confidence ellipses per group — <code>pca_plots_enhanced()</code>.</em>
+</td>
+<td align="center" width="50%">
+  <img src="docs/user-guide/figures/heatmap_treatment.png" width="100%" alt="Clustered metric heatmap">
+  <br><em>Every MEA metric, z-scored and clustered by condition — <code>create_mea_heatmaps_enhanced()</code>.</em>
+</td>
+</tr>
+<tr>
+<td align="center" width="50%">
+  <img src="docs/user-guide/figures/metric_violin.png" width="100%" alt="Per-metric violin plot">
+  <br><em>Any single metric as bar / box / violin, split by group and timepoint — <code>plot_mea_metric()</code>.</em>
+</td>
+<td align="center" width="50%">
+  <img src="docs/user-guide/figures/pca_secondary_combination.png" width="100%" alt="PCA coloured by treatment, shaped by timepoint">
+  <br><em>Two variables at once: colour by group, shape by timepoint — <code>pca_plots_enhanced()</code>.</em>
+</td>
+</tr>
+</table>
+
+---
+
 ## Installation
 
 ```r
