@@ -57,6 +57,31 @@ If `quarto` is not on your `PATH`, RStudio ships one:
 this affects `R CMD check`. Downloaded data (`data/`) and the discovery dump
 (`outputs/`) are gitignored.
 
+## Reproducibility (renv), and its one sharp edge
+
+`renv.lock` records the exact version of every package these studies used —
+126 of them, against R 4.4.2. It was snapshotted from the library that actually
+produced the results, so it documents what ran rather than what was intended to
+run.
+
+Be clear about what that does and does not buy you. **The day-to-day workflow does
+not go through renv.** Discovery runs from the repo root and Quarto renders from a
+study subdirectory; neither starts R in `case_studies/`, so neither activates the
+project library — both use your system library. The lockfile is a manifest plus an
+opt-in restore, not an enforced environment.
+
+To reproduce strictly, in a fresh clone:
+
+```r
+setwd("case_studies")
+renv::restore()   # installs the recorded versions into an isolated library
+```
+
+**The sharp edge:** the project library starts empty. If you start R *in*
+`case_studies/` before running `renv::restore()`, renv activates that empty library
+and nothing — not even dplyr — is available. Work from the repo root, or restore
+first.
+
 ## How findings are ranked
 
 By **raw effect size**, with no significance testing:
