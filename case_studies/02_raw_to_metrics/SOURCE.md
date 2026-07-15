@@ -1,33 +1,15 @@
-# Source — spike-level dataset (raw → NOVA metrics)
+# Source — study 02 (not yet started)
 
-> **STATUS: NOT YET SELECTED.** Template. Fill from the actual download.
+No dataset chosen. When one is, this file records the URL, licence, download date and
+SHA-256 before any analysis runs — see
+[`../01_epa_dnt_ontogeny/SOURCE.md`](../01_epa_dnt_ontogeny/SOURCE.md) for the shape.
 
-| Field | Value |
-|-------|-------|
-| Dataset | *TBD — meaRtools bundled example spike data, or a small Zenodo/DANDI spike-list set* |
-| URL | *TBD* |
-| Accessed | *TBD* |
-| SHA-256 | *TBD* |
-| Licence | *TBD — record explicitly; unlike the EPA data this is not automatically public domain* |
-| Format | spike times per electrode |
+**The question.** Study 01 begins with a metrics table, which is what NOVA reads. This one
+begins with spike times and asks whether the extraction step — firing rate, active
+electrodes, ISI bursts, network bursts, STTC synchrony — belongs inside NOVA or stays
+upstream in Axion AxIS / `meaRtools` / spikeinterface.
 
-## Purpose
-
-Case study 01 uses NOVA's native input: a metrics table. This one asks the
-upstream question — can NOVA consume data that starts as spike times? — and
-registers the answer as a candidate ingestion feature (`ROADMAP.md`).
-
-The extraction step (`extract_metrics.R`, wrapped as an experimental
-`nova_metrics_from_spikes()`) computes NOVA's core metrics from spike times:
-mean firing rate, active electrodes by rate threshold, ISI-threshold bursts,
-network bursts, and STTC synchrony. It leans on `meaRtools` where that package
-already implements these, and cites it rather than reimplementing.
-
-**`meaRtools` is CRAN-archived and not currently installed.** It is to be pinned
-from the CRAN archive via renv; whether it builds against R 4.4.2 is unverified
-and must be checked before this study is planned in detail.
-
-The wrapper stays **experimental and outside the package build** until it has been
-validated against values the source dataset reports independently. An extraction
-step that produces plausible numbers nobody has checked is worse than no
-extraction step, because everything downstream inherits the error silently.
+**Open before planning:** `meaRtools` is archived on CRAN and unverified against R 4.4.2.
+Any extraction wrapper stays experimental and outside the package build until its output is
+checked against values the source dataset reports independently — numbers nobody has
+verified are worse than no numbers, because everything downstream inherits them silently.
