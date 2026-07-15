@@ -1,19 +1,28 @@
-# NOVA 0.3.1
+# NOVA 0.4.0
 
 ## Bug fixes: plate identity
 
 Wells are named identically on every plate (`A1` exists everywhere), so `Experiment` is
 what tells two of them apart. Several places did not use it, and the result was wrong
-numbers rather than an error. **Analyses spanning more than one experiment will produce
-different — and correct — results after this release.** Single-plate datasets are
-unaffected.
+numbers rather than an error.
+
+**Results will change.** Multi-plate analyses change the most — values normalised against
+the wrong plate are corrected, and wells previously pooled across plates are now separate
+replicates, which generally *widens* error bands that were too narrow. Single-plate
+datasets are mostly unaffected, with one exception: `plot_pca_trajectories_general()`
+previously collapsed every well on a plate into a single trajectory (see below).
+
+This is a minor-version bump rather than a patch because a documented default changes
+(`sample_id_components`), numeric results change, and `plot_pca_trajectories_general()`
+changes what it returns.
 
 * **`process_mea_flexible()` normalised wells to other plates' baselines.** The baseline
   lookup was keyed on `Well` + `Variable` + grouping variables but not `Experiment`, so
-  every plate's baseline matched every plate's wells. The join fanned out, inflating row
-  counts and emitting values normalised against the wrong plate alongside the correct
-  ones. `Experiment` is now always part of the key, and a non-unique baseline key warns
-  rather than silently duplicating rows.
+  every plate's baseline matched every plate's wells. The join fanned out — 5270 rows
+  became 5766 on the bundled example — and emitted values normalised against the wrong
+  plate alongside the correct ones. `Experiment` is now part of the baseline key, and
+  both a non-unique baseline key and any row inflation now warn rather than passing
+  silently downstream.
 
 * **`nova_trajectory_summary()` could draw a flat line at zero.** `plot_data` folded
   `Well` into the `Sample` string and dropped it, so replicate auto-detection fell
@@ -23,6 +32,31 @@ unaffected.
   is no longer a candidate replicate column, and a `unit_var` yielding one timepoint per
   unit now warns and falls back to the group-mean trajectory. The `metrics` table was
   never affected.
+
+* **`unit_var` now accepts multiple columns**, and auto-detects as
+  `c("Experiment", "Well")` when both are present. `"Well"` alone merges the same well
+  from different plates into one replicate, which understates the spread: on the bundled
+  example, `pbs` at `2h` moves from 0.550 ± 0.071 (n = 4) to 0.941 ± 0.323 (n = 5).
+  Passing several columns previously raised an error that was swallowed by an internal
+  `tryCatch`, so the bands vanished and the function reported "no replicate column
+  found". Extraction errors are now re-emitted as warnings, and `params$unit_var` reports
+  the columns actually used rather than the ones requested.
+
+* **`plot_pca_trajectories_general()` grouped by plate instead of by well.** `well_id`
+  was derived by string-splitting `individual_var` on `_`, which assumed that column held
+  a composite `Sample` ID. It now uses the real `Well` column, qualified by `Experiment`.
+  On the bundled example this returns 23 well trajectories where it previously returned
+  16 — the old count silently pooled wells that shared an ID across plates. **On
+  single-plate data the previous behaviour collapsed all wells into one trajectory**, so
+  this changes single-plate results too. `n_wells` counts wells rather than plates.
+
+* **`find_mea_metadata_row()` found only one of the four metadata rows.** Matching was
+  exact, but Axion writes qualified labels — `Well Averages`, `Treatment/ID`,
+  `Exclude/Include` — so only `Genotype` was ever located and the rest fell back to
+  hardcoded row numbers. This was latent (the constants match the current layout) but it
+  meant the row-search was inert: a genuinely shifted export would have been misread
+  silently. Matching is now anchored at a word boundary, so `Well` matches
+  `Well Averages` but not `Wellington`, and the fallback is unchanged.
 
 * **`pca_analysis_enhanced()` silently merged samples across plates.**
   `sample_id_components` now defaults to
