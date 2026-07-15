@@ -1,3 +1,52 @@
+# NOVA 0.3.1
+
+## Bug fixes: plate identity
+
+Wells are named identically on every plate (`A1` exists everywhere), so `Experiment` is
+what tells two of them apart. Several places did not use it, and the result was wrong
+numbers rather than an error. **Analyses spanning more than one experiment will produce
+different — and correct — results after this release.** Single-plate datasets are
+unaffected.
+
+* **`process_mea_flexible()` normalised wells to other plates' baselines.** The baseline
+  lookup was keyed on `Well` + `Variable` + grouping variables but not `Experiment`, so
+  every plate's baseline matched every plate's wells. The join fanned out, inflating row
+  counts and emitting values normalised against the wrong plate alongside the correct
+  ones. `Experiment` is now always part of the key, and a non-unique baseline key warns
+  rather than silently duplicating rows.
+
+* **`nova_trajectory_summary()` could draw a flat line at zero.** `plot_data` folded
+  `Well` into the `Sample` string and dropped it, so replicate auto-detection fell
+  through to `Sample` — an ID that embeds the timepoint. Each "replicate" then spanned a
+  single timepoint, making every distance-from-baseline exactly 0, and the
+  distance-from-baseline figure rendered as a flat zero line with no warning. `Sample`
+  is no longer a candidate replicate column, and a `unit_var` yielding one timepoint per
+  unit now warns and falls back to the group-mean trajectory. The `metrics` table was
+  never affected.
+
+* **`pca_analysis_enhanced()` silently merged samples across plates.**
+  `sample_id_components` now defaults to
+  `c("Experiment", "Well", "Timepoint", "Treatment", "Genotype")`, and components present
+  in the data are carried through to `plot_data` instead of being dissolved into
+  `Sample`. Observations sharing a `Sample` are still averaged, but that now warns.
+  Sample ID strings gain an `Experiment` prefix.
+
+* **`discover_mea_structure()` reported `30min` as a candidate baseline.** Detection used
+  an unanchored pattern, and `"30min"` contains `"0min"`. It now uses the package's own
+  baseline vocabulary plus a parsed time of zero, and returns candidates best-first.
+
+* **`pca_plots_enhanced()` errored on `shape_variable = NULL`.** Opting out of an
+  aesthetic hit `if (logical(0))`. `NULL` is now honoured as "do not map this aesthetic",
+  including the single-genotype case the quickstart documents.
+
+* **`Example/nova_quickstart.R` did not run.** It passed a `timepoints_order` argument
+  that `process_mea_flexible()` does not accept, and called `create_mea_trajectories()`,
+  which does not exist — the current function is `nova_trajectory_summary()`. It also
+  read `pca_results$plots$scatter` and `$plots$elbow` (there is no `$plots` element; the
+  elbow is `$elbow_plot`) and looked for `pheatmap` objects one level above where they
+  live, so the scatter, scree, and heatmap panels were silently never written. It now
+  runs end-to-end and picks the baseline by dynamical order.
+
 # NOVA 0.3.0
 
 ## A simpler, honest trajectory layer

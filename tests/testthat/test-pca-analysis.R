@@ -40,6 +40,40 @@ test_that("pca_analysis_enhanced loads from raw_data sheet when normalized_data 
   unlink(tmp)
 })
 
+# ── sample identity ───────────────────────────────────────────────────────────
+# Regression: sample_id_components omitted Experiment, so the same well ID on
+# two plates produced one Sample and the two observations were averaged into a
+# single PCA point without warning.
+
+make_two_plate_long <- function() {
+  grid <- expand.grid(Timepoint = c("baseline", "1h"), Well = c("A1", "A2"),
+                      Experiment = c("MEA001", "MEA002"),
+                      Variable = paste0("V", 1:4),
+                      stringsAsFactors = FALSE)
+  grid$Treatment <- "drug"
+  grid$Normalized_Value <- seq_len(nrow(grid)) / 10
+  grid
+}
+
+test_that("wells sharing an ID across plates stay distinct samples", {
+  d <- make_two_plate_long()
+  pca <- pca_analysis_enhanced(normalized_data = d, grouping_variables = "Treatment",
+                               verbose = FALSE)
+  # 2 wells x 2 timepoints x 2 plates = 8 distinct samples, not 4.
+  expect_equal(nrow(pca$plot_data), 8L)
+  expect_equal(length(unique(pca$plot_data$Sample)), 8L)
+})
+
+test_that("sample_id_components that collide warn instead of silently averaging", {
+  d <- make_two_plate_long()
+  expect_warning(
+    pca_analysis_enhanced(normalized_data = d, grouping_variables = "Treatment",
+                          sample_id_components = c("Well", "Timepoint"),  # Experiment omitted
+                          verbose = FALSE),
+    regexp = "averaged into one PCA point"
+  )
+})
+
 # -- trajectory color_by tests ──────────────────────────────────────────────
 
 make_mini_pca <- function() {
@@ -88,4 +122,25 @@ test_that("combined averaged plot subtitle contains timepoints", {
   comb_avg <- result$plots$combined_average
   subtitle  <- comb_avg$labels$subtitle
   expect_true(!is.null(subtitle) && nchar(subtitle) > 0)
+})
+
+# ── NULL aesthetics ───────────────────────────────────────────────────────────
+# Regression: `!NULL %in% x` is logical(0), and `if (logical(0))` is an error, so
+# opting out of an aesthetic crashed -- including the documented single-genotype
+# case where Genotype is deliberately absent.
+
+test_that("pca_plots_enhanced accepts NULL shape variables", {
+  pca <- make_mini_pca()
+  pca$pca_result <- prcomp(matrix(rnorm(24), nrow = 6))
+  expect_no_error(
+    pca_plots_enhanced(
+      pca_output               = pca,
+      grouping_variables       = "Treatment",
+      color_variable           = "Treatment",
+      shape_variable           = NULL,
+      secondary_shape_variable = NULL,
+      save_plots               = FALSE,
+      verbose                  = FALSE
+    )
+  )
 })

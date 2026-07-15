@@ -29,7 +29,10 @@ process_mea_flexible(
 
 \item{baseline_timepoint}{Character. Timepoint to use for normalization (default: NULL = no normalization)}
 
-\item{unique_id_vars}{Character vector. Variables that uniquely identify observations for normalization}
+\item{unique_id_vars}{Character vector. Variables that uniquely identify observations for
+normalization. \code{grouping_variables} and \code{Experiment} are added automatically, so
+the default is correct for multi-plate datasets; supply extra columns only if a single
+plate still contains more than one baseline per well/variable.}
 
 \item{exclude_std_variables}{Logical. Whether to automatically exclude standard deviation variables (default: TRUE)}
 
@@ -62,6 +65,12 @@ in their names (e.g., "Number of Spikes - Std") while keeping average/mean varia
 
 By default, no files are written. To save output, provide an explicit output_path parameter.
 Normalization creates fold-change values relative to baseline timepoint.
+
+Baseline matching is keyed on \code{unique_id_vars} plus \code{grouping_variables} plus
+\code{Experiment}, so each well is normalised to the baseline of its own plate. The key must
+identify exactly one baseline row; if it does not, the function warns rather than silently
+duplicating rows. Fold-changes are ratios, so they are asymmetric (halving = 0.5, doubling =
+2.0) and undefined against a zero baseline, which yields \code{NA}.
 
 Process data without saving (returns data frames only)
 Save output by providing explicit path

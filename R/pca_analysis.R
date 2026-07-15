@@ -41,7 +41,11 @@ perform_mea_pca <- function(data, variables = NULL, scale = TRUE, center = TRUE,
 #' @param n_components Integer. Number of principal components to extract (default: 2)
 #' @param variance_cutoff Numeric. Cumulative variance percentage threshold (default: 70)
 #' @param grouping_variables Character vector. Variables for sample grouping (default: c("Treatment", "Genotype"))
-#' @param sample_id_components Character vector. Variables to create unique sample IDs (default: c("Well", "Timepoint", "Treatment", "Genotype"))
+#' @param sample_id_components Character vector. Variables to create unique sample IDs
+#'   (default: c("Experiment", "Well", "Timepoint", "Treatment", "Genotype")). These must jointly
+#'   identify one observation: a column that varies within a Sample but is missing here causes
+#'   distinct observations to be silently averaged together. Components present in the data are
+#'   also carried through to \code{plot_data}, keeping replicate structure available downstream.
 #' @param value_column Character. Name of column containing values for PCA (default: "Normalized_Value")
 #' @param variable_column Character. Name of column containing variable names (default: "Variable")
 #' @param timepoint_column Character. Name of column containing timepoint information (default: "Timepoint")
@@ -226,7 +230,7 @@ pca_analysis_enhanced <- function(normalized_data = NULL,
     if (is.null(n_components)) n_components <- null_coalesce(config$pca_components, 2)
     if (is.null(variance_cutoff)) variance_cutoff <- null_coalesce(config$pca_variance_cutoff, 70)
     if (is.null(grouping_variables)) grouping_variables <- null_coalesce(config$grouping_variables, c("Treatment", "Genotype"))
-    if (is.null(sample_id_components)) sample_id_components <- null_coalesce(config$sample_id_components, c("Well", "Timepoint", "Treatment", "Genotype"))
+    if (is.null(sample_id_components)) sample_id_components <- null_coalesce(config$sample_id_components, c("Experiment", "Well", "Timepoint", "Treatment", "Genotype"))
   } else {
     # Fallback defaults when no config provided
     if (is.null(min_var)) min_var <- 0.01
@@ -235,7 +239,7 @@ pca_analysis_enhanced <- function(normalized_data = NULL,
     if (is.null(n_components)) n_components <- 2
     if (is.null(variance_cutoff)) variance_cutoff <- 70
     if (is.null(grouping_variables)) grouping_variables <- c("Treatment", "Genotype")
-    if (is.null(sample_id_components)) sample_id_components <- c("Well", "Timepoint", "Treatment", "Genotype")
+    if (is.null(sample_id_components)) sample_id_components <- c("Experiment", "Well", "Timepoint", "Treatment", "Genotype")
   }
   
   if (verbose) {
@@ -306,19 +310,31 @@ pca_analysis_enhanced <- function(normalized_data = NULL,
     raw_counts <- data.frame(raw_n = nrow(normalized_data_clean))
   }
   
-  # Extract metadata using available grouping variables
-  metadata_vars <- c("Sample", valid_grouping_variables)
+  # Extract metadata using available grouping variables.
+  # The sample-identity columns (e.g. Well, Experiment) are carried through as
+  # well: they are folded into the Sample string, and downstream code that needs
+  # replicate structure -- nova_trajectory_summary() looking for a unit column --
+  # cannot recover them by parsing that string back apart.
+  id_cols_to_keep <- setdiff(valid_sample_id_components, timepoint_column)
+  metadata_vars <- unique(c("Sample", valid_grouping_variables, id_cols_to_keep))
   if (timepoint_column %in% names(normalized_data_clean)) {
     metadata_vars <- c(metadata_vars, "Timepoint_clean")
   }
-  
+
   # Filter to only include available columns
   metadata_vars <- metadata_vars[metadata_vars %in% names(normalized_data_clean)]
-  
+
   sample_metadata <- normalized_data_clean %>%
     select(all_of(metadata_vars)) %>%
     distinct()
-  
+
+  # Sample must key this table one-to-one, or the join onto the PC scores fans
+  # out and duplicates points in the PCA. Collapse to the first row per Sample so
+  # the join stays a lookup; the pivot below reports the underlying merging.
+  if (any(duplicated(sample_metadata$Sample))) {
+    sample_metadata <- sample_metadata[!duplicated(sample_metadata$Sample), , drop = FALSE]
+  }
+
   # Rename timepoint column for consistency
   if ("Timepoint_clean" %in% names(sample_metadata)) {
     sample_metadata <- sample_metadata %>% rename(Timepoint = Timepoint_clean)
@@ -331,9 +347,24 @@ pca_analysis_enhanced <- function(normalized_data = NULL,
   if (verbose) cat("Reshaping data for PCA...\n")
   
   # Pivot to wide format - aggregate duplicates by taking mean
-  pca_input <- normalized_data_clean %>%
+  pca_long <- normalized_data_clean %>%
     group_by(Sample, .data[[variable_column]]) %>%
-    summarise(Value = mean(.data[[value_column]], na.rm = TRUE), .groups = 'drop') %>%
+    summarise(Value = mean(.data[[value_column]], na.rm = TRUE),
+              n_obs = n(), .groups = 'drop')
+
+  # Averaging here is right for technical replicates, but it is also where
+  # distinct samples quietly become one if sample_id_components omits a column
+  # that separates them -- the same well ID on two plates, most often.
+  n_merged <- sum(pca_long$n_obs > 1)
+  if (n_merged > 0) {
+    warning(n_merged, " (Sample, ", variable_column, ") combination(s) held multiple ",
+            "observations and were averaged into one PCA point. If these are distinct ",
+            "samples rather than technical replicates, add the column that separates them ",
+            "(often 'Experiment') to `sample_id_components`.")
+  }
+
+  pca_input <- pca_long %>%
+    select(-n_obs) %>%
     pivot_wider(names_from = all_of(variable_column), values_from = Value)
   
   # Build matrix for PCA

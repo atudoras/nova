@@ -42,8 +42,9 @@
 #' @param dims Embedding columns (default \code{c("PC1","PC2")}); the first two
 #'   are plotted, all are used for distances.
 #' @param group_var Grouping column (auto-detected if \code{NULL}).
-#' @param unit_var Replicate column for the error bands (auto-detected, e.g.
-#'   \code{"Well"}; set \code{NULL} to disable).
+#' @param unit_var Replicate column(s) for the error bands. Auto-detected as
+#'   \code{c("Experiment", "Well")} when both are present, since well IDs repeat
+#'   across plates; set \code{NULL} to disable the bands.
 #' @param timepoint_var,timepoint_order Timepoint column / explicit order
 #'   (otherwise \code{nova_order_timepoints()}, baseline first).
 #' @param verbose Logical.
@@ -71,11 +72,20 @@ nova_trajectory_summary <- function(x,
                                     timepoint_order = NULL,
                                     verbose = TRUE) {
 
-  # auto-detect a replicate column for the error bands
+  # auto-detect the replicate column(s) for the error bands.
+  # "Sample" is deliberately not a candidate: it is a per-observation ID built
+  # from the timepoint among other things, so each "replicate" would span a
+  # single timepoint and its distance from its own baseline would be 0 by
+  # construction -- error bands that are silently, uniformly zero.
   if (!inherits(x, "nova_trajectories") && is.null(unit_var)) {
     pd <- if (is.list(x) && "plot_data" %in% names(x)) x$plot_data else x
-    unit_var <- .nova_resolve_col(pd, "Well", c("Well", "Experiment", "Sample", "ID"))
-    if (is.na(unit_var)) unit_var <- NULL
+    if ("Well" %in% names(pd)) {
+      # A well is only identified once its plate is known: A1 exists on every one.
+      unit_var <- intersect(c("Experiment", "Well"), names(pd))
+    } else {
+      unit_var <- .nova_resolve_col(pd, "Experiment", c("Experiment", "ID"))
+      if (is.na(unit_var)) unit_var <- NULL
+    }
   }
 
   # group-mean trajectory (one path per condition)
@@ -91,7 +101,31 @@ nova_trajectory_summary <- function(x,
     tru <- tryCatch(
       nova_extract_trajectories(x, dims = dims, group_var = group_var, unit_var = unit_var,
                                 timepoint_var = timepoint_var, timepoint_order = timepoint_order),
-      error = function(e) NULL)
+      # Never fail silently here: a swallowed error looks identical to "no
+      # replicate column", so the bands vanish with no way to tell why.
+      error = function(e) {
+        warning("Could not build per-replicate trajectories from unit_var '",
+                paste(unit_var, collapse = ", "), "': ", conditionMessage(e),
+                ". Falling back to the group-mean trajectory without error bands.")
+        NULL
+      })
+    # Report the columns actually used, not the ones requested: extraction drops
+    # any that are missing, and params claiming otherwise would misdescribe the
+    # figure it accompanies.
+    unit_var <- if (is.null(tru)) NULL else attr(tru, "unit_var")
+  }
+
+  # A unit resolving to one timepoint cannot describe movement: each unit is its
+  # own baseline, so every displacement is 0. Fall back to the group-mean path --
+  # correct, just without bands -- rather than drawing a flat line at zero and
+  # presenting it as a measurement.
+  if (!is.null(tru) && nrow(tru) > 0L && max(table(tru$traj_id)) < 2L) {
+    warning("`unit_var` '", paste(unit_var, collapse = ", "), "' has one timepoint per unit, ",
+            "so it cannot describe movement over time and no error bands are available. ",
+            "Pass a replicate column measured repeatedly across timepoints (e.g. 'Well'). ",
+            "Falling back to the group-mean trajectory.")
+    tru <- NULL
+    unit_var <- NULL
   }
 
   # --- metrics from the group-mean trajectory --------------------------------

@@ -141,7 +141,11 @@ pca_plots_enhanced <- function(pca_output = NULL,
     message("Valid grouping variables: ", paste(valid_grouping_vars, collapse = ", "))
   }
   
-  if (!color_variable %in% available_columns) {
+  # NULL means "do not map this aesthetic" and is honoured as-is; a named column
+  # that is missing from the data falls back to another grouping variable.
+  if (is.null(color_variable)) {
+    if (verbose) message("No color variable requested")
+  } else if (!color_variable %in% available_columns) {
     if (length(valid_grouping_vars) > 0) {
       old_color_variable <- color_variable
       color_variable <- valid_grouping_vars[1]
@@ -153,9 +157,11 @@ pca_plots_enhanced <- function(pca_output = NULL,
   } else {
     if (verbose) message("Using requested color variable: ", color_variable)
   }
-  
-  if (!shape_variable %in% available_columns) {
-    available_alternatives <- valid_grouping_vars[valid_grouping_vars != color_variable]
+
+  if (is.null(shape_variable)) {
+    if (verbose) message("No shape variable requested")
+  } else if (!shape_variable %in% available_columns) {
+    available_alternatives <- setdiff(valid_grouping_vars, color_variable)
     if (length(available_alternatives) > 0) {
       old_shape_variable <- shape_variable
       shape_variable <- available_alternatives[1]
@@ -167,9 +173,11 @@ pca_plots_enhanced <- function(pca_output = NULL,
   } else {
     if (verbose) message("Using requested shape variable: ", shape_variable)
   }
-  
-  if (!secondary_shape_variable %in% available_columns) {
-    available_alternatives <- valid_grouping_vars[!valid_grouping_vars %in% c(color_variable, shape_variable)]
+
+  if (is.null(secondary_shape_variable)) {
+    if (verbose) message("No secondary shape variable requested")
+  } else if (!secondary_shape_variable %in% available_columns) {
+    available_alternatives <- setdiff(valid_grouping_vars, c(color_variable, shape_variable))
     if (length(available_alternatives) > 0) {
       old_secondary_shape_variable <- secondary_shape_variable
       secondary_shape_variable <- available_alternatives[1]
@@ -767,7 +775,17 @@ plot_pca_trajectories_general <- function(pca_results,
            !is.na(.data[[pc_y]]),
            !is.na(group_id))
   
-  plot_data_clean$well_id <- sub("_.*", "", plot_data_clean[[individual_var]])
+  # Identify the replicate well. Prefer the real Well column, qualified by
+  # Experiment so the same well ID on two plates stays two replicates. The
+  # prefix-strip below is a fallback for callers whose only identity column is a
+  # composite Sample string ("A1_15min_pbs"); it silently returns a plate ID if
+  # handed anything else, so it is used only when there is no Well column.
+  well_id_cols <- intersect(c("Experiment", "Well"), names(plot_data_clean))
+  if ("Well" %in% well_id_cols) {
+    plot_data_clean$well_id <- do.call(paste, c(plot_data_clean[well_id_cols], sep = "_"))
+  } else {
+    plot_data_clean$well_id <- sub("_.*", "", plot_data_clean[[individual_var]])
+  }
   
   individual_trajectories <- plot_data_clean %>%
     group_by(group_id, !!!syms(trajectory_grouping), well_id, .data[[timepoint_var]], time_rank) %>%
