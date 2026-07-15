@@ -5,6 +5,7 @@
 ^CRAN-SUBMISSION$
 ^cran-comments\.md$
 ^CASE_STUDIES_SESSION_PROMPT\.md$
+^NEXT_SESSION_PROMPT\.md$
 ^case_studies(/|$)
 ^\.claude(/|$)
 ^\.claire(/|$)
