@@ -146,7 +146,7 @@ sync$Designation <- DESIGNATION$label[match(sync$Compound, DESIGNATION$compound)
 pal <- stats::setNames(NOVA::nova_palette(dplyr::n_distinct(sync$Compound)),
                        sort(unique(sync$Compound)))
 
-ggplot(sync, aes(.data$Dose, .data$fc, colour = .data$Compound)) +
+hero <- ggplot(sync, aes(.data$Dose, .data$fc, colour = .data$Compound)) +
   geom_hline(yintercept = 1, linetype = "dashed", colour = "grey40") +
   geom_line(aes(linetype = .data$Designation), linewidth = 0.9) +
   geom_point(size = 2) +
@@ -156,6 +156,16 @@ ggplot(sync, aes(.data$Dose, .data$fc, colour = .data$Compound)) +
   labs(x = "Dose (uM, log scale)", y = "Synchrony / vehicle control (log scale)",
        caption = "Lines join doses of one compound; no dose-response model was fitted.") +
   NOVA::nova_theme(base_size = 11)
+
+# Also written to disk so the repo's README can show the result without anyone
+# clicking anything -- GitHub renders neither a Quarto HTML notebook nor, as it
+# turns out, this PDF. Exported from the same object the report plots, so the
+# figure in the README cannot drift away from the figure in the study.
+if (knitr::is_html_output()) {
+  ggsave(file.path(params$study_dir, "hero.png"), hero,
+         width = 7.5, height = 4, dpi = 140, bg = "white")
+}
+hero
 ```
 
 ## The largest changes that more than one well agrees on

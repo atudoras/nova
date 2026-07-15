@@ -27,7 +27,10 @@ orthovanadate takes network synchrony down to **1% of vehicle**, in dose order. 
 told none of this: it normalised to the vehicle wells, ran a PCA, and sorted by effect
 size.
 
-**[📓 Notebook](01_epa_dnt_ontogeny/summary.html)  ·  [📄 3-page brief](01_epa_dnt_ontogeny/summary.pdf)**
+![Synchrony as a fraction of vehicle controls at DIV 7, by compound and dose. Acetaminophen, the designated negative, is flat across three orders of magnitude; sodium orthovanadate falls to 1% of vehicle.](01_epa_dnt_ontogeny/hero.png)
+
+**[📓 Full notebook](01_epa_dnt_ontogeny/summary.html)  ·  [📄 3-page brief](01_epa_dnt_ontogeny/summary.pdf)**
+— GitHub renders neither in-browser; download them, or open the notebook after cloning.
 
 *Exploratory.* It recovers labels the paper had already assigned — a claim about
 prediction, not about neurotoxicity. And 20 of those 25 are compounds the paper reports
