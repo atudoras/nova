@@ -13,9 +13,9 @@
   Two things it does that a hand-rolled `pivot_longer()` will not:
 
   - **`experiment` accepts several columns.** A well is only identified once you know its
-    experiment, and the experiment is not always one column — in the EPA dataset in
-    `case_studies/`, plate serial numbers are reused across culture dates (4 serials, 6
-    experiments), so keying on the serial merges two cultures into one well.
+    experiment, and the experiment is not always one column — in the EPA's DNT dataset,
+    plate serial numbers are reused across culture dates (4 serials, 6 experiments), so
+    keying on the serial merges two cultures into one well.
   - **`normalize = "control"`** divides each well by the control wells on its own plate at
     the same timepoint — the toxicology convention, and the only workable option when the
     earliest timepoint cannot serve as a reference (in a developmental assay every well may

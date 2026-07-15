@@ -10,10 +10,13 @@ inst/doc
 .claude/worktrees/
 .claire/
 
-# --- case studies ---
-# Datasets are never committed -- each notebook downloads its own and checks the
-# hash. The rendered notebook.md and its figures ARE committed: they are the point.
-case_studies/**/data/
+# --- case studies: LOCAL ONLY ---
+# Nothing here goes public until Alex says a finding is worth publishing. A case
+# study is a scientific claim, not a code change: "the package is ready to ship"
+# is not the same decision as "this result should be read by strangers", and they
+# were conflated once already. Ignored wholesale so the second decision has to be
+# made deliberately -- by un-ignoring -- rather than by a stray `git add`.
+case_studies/
 
 # --- macOS ---
 .DS_Store

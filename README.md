@@ -227,10 +227,10 @@ res <- process_mea_table(
 
 **`experiment` often needs more than one column, and getting it wrong is silent.** A well is
 only identified once you know which experiment it came from — and the experiment is not
-always one column. In the EPA dataset used in [`case_studies/`](case_studies/), plate serial
-numbers are *reused across culture dates*: four serials, six experiments. Keying on the
-serial alone merges two different cultures into one well. Pass every column that identifies
-the experiment.
+always one column. In the EPA's developmental-neurotoxicity dataset, for instance, plate
+serial numbers are *reused across culture dates*: four serials, six experiments. Keying on
+the serial alone merges two different cultures into one well. Pass every column that
+identifies the experiment.
 
 **Normalisation is a choice, not a default.** `"baseline"` divides each well by its own
 earliest timepoint — a fold-change over time. `"control"` divides by the control wells on the
