@@ -310,15 +310,15 @@ pca_plots_enhanced <- function(pca_output = NULL,
         legend.title = element_text(size = 11, face = "bold"),
         legend.text = element_text(size = 10),
         panel.grid.minor = element_blank(),
-        panel.grid.major = element_line(color = "grey90", size = 0.3),
+        panel.grid.major = element_line(color = "grey90", linewidth = 0.3),
         aspect.ratio = 1,
-        panel.background = element_rect(fill = "white", color = "black", size = 0.8),
+        panel.background = element_rect(fill = "white", color = "black", linewidth = 0.8),
         plot.background = element_rect(fill = "white", color = NA),
         legend.background = element_rect(fill = "white", color = NA),
         legend.key = element_rect(fill = "white", color = NA),
-        legend.box.background = element_rect(fill = "white", color = "gray80", size = 0.5),
+        legend.box.background = element_rect(fill = "white", color = "gray80", linewidth = 0.5),
         axis.line = element_blank(),
-        axis.ticks = element_line(color = "black", size = 0.5),
+        axis.ticks = element_line(color = "black", linewidth = 0.5),
         axis.ticks.length = unit(0.15, "cm"),
         plot.margin = margin(20, 20, 20, 20)
       )
@@ -618,7 +618,7 @@ pca_plots_enhanced <- function(pca_output = NULL,
 #' @return A list containing plots, trajectories, and metadata
 #'
 #' @importFrom dplyr filter group_by summarise mutate arrange distinct
-#' @importFrom ggplot2 ggplot geom_point geom_segment geom_errorbar geom_errorbarh geom_text scale_color_viridis_c
+#' @importFrom ggplot2 ggplot geom_point geom_segment geom_errorbar geom_text scale_color_viridis_c
 #' @importFrom tidyr unnest
 #' @importFrom purrr walk map
 #' @importFrom rlang syms .data
@@ -1076,10 +1076,10 @@ plot_pca_trajectories_general <- function(pca_results,
     p <- ggplot() +
       {if(nrow(grad_df) > 0 && "well_id" %in% names(grad_df)) {
         geom_segment(data = grad_df, aes(x, y, xend = xend, yend = yend, group = well_id, color = tfrac), 
-                     size = line_size * 0.4, alpha = 0.6)
+                     linewidth = line_size * 0.4, alpha = 0.6)
       } else if(nrow(grad_df) > 0) {
         geom_segment(data = grad_df, aes(x, y, xend = xend, yend = yend, color = tfrac), 
-                     size = line_size * 0.4, alpha = 0.6)
+                     linewidth = line_size * 0.4, alpha = 0.6)
       }} +
       scale_color_viridis_c(guide = 'none') +
       geom_point(data = group_data, aes(x = mean_x, y = mean_y, fill = well_id), 
@@ -1125,14 +1125,17 @@ plot_pca_trajectories_general <- function(pca_results,
     
     p <- ggplot() +
       {if(nrow(grad_avg) > 0) geom_segment(data = grad_avg, aes(x, y, xend = xend, yend = yend, color = tfrac), 
-                                           size = line_size)} +
+                                           linewidth = line_size)} +
       scale_color_viridis_c(guide = 'none') +
       geom_point(data = label_df, aes(x = avg_x, y = avg_y), 
                  shape = 21, fill = 'white', size = point_size) +
       geom_errorbar(data = group_data, aes(x = avg_x, ymin = avg_y - se_y, ymax = avg_y + se_y),
                     width = 0.08, color = "gray60", alpha = 0.6, linewidth = 0.5) +
-      geom_errorbarh(data = group_data, aes(y = avg_y, xmin = avg_x - se_x, xmax = avg_x + se_x),
-                     height = 0.08, color = "gray60", alpha = 0.6, linewidth = 0.5) +
+      # geom_errorbarh() was deprecated in ggplot2 4.0.0; orientation = "y" is the
+      # replacement, and takes `width` where the old geom took `height`.
+      geom_errorbar(data = group_data, aes(y = avg_y, xmin = avg_x - se_x, xmax = avg_x + se_x),
+                    orientation = "y", width = 0.08, color = "gray60",
+                    alpha = 0.6, linewidth = 0.5) +
       geom_text(data = label_df, aes(x = avg_x, y = avg_y, label = label_text), 
                 nudge_x = 0.02, nudge_y = 0.02, size = point_size * 0.9, fontface = 'bold') +
       labs(title = paste('Avg Trajectory +/- SEM - Group:', group_name),
@@ -1231,7 +1234,7 @@ plot_pca_trajectories_general <- function(pca_results,
   
   p_combined <- ggplot() +
     geom_segment(data = grad_df_combined, aes(x, y, xend = xend, yend = yend, color = group_id),
-                 size = line_size * 0.3, alpha = alpha * 0.6) +
+                 linewidth = line_size * 0.3, alpha = alpha * 0.6) +
     geom_point(data = individual_trajectories, aes(x = mean_x, y = mean_y, color = group_id),
                size = point_size * 0.2, alpha = 0.5) +
     scale_color_manual(values = active_palette, name = "Group") +
@@ -1344,13 +1347,13 @@ plot_pca_trajectories_general <- function(pca_results,
   
   p_comb_avg <- ggplot() +
     geom_segment(data = grad_avg_combined, aes(x, y, xend = xend, yend = yend, color = group_id),
-                 size = line_size, alpha = 1) +
+                 linewidth = line_size, alpha = 1) +
     geom_point(data = group_average_trajectories, aes(x = avg_x, y = avg_y, color = group_id),
                size = point_size * 0.5, alpha = 0.8) +
     geom_errorbar(data = group_average_trajectories, aes(x = avg_x, ymin = avg_y - se_y, ymax = avg_y + se_y, color = group_id),
                   width = 0.05, alpha = 0.5, linewidth = 0.4) +
-    geom_errorbarh(data = group_average_trajectories, aes(y = avg_y, xmin = avg_x - se_x, xmax = avg_x + se_x, color = group_id),
-                   height = 0.05, alpha = 0.5, linewidth = 0.4) +
+    geom_errorbar(data = group_average_trajectories, aes(y = avg_y, xmin = avg_x - se_x, xmax = avg_x + se_x, color = group_id),
+                  orientation = "y", width = 0.05, alpha = 0.5, linewidth = 0.4) +
     geom_point(data = first_last_points,
                aes(x = first_x, y = first_y, color = group_id),
                shape = 5, size = point_size * 1.4, stroke = 1.4) +
@@ -2580,8 +2583,8 @@ analyze_pca_variable_importance_general <- function(pca_result = NULL,
       axis.title = element_text(size = 12),
       legend.title = element_text(size = 11),
       panel.grid.minor = element_blank(),
-      panel.grid.major = element_line(color = "grey90", size = 0.3),
-      panel.background = element_rect(fill = colors$background, color = "black", size = 0.3)
+      panel.grid.major = element_line(color = "grey90", linewidth = 0.3),
+      panel.background = element_rect(fill = colors$background, color = "black", linewidth = 0.3)
     ) +
     coord_fixed()
   

@@ -1,3 +1,56 @@
+# NOVA 0.5.0
+
+## Published data, and a smaller public API
+
+### New
+
+* **`process_mea_table()` — ingest any tidy metrics table.** Until now NOVA could only read
+  the Axion CSV export, whose metadata lives on fixed rows 121–124. Published datasets
+  essentially never look like that: they arrive as a plain table, one row per well ×
+  timepoint with metrics in columns, or already in long form. This maps such a table onto
+  the same schema, so everything downstream works unchanged.
+
+  Two things it does that a hand-rolled `pivot_longer()` will not:
+
+  - **`experiment` accepts several columns.** A well is only identified once you know its
+    experiment, and the experiment is not always one column — in the EPA dataset in
+    `case_studies/`, plate serial numbers are reused across culture dates (4 serials, 6
+    experiments), so keying on the serial merges two cultures into one well.
+  - **`normalize = "control"`** divides each well by the control wells on its own plate at
+    the same timepoint — the toxicology convention, and the only workable option when the
+    earliest timepoint cannot serve as a reference (in a developmental assay every well may
+    be silent at the first timepoint, leaving the ratio undefined). `normalize = "baseline"`
+    keeps the existing per-well fold-change. Both yield `NA` against a zero divisor, never
+    `Inf`, and the control path returns `Control_Value` so the divisor can be inspected
+    rather than trusted.
+
+  Verified by reproducing a bespoke adapter for a real published dataset exactly — same
+  values, same normalisation, same 15,840 rows.
+
+### Breaking
+
+* **The public API is 18 functions, down from 28.** Ten internal helpers were exported by
+  accident and are now internal: `aggregate_data`, `apply_scaling_enhanced`,
+  `clean_heatmap_matrix`, `create_annotations_enhanced`, `create_color_palette_enhanced`,
+  `handle_missing_values`, `null_coalesce`, `print_detailed_summary`, `quality_filter`,
+  `setup_color_scheme`. None was documented as part of the workflow and none is used outside
+  the package; if you call one, it is still reachable as `NOVA:::name()`.
+* **`perform_mea_pca()` is removed.** It was exported and fully documented while its entire
+  body was `stop()` — a manual page for a function that could never run. Use
+  `pca_analysis_enhanced()`, which is what its error message already said.
+
+### Fixed
+
+* **The package no longer emits ggplot2 deprecation warnings.** A full pipeline run produced
+  five distinct warnings on every call — `size` in `element_line()`/`element_rect()` and on
+  line geoms (`linewidth` since 3.4.0), `geom_errorbarh()` (`geom_errorbar(orientation = "y")`
+  since 4.0.0), and a `labs()` entry for an aesthetic the plot never mapped, which made
+  ggplot report "Ignoring unknown labels" on every `plot_mea_metric()` call. Warning noise
+  that users learn to scroll past is how a real warning gets missed. Now zero, with a
+  source-level test so it stays that way.
+* **`nova_unit_cols()` warns when it falls back to `Well` alone** rather than narrowing
+  identity in silence. Pass `warn = FALSE` for genuinely single-experiment data.
+
 # NOVA 0.4.0
 
 ## Bug fixes: plate identity

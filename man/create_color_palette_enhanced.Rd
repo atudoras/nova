@@ -23,3 +23,4 @@ List containing colors and breaks
 \description{
 Creates color palettes and breaks for heatmap visualization
 }
+\keyword{internal}

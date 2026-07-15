@@ -19,3 +19,4 @@ Cleaned matrix or NULL if insufficient data
 \description{
 Removes rows and columns with insufficient finite values from matrix
 }
+\keyword{internal}

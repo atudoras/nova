@@ -175,14 +175,17 @@ plot_mea_metric <- function(
       ggplot2::scale_colour_manual(values = colors)
   }
 
+  # Label only the aesthetics this plot type actually maps. Bars, boxes and violins
+  # map `fill`; lines map `colour`. Labelling both makes ggplot warn "Ignoring
+  # unknown labels" on every call -- noise that trains you to ignore its warnings.
+  metric_labs <- list(
+    title = if (is.null(title)) metric else title,
+    x = x_var, y = y_label
+  )
+  metric_labs[[if (plot_type == "line") "colour" else "fill"]] <- group_by
+
   p <- p +
-    ggplot2::labs(
-      title  = if (is.null(title)) metric else title,
-      x      = x_var,
-      y      = y_label,
-      fill   = group_by,
-      colour = group_by
-    ) +
+    do.call(ggplot2::labs, metric_labs) +
     ggplot2::theme_bw(base_size = 12) +
     ggplot2::theme(
       axis.text.x     = ggplot2::element_text(angle = 45, hjust = 1),

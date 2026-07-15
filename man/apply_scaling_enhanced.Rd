@@ -19,3 +19,4 @@ Scaled matrix
 \description{
 Applies various scaling methods to matrix data for heatmap visualization
 }
+\keyword{internal}

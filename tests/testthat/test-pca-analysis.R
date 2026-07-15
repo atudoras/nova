@@ -1,9 +1,11 @@
 # tests/testthat/test-pca-analysis.R
-test_that("perform_mea_pca redirects to pca_analysis_enhanced with helpful message", {
-  expect_error(
-    perform_mea_pca(data.frame(), variables = NULL),
-    regexp = "pca_analysis_enhanced"
-  )
+test_that("the public API exports nothing that only errors", {
+  # perform_mea_pca() was exported and fully documented while its entire body was
+  # stop(): a manual page for a function that could never run. It never worked, so
+  # nothing could depend on it, and it is gone rather than deprecated.
+  exports <- getNamespaceExports("NOVA")
+  expect_false("perform_mea_pca" %in% exports)
+  expect_true("pca_analysis_enhanced" %in% exports)
 })
 
 test_that("null_coalesce is not redefined inside pca_analysis_enhanced body", {

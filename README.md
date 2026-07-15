@@ -66,7 +66,12 @@ Trajectories are just one view. Each of these is a single function call on the s
 remotes::install_github("atudoras/nova")
 ```
 
-Already using NOVA? This is a **drop-in update** — every existing function keeps the same name, arguments, and output. Nothing in your current scripts needs to change.
+> **Upgrading from 0.3.x or earlier? Your numbers will change, and the new ones are the
+> correct ones.** Well IDs repeat on every plate, so `Experiment` is what tells two wells
+> apart — and several functions did not use it. Multi-plate analyses were normalising wells
+> against other plates' baselines, and the trajectory figure could render as a flat line at
+> zero. See [NEWS.md](NEWS.md) for what changed and why. Single-plate analyses are largely
+> unaffected.
 
 ---
 
@@ -75,22 +80,30 @@ Already using NOVA? This is a **drop-in update** — every existing function kee
 ```r
 library(NOVA)
 
-# 1. Process MEA CSVs across timepoints, normalise to baseline
+# 1. Read it. Axion's CSV export...
 processed <- process_mea_flexible(
-  main_dir            = "path/to/your/MEA_data",
-  grouping_variables  = c("Experiment", "Treatment", "Well"),
-  baseline_timepoint  = "baseline"
+  main_dir           = "path/to/your/MEA_data",
+  baseline_timepoint = "baseline"
 )
 
-# 2. PCA (the shared state space)
-pca <- pca_analysis_enhanced(processing_result = processed,
+# ...or any tidy table, including published datasets (see "Data format").
+# processed <- process_mea_table(df, experiment = "plate", well = "well",
+#                                timepoint = "div", treatment = "compound",
+#                                metrics = c("firing_rate", "n_bursts"),
+#                                normalize = "baseline")
+
+# 2. PCA — the shared state space.
+pca <- pca_analysis_enhanced(normalized_data = processed$normalized_data,
                              grouping_variables = "Treatment")
 
-# 3. Trajectories — timepoints ordered correctly (baseline first; 1h15 < 1h30 < 1h45)
-plot_pca_trajectories_general(
-  pca, trajectory_grouping = "Treatment",
-  timepoint_order = nova_order_timepoints(pca$plot_data$Timepoint)
-)
+# 3. How did each condition move away from baseline?
+traj <- nova_trajectory_summary(pca, group_var = "Treatment")
+traj$plots$displacement   # distance from baseline over time, mean +/- SEM across wells
+traj$plots$map            # the path through PC space
+traj$metrics              # net displacement, path length, directness, peak timing
+
+# 4. In plain language.
+nova_describe(traj)
 ```
 
 ---
@@ -134,28 +147,53 @@ nova_describe(s)   # a plain-language summary
 
 ## Function reference
 
+**Read**
+
 | Function | Description |
 |---|---|
 | `discover_mea_structure` | Scan a directory and report detected MEA experiments and timepoints |
-| `process_mea_flexible` | Read and merge CSVs across experiments and timepoints; normalize to baseline |
+| `process_mea_flexible` | Read and merge Axion CSV exports across experiments and timepoints |
+| `process_mea_table` | Ingest an already-tidy table (published data, or your own); normalise to a baseline timepoint **or** to control wells |
+
+**Analyse**
+
+| Function | Description |
+|---|---|
 | `pca_analysis_enhanced` | Run PCA on the processed feature matrix |
+| `nova_extract_trajectories` | Tidy, correctly ordered paths through an embedding |
+| `nova_trajectory_summary` | How each condition moved from baseline: distance, path length, directness, timing |
+| `nova_describe` | Plain-language read-out of a trajectory result (rule-based, no AI) |
+
+**Plot**
+
+| Function | Description |
+|---|---|
 | `pca_plots_enhanced` | PCA scatter, ellipses, loadings, variance plots |
-| `plot_pca_trajectories_general` | Mean PCA trajectories across timepoints per group |
+| `plot_pca_trajectories_general` | Per-well and group-mean PCA trajectories across timepoints |
 | `create_mea_heatmaps_enhanced` | Heatmaps of MEA metrics (raw or normalized) |
 | `plot_mea_metric` | Bar/box/violin/line plot for a single MEA variable |
-| `nova_trajectory_summary` | Describe how conditions move from baseline (distance, directness, timing) |
-| `nova_order_timepoints` / `nova_time_to_minutes` | Robust, baseline-first timepoint ordering |
-| `nova_describe` | Plain-language summary of a trajectory result |
+
+**Utilities**
+
+| Function | Description |
+|---|---|
+| `nova_order_timepoints` / `nova_time_to_minutes` | Baseline-first timepoint ordering; parses `1h30`, `90min`, `DIV7` |
+| `nova_unit_cols` / `nova_unit_id` | What identifies one replicate well. Ask these rather than counting on `Well`: well IDs repeat across plates, so `n_distinct(Well)` merges the same ID from different plates into one replicate and understates your replication |
+| `nova_theme` / `nova_palette` | Consistent figure styling |
 
 ---
 
 ## Data format
 
-NOVA reads the directory layout Axion BioSystems software exports:
+NOVA takes two kinds of input.
+
+### 1. Axion CSV exports — `process_mea_flexible()`
+
+The directory layout Axion BioSystems software produces:
 
 - **One folder per MEA plate**, named `MEA` + digits (e.g. `MEA001`, `MEA016a`)
 - **One CSV per timepoint** inside it, named `<plate>_<timepoint>.csv` (e.g. `MEA001_baseline.csv`, `MEA001_1h.csv`)
-- **Timepoint labels** can be any string after the underscore — `baseline`, `0min`, `1h30`, `DIV7`; NOVA finds the metadata row automatically and orders timepoints by real time.
+- **Timepoint labels** can be any string after the underscore — `baseline`, `0min`, `1h30`, `DIV7`; NOVA finds the metadata rows automatically and orders timepoints by real time.
 
 ```
 MEA_data/
@@ -167,6 +205,39 @@ MEA_data/
     ├── MEA002_baseline.csv
     └── MEA002_1h.csv
 ```
+
+### 2. Any tidy table — `process_mea_table()`
+
+Published datasets essentially never arrive in the Axion layout. They arrive as a plain
+table: one row per well × timepoint, metrics in columns (or already in long form).
+`process_mea_table()` maps that onto the same schema, so everything downstream is identical.
+
+```r
+res <- process_mea_table(
+  df,
+  experiment = c("culture_date", "plate_id"),  # see below
+  well       = "well",
+  timepoint  = "DIV",         # "DIV7" and "1h30" both parse to real time
+  treatment  = "compound",
+  metrics    = c("meanfiringrate", "burst.per.min", "nAE"),
+  normalize  = "control",     # or "baseline", or "none"
+  control    = df$dose == 0   # which wells are the controls
+)
+```
+
+**`experiment` often needs more than one column, and getting it wrong is silent.** A well is
+only identified once you know which experiment it came from — and the experiment is not
+always one column. In the EPA dataset used in [`case_studies/`](case_studies/), plate serial
+numbers are *reused across culture dates*: four serials, six experiments. Keying on the
+serial alone merges two different cultures into one well. Pass every column that identifies
+the experiment.
+
+**Normalisation is a choice, not a default.** `"baseline"` divides each well by its own
+earliest timepoint — a fold-change over time. `"control"` divides by the control wells on the
+same plate at the same timepoint — the toxicology convention, and the only workable option
+when the earliest timepoint is not a usable reference (in a developmental assay, every well
+may be silent at the first timepoint, making the ratio undefined). Both are ratios: undefined
+against zero, which yields `NA`, never `Inf`.
 
 ---
 

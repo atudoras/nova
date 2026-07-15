@@ -17,3 +17,4 @@ List containing annotations data frame and color schemes
 \description{
 Creates annotation data frames and color schemes for heatmap visualization
 }
+\keyword{internal}

@@ -17,3 +17,4 @@ List of colors for plotting
 \description{
 Sets up color schemes for plotting functions
 }
+\keyword{internal}

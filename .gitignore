@@ -23,3 +23,8 @@ case_studies/**/*_files/
 
 # --- macOS ---
 .DS_Store
+
+# --- session / agent scratch (never public) ---
+*_SESSION_PROMPT.md
+NEXT_SESSION*.md
+CRAN-SUBMISSION

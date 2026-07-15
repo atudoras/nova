@@ -38,3 +38,4 @@ NULL (prints to console)
 \description{
 Prints formatted summary of PCA variable importance analysis
 }
+\keyword{internal}

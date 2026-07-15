@@ -13,14 +13,7 @@
 #'
 #' @return Data frame with missing values handled according to specified method
 #'
-#'@examples
-#' test_data <- data.frame(
-#'   ID = 1:10,
-#'   Value = c(1.2, NA, 3.4, 2.1, NA, 5.6, 4.3, NA, 2.8, 3.9)
-#' )
-#' cleaned <- handle_missing_values(test_data, "Value", "remove", FALSE)
-#'
-#' @export
+#' @keywords internal
 handle_missing_values <- function(data, value_column, method, verbose) {
   original_na <- sum(is.na(data[[value_column]]))
   
@@ -59,16 +52,7 @@ handle_missing_values <- function(data, value_column, method, verbose) {
 #'
 #' @return Filtered data frame
 #' 
-#' @examples
-#' test_data <- data.frame(
-#'   Variable = rep(paste0("V", 1:5), each = 20),
-#'   Value = rnorm(100),
-#'   Group = rep(c("A", "B"), 50)
-#' )
-#' filtered <- quality_filter(test_data, "Variable", "Value", "Group", 
-#'                            0.8, 5, FALSE)
-#' 
-#' @export
+#' @keywords internal
 quality_filter <- function(data, variable_column, value_column, grouping_columns, 
                            quality_threshold, min_observations, verbose) {
   original_vars <- length(unique(data[[variable_column]]))
@@ -118,15 +102,7 @@ quality_filter <- function(data, variable_column, value_column, grouping_columns
 #'
 #' @return Aggregated data frame
 #' 
-#' @examples
-#' test_data <- data.frame(
-#'   Group = rep(c("A", "B"), each = 10),
-#'   Variable = rep(paste0("V", 1:5), 4),
-#'   Value = rnorm(20)
-#' )
-#' agg <- aggregate_data(test_data, "Group", "Variable", "Value", "mean")
-#' 
-#' @export
+#' @keywords internal
 aggregate_data <- function(data, group_col, variable_column, value_column, method) {
   data %>%
     dplyr::group_by(.data[[group_col]], .data[[variable_column]]) %>%
@@ -149,7 +125,7 @@ aggregate_data <- function(data, group_col, variable_column, value_column, metho
 #' @param verbose Whether to print scaling information
 #'
 #' @return Scaled matrix
-#' @export
+#' @keywords internal
 apply_scaling_enhanced <- function(matrix_data, scale_method, verbose = FALSE) {
   if (verbose) cat("Applying scaling method:", scale_method, "\n")
   
@@ -208,7 +184,7 @@ apply_scaling_enhanced <- function(matrix_data, scale_method, verbose = FALSE) {
 #' @param verbose Whether to print cleaning information
 #'
 #' @return Cleaned matrix or NULL if insufficient data
-#' @export
+#' @keywords internal
 clean_heatmap_matrix <- function(matrix_data, min_finite = 2, verbose = FALSE) {
   if (nrow(matrix_data) == 0 || ncol(matrix_data) == 0) {
     if (verbose) cat("Warning: Empty matrix\n")
@@ -246,7 +222,7 @@ clean_heatmap_matrix <- function(matrix_data, min_finite = 2, verbose = FALSE) {
 #' @param factor_cols Vector of factor column names
 #'
 #' @return List containing annotations data frame and color schemes
-#' @export
+#' @keywords internal
 create_annotations_enhanced <- function(rownames_vector, factor_cols) {
   # Parse combined names back to individual factors
   split_names <- strsplit(rownames_vector, "_")
@@ -289,7 +265,7 @@ create_annotations_enhanced <- function(rownames_vector, factor_cols) {
 #' @param data_matrix Data matrix to determine color range
 #'
 #' @return List containing colors and breaks
-#' @export
+#' @keywords internal
 create_color_palette_enhanced <- function(palette_name = "yellow_purple", custom_colors = NULL, data_matrix = NULL) {
   if (!is.null(custom_colors)) {
     colors <- grDevices::colorRampPalette(custom_colors)(100)
@@ -344,11 +320,7 @@ create_color_palette_enhanced <- function(palette_name = "yellow_purple", custom
 #'
 #' @return lhs if not NULL, otherwise rhs
 #' 
-#' @examples
-#' null_coalesce(5, 10)
-#' null_coalesce(NULL, 10)
-#' 
-#' @export
+#' @keywords internal
 null_coalesce <- function(lhs, rhs) {
   if (!is.null(lhs)) lhs else rhs
 }
@@ -366,7 +338,7 @@ null_coalesce <- function(lhs, rhs) {
 #' @param min_loading_threshold Minimum loading threshold
 #'
 #' @return NULL (prints to console)
-#' @export
+#' @keywords internal
 print_detailed_summary <- function(top_vars, pc_x_top, pc_y_top, high_both, 
                                    pc_x, pc_y, top_n, min_loading_threshold) {
   
@@ -417,7 +389,7 @@ print_detailed_summary <- function(top_vars, pc_x_top, pc_y_top, high_both,
 #' @param custom_colors Custom color list (optional)
 #'
 #' @return List of colors for plotting
-#' @export
+#' @keywords internal
 setup_color_scheme <- function(color_scheme, custom_colors) {
   if (color_scheme == "viridis") {
     return(list(

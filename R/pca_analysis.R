@@ -1,29 +1,6 @@
 # pca_analysis.R
 # Functions for Principal Component Analysis of MEA data
 
-#' Perform MEA PCA Analysis
-#' 
-#' Template function for performing PCA on MEA data
-#'
-#' @param data Data frame or tibble with processed MEA data
-#' @param variables Character vector. Variables to include in PCA (if NULL, uses all numeric)
-#' @param scale Logical. Whether to scale variables before PCA (default: TRUE)
-#' @param center Logical. Whether to center variables before PCA (default: TRUE)
-#' @param ... Additional PCA parameters
-#'
-#' @return List containing PCA results (scores, loadings, variance explained, etc.)
-#'
-#' Perform PCA analysis (requires processed MEA data)
-#'
-#' @export
-perform_mea_pca <- function(data, variables = NULL, scale = TRUE, center = TRUE, ...) {
-  stop(
-    "perform_mea_pca() is not implemented. ",
-    "Use pca_analysis_enhanced() instead - it accepts a data frame, ",
-    "a processing result, or a file path. See ?pca_analysis_enhanced."
-  )
-}
-
 #' Enhanced PCA Analysis for MEA Data
 #' 
 #' This function performs Principal Component Analysis (PCA) on MEA data with extensive
