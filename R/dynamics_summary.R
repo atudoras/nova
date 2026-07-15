@@ -79,11 +79,9 @@ nova_trajectory_summary <- function(x,
   # construction -- error bands that are silently, uniformly zero.
   if (!inherits(x, "nova_trajectories") && is.null(unit_var)) {
     pd <- if (is.list(x) && "plot_data" %in% names(x)) x$plot_data else x
-    if ("Well" %in% names(pd)) {
-      # A well is only identified once its plate is known: A1 exists on every one.
-      unit_var <- intersect(c("Experiment", "Well"), names(pd))
-    } else {
-      unit_var <- .nova_resolve_col(pd, "Experiment", c("Experiment", "ID"))
+    unit_var <- .nova_unit_cols(pd)
+    if (length(unit_var) == 0L) {
+      unit_var <- .nova_resolve_col(pd, "ID", "ID")
       if (is.na(unit_var)) unit_var <- NULL
     }
   }

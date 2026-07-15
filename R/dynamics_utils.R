@@ -133,6 +133,30 @@ nova_order_timepoints <- function(timepoints, baseline_first = TRUE) {
   hit[1]
 }
 
+# ---------------------------------------------------------------------------
+# Internal: what identifies one replicate well.
+#
+# Plates reuse well IDs -- "A1" exists on every one -- so a well is only
+# identified once its Experiment is known. Deriving this ad hoc in each caller
+# is how the same well on two plates ends up merged into one replicate, so every
+# caller that needs a replicate unit should ask here instead.
+#
+# Returns the identity columns present in `data`, most significant first, or
+# character(0) when none are.
+# ---------------------------------------------------------------------------
+.nova_unit_cols <- function(data) {
+  intersect(c("Experiment", "Well"), names(data))
+}
+
+# Internal: collapse the identity columns into one label. Use for display and
+# row names; group on the columns themselves (via .nova_unit_cols) wherever the
+# grouping has to be exact.
+.nova_unit_id <- function(data, cols = NULL) {
+  if (is.null(cols)) cols <- .nova_unit_cols(data)
+  if (length(cols) == 0L) return(NULL)
+  do.call(paste, c(as.list(as.data.frame(data)[cols]), sep = "_"))
+}
+
 # Internal: axis label with variance-explained, when available.
 .nova_axis_label <- function(dim, var_exp) {
   if (!is.null(var_exp) && dim %in% names(var_exp)) {

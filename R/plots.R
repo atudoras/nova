@@ -775,14 +775,13 @@ plot_pca_trajectories_general <- function(pca_results,
            !is.na(.data[[pc_y]]),
            !is.na(group_id))
   
-  # Identify the replicate well. Prefer the real Well column, qualified by
-  # Experiment so the same well ID on two plates stays two replicates. The
-  # prefix-strip below is a fallback for callers whose only identity column is a
-  # composite Sample string ("A1_15min_pbs"); it silently returns a plate ID if
-  # handed anything else, so it is used only when there is no Well column.
-  well_id_cols <- intersect(c("Experiment", "Well"), names(plot_data_clean))
+  # Identify the replicate well. The prefix-strip below is a fallback for callers
+  # whose only identity column is a composite Sample string ("A1_15min_pbs"); it
+  # silently returns a plate ID if handed anything else, so it is used only when
+  # there is no Well column to ask about.
+  well_id_cols <- .nova_unit_cols(plot_data_clean)
   if ("Well" %in% well_id_cols) {
-    plot_data_clean$well_id <- do.call(paste, c(plot_data_clean[well_id_cols], sep = "_"))
+    plot_data_clean$well_id <- .nova_unit_id(plot_data_clean, well_id_cols)
   } else {
     plot_data_clean$well_id <- sub("_.*", "", plot_data_clean[[individual_var]])
   }
@@ -1463,7 +1462,11 @@ plot_pca_trajectories_general <- function(pca_results,
 #' @param variable_column Character string specifying the column containing variable names (default: "Variable").
 #' @param grouping_columns Character vector of column names to use for grouping (default: c("Treatment", "Genotype")).
 #'   Function will auto-detect which columns are available.
-#' @param sample_id_columns Character vector of columns identifying individual samples (default: c("Well")).
+#' @param sample_id_columns Character vector of columns jointly identifying one sample
+#'   (default: \code{c("Experiment", "Well")}). Used to key the rows of the
+#'   \code{split_by = "combination"} heatmap. Well IDs repeat across plates, so dropping
+#'   \code{"Experiment"} pools the same well from different experiments into a single row.
+#'   The main per-group heatmaps deliberately pool replicate wells and are unaffected.
 #' @param timepoint_column Character string specifying the timepoint column (default: "Timepoint").
 #' @param scale_method Character string specifying scaling method. Options: "z_score" (default), "min_max", "robust", "none".
 #' @param aggregation_method Character string specifying how to aggregate multiple measurements. Options: "mean" (default), "median", "sum".
@@ -1547,7 +1550,7 @@ create_mea_heatmaps_enhanced <- function(
     value_column = "Normalized_Value",
     variable_column = "Variable",
     grouping_columns = c("Treatment", "Genotype"),
-    sample_id_columns = c("Well"),
+    sample_id_columns = c("Experiment", "Well"),
     timepoint_column = "Timepoint",
     scale_method = "z_score",
     aggregation_method = "mean",
@@ -1694,15 +1697,27 @@ create_mea_heatmaps_enhanced <- function(
                    variable_column else "Variable"
       val_col <- value_column
 
-      # Wide matrix: rows = Well, cols = Variable
-      mat <- data %>%
-        dplyr::select(Well,
+      # Wide matrix: rows = well, cols = Variable. Rows are keyed on the well's
+      # full identity (Experiment + Well): keying on Well alone silently pools
+      # the same well ID from different plates into one row, and outright fails
+      # below if those plates disagree about the well's Treatment.
+      combo_data <- data
+      id_cols <- intersect(sample_id_columns, names(combo_data))
+      if (length(id_cols) == 0L) {
+        warning("None of `sample_id_columns` (", paste(sample_id_columns, collapse = ", "),
+                ") are present; falling back to the available identity columns.")
+        id_cols <- .nova_unit_cols(combo_data)
+      }
+      combo_data$.unit_id <- .nova_unit_id(combo_data, id_cols)
+
+      mat <- combo_data %>%
+        dplyr::select(.unit_id,
                       Variable = !!dplyr::sym(var_col),
                       Value    = !!dplyr::sym(val_col)) %>%
         tidyr::pivot_wider(names_from  = Variable,
                            values_from = Value,
                            values_fn   = mean) %>%
-        tibble::column_to_rownames("Well") %>%
+        tibble::column_to_rownames(".unit_id") %>%
         as.matrix()
 
       # Drop columns that are entirely NA (pheatmap/dist errors on all-NA columns)
@@ -1717,11 +1732,11 @@ create_mea_heatmaps_enhanced <- function(
       mat_scaled[mat_scaled >  3] <-  3   # cap outliers at +/-3 SD
       mat_scaled[mat_scaled < -3] <- -3
 
-      # Annotation: one row per Well, Treatment + Genotype columns
-      ann_row <- data %>%
-        dplyr::distinct(Well, Treatment, Genotype) %>%
+      # Annotation: one row per well, Treatment + Genotype columns
+      ann_row <- combo_data %>%
+        dplyr::distinct(.unit_id, Treatment, Genotype) %>%
         dplyr::arrange(Treatment, Genotype) %>%
-        tibble::column_to_rownames("Well")
+        tibble::column_to_rownames(".unit_id")
 
       # Align annotation rows to matrix rows
       ann_row <- ann_row[rownames(mat_scaled), , drop = FALSE]
