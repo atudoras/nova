@@ -4,10 +4,14 @@
 \alias{nova_unit_cols}
 \title{Which columns identify one replicate well}
 \usage{
-nova_unit_cols(data)
+nova_unit_cols(data, warn = TRUE)
 }
 \arguments{
 \item{data}{A data frame carrying MEA data.}
+
+\item{warn}{Logical. Warn when `Well` is present but `Experiment` is not, so the
+identity silently narrows to a column that does not identify a well (default
+`TRUE`). Set `FALSE` for genuinely single-experiment data.}
 }
 \value{
 The identity columns present in `data`, most significant first;

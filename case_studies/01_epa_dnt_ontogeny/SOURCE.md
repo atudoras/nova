@@ -82,6 +82,39 @@ at DIV 5.
 
 **The Phase-0 assumption "baseline = earliest DIV" does not hold for this dataset.**
 
+## What the source paper designates active
+
+Quoted from the abstract of Brown et al. (2016), *Toxicol Sci* 154(1):126–139
+([doi:10.1093/toxsci/kfw147](https://doi.org/10.1093/toxsci/kfw147),
+[PMID 27492221](https://pubmed.ncbi.nlm.nih.gov/27492221/)) — **verified against the
+abstract, not inferred**:
+
+> "All compounds except acetaminophen (≤ 30 µM) caused concentration-related effects on
+> one or more of these parameters."
+
+> "Domoic acid and sodium orthovanadate altered several of these parameters in the
+> absence of cytotoxicity."
+
+So the training set is **five actives and one negative**, and among the actives the paper
+draws a second, load-bearing distinction:
+
+| Compound | Designation | Basis |
+|---|---|---|
+| Acetaminophen | **negative** (≤ 30 µM) | "All compounds except acetaminophen…" |
+| Domoic acid | active, **without cytotoxicity** | named explicitly |
+| Sodium orthovanadate | active, **without cytotoxicity** | named explicitly |
+| Bisindolylmaleimide-1 | active | "all compounds except acetaminophen" |
+| Mevastatin | active | as above |
+| Loperamide | active | as above |
+| Glyphosate | — | not in the paper's training set; appears here at dose 0 only |
+
+**The cytotoxicity distinction matters for interpretation.** The paper singles out domoic
+acid and sodium orthovanadate as altering network parameters *without* killing cells. The
+implication for the other three actives is that their network effects are at least partly
+cytotoxic. Viability (Cell Titer Blue, day 12) is **not in this file**, so cytotoxicity
+cannot be modelled or adjusted for here — an activity ranking built on this file alone
+cannot separate "changed the network" from "killed the cells", and must say so.
+
 ## Caveats to carry into any analysis
 
 - **DIV 5 is already exposed.** Compounds are applied from the start of the 12-day

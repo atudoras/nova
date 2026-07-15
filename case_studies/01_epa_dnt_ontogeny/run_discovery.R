@@ -26,10 +26,11 @@ if (!file.exists(CSV)) {
 # DIV 5 is excluded, and not for convenience. Values are expressed as a fraction
 # of the vehicle controls on the same plate at the same DIV, and at DIV 5 those
 # controls are themselves silent: the control mean is exactly 0 for network
-# spikes in 4 of 6 experiments, so the ratio is undefined for 63-81% of wells on
-# the network metrics. That is the assay working -- cortical networks have not
-# formed at DIV 5, which is what it exists to measure -- but it means DIV 5
-# cannot be expressed on this scale at all.
+# spikes in 5 of 6 experiments, so the ratio is undefined for 63-81% of wells on
+# the network metrics (0% on firing rate, active electrodes and synchrony). That
+# is the assay working -- cortical networks have not formed at DIV 5, which is
+# what it exists to measure -- but it means DIV 5 cannot be expressed on this
+# scale at all.
 #
 # The alternative was to keep DIV 5 and drop to the three metrics whose controls
 # are active then (firing rate, active electrodes, synchrony), which would have

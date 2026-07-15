@@ -149,6 +149,9 @@ nova_order_timepoints <- function(timepoints, baseline_first = TRUE) {
 #' each one decided differently.
 #'
 #' @param data A data frame carrying MEA data.
+#' @param warn Logical. Warn when `Well` is present but `Experiment` is not, so the
+#'   identity silently narrows to a column that does not identify a well (default
+#'   `TRUE`). Set `FALSE` for genuinely single-experiment data.
 #' @return The identity columns present in `data`, most significant first;
 #'   `character(0)` if none are.
 #' @seealso [nova_unit_id()] for the collapsed label.
@@ -159,8 +162,17 @@ nova_order_timepoints <- function(timepoints, baseline_first = TRUE) {
 #' length(unique(d$Well))
 #' length(unique(nova_unit_id(d)))
 #' @export
-nova_unit_cols <- function(data) {
-  intersect(c("Experiment", "Well"), names(data))
+nova_unit_cols <- function(data, warn = TRUE) {
+  cols <- intersect(c("Experiment", "Well"), names(data))
+  # Degrading quietly to Well alone is how this bug keeps coming back: the caller
+  # asked for a well's identity and got something that is not one, with no signal
+  # that anything narrowed.
+  if (isTRUE(warn) && identical(cols, "Well")) {
+    warning("No `Experiment` column: well identity falls back to `Well` alone, which ",
+            "does not distinguish the same well ID on different plates. Correct only ",
+            "for single-experiment data; pass warn = FALSE if that is the case.")
+  }
+  cols
 }
 
 #' Collapse well identity into a single label
@@ -185,9 +197,13 @@ nova_unit_id <- function(data, cols = NULL) {
   do.call(paste, c(as.list(as.data.frame(data)[cols]), sep = "_"))
 }
 
-# Back-compat aliases for internal call sites.
-.nova_unit_cols <- nova_unit_cols
-.nova_unit_id   <- nova_unit_id
+# Internal call sites resolve identity on data whose shape they have already
+# checked, so they opt out of the fallback warning to avoid emitting it twice.
+.nova_unit_cols <- function(data) nova_unit_cols(data, warn = FALSE)
+.nova_unit_id   <- function(data, cols = NULL) {
+  if (is.null(cols)) cols <- .nova_unit_cols(data)
+  nova_unit_id(data, cols)
+}
 
 # Internal: axis label with variance-explained, when available.
 .nova_axis_label <- function(dim, var_exp) {

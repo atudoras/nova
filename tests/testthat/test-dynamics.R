@@ -225,8 +225,16 @@ test_that("nova_unit_cols/nova_unit_id keep same-ID wells on different plates ap
   expect_equal(length(unique(nova_unit_id(d))), 3L)
 })
 
+test_that("nova_unit_cols warns rather than silently narrowing to Well alone", {
+  # Falling back to Well without saying so is how this bug keeps returning: the
+  # caller asks for a well's identity and gets something that is not one.
+  expect_warning(cols <- nova_unit_cols(data.frame(Well = "A1")), "does not distinguish")
+  expect_equal(cols, "Well")
+  expect_no_warning(nova_unit_cols(data.frame(Well = "A1"), warn = FALSE))
+  expect_no_warning(nova_unit_cols(data.frame(Experiment = "E1", Well = "A1")))
+})
+
 test_that("nova_unit_cols degrades honestly when identity columns are absent", {
-  expect_equal(nova_unit_cols(data.frame(Well = "A1")), "Well")
   expect_equal(nova_unit_cols(data.frame(x = 1)), character(0))
   expect_null(nova_unit_id(data.frame(x = 1)))
 })

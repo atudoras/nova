@@ -134,7 +134,10 @@ suppressPackageStartupMessages({
     summarise(
       median_log2_fc = stats::median(.data$.log2fc, na.rm = TRUE),
       n_wells        = dplyr::n_distinct(.data$.unit),
-      n_plates       = if ("Experiment" %in% names(usable)) {
+      # Experiments, not physical plates: a plate serial can be reused across
+      # cultures, so these are not the same count and conflating them undoes the
+      # identity distinction the schema exists to preserve.
+      n_experiments  = if ("Experiment" %in% names(usable)) {
                          dplyr::n_distinct(.data$Experiment)
                        } else NA_integer_,
       .groups = "drop"
@@ -149,7 +152,7 @@ suppressPackageStartupMessages({
       effect_type = "abs_median_log2_fc",
       direction   = ifelse(.data$median_log2_fc >= 0, "up", "down"),
       n_wells     = .data$n_wells,
-      n_plates    = .data$n_plates
+      n_experiments = .data$n_experiments
     ) %>%
     as.data.frame()
 }
@@ -172,7 +175,7 @@ suppressPackageStartupMessages({
       effect_type = "abs_loading",
       direction   = ifelse(rot[, i] >= 0, "up", "down"),
       n_wells     = NA_integer_,
-      n_plates    = NA_integer_,
+      n_experiments = NA_integer_,
       variance_explained = if (!is.null(ve) && pc %in% names(ve)) as.numeric(ve[[pc]]) else NA_real_,
       stringsAsFactors = FALSE, row.names = NULL
     )
@@ -188,7 +191,7 @@ suppressPackageStartupMessages({
       kind = "trajectory_distance", group = m$group, metric = NA_character_,
       timepoint = m$peak_timepoint, component = NA_character_,
       effect = m$net_displacement, effect_type = "net_displacement",
-      direction = NA_character_, n_wells = NA_integer_, n_plates = NA_integer_,
+      direction = NA_character_, n_wells = NA_integer_, n_experiments = NA_integer_,
       stringsAsFactors = FALSE
     ),
     # Directness is reported as 1 - directness so that "least direct path" ranks
@@ -198,7 +201,7 @@ suppressPackageStartupMessages({
       timepoint = NA_character_, component = NA_character_,
       effect = ifelse(is.na(m$directness), NA_real_, 1 - m$directness),
       effect_type = "one_minus_directness",
-      direction = NA_character_, n_wells = NA_integer_, n_plates = NA_integer_,
+      direction = NA_character_, n_wells = NA_integer_, n_experiments = NA_integer_,
       stringsAsFactors = FALSE
     )
   )
@@ -225,7 +228,7 @@ suppressPackageStartupMessages({
       metric = NA_character_, timepoint = NA_character_,
       component = paste(dims, collapse = "/"),
       effect = dist, effect_type = "centroid_distance",
-      direction = NA_character_, n_wells = NA_integer_, n_plates = NA_integer_,
+      direction = NA_character_, n_wells = NA_integer_, n_experiments = NA_integer_,
       stringsAsFactors = FALSE
     )
   })
