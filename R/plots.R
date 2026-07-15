@@ -230,11 +230,20 @@ pca_plots_enhanced <- function(pca_output = NULL,
       }
     }
     
+    # Interpolate past the end of the hand-picked palette rather than truncating.
+    # `scientific_colors[1:min(n, 20)]` capped the colours at 20 while the names
+    # vector kept every level, so any dataset with more than 20 groups died on the
+    # length mismatch -- a dose-response design reaches that easily.
+    color_palette <- if (n_colors <= length(scientific_colors)) {
+      scientific_colors[seq_len(n_colors)]
+    } else {
+      grDevices::colorRampPalette(scientific_colors)(n_colors)
+    }
+    names(color_palette) <- unique_color_vals
+
     if (!is.null(gray_color_value)) {
-      color_palette <- scientific_colors[1:min(n_colors, length(scientific_colors))]
-      names(color_palette) <- unique_color_vals
       color_palette[gray_color_value] <- "gray50"
-      
+
       if (verbose) {
         message("Color mapping (", color_variable, ") with gray option:")
         for (i in seq_along(color_palette)) {
@@ -243,8 +252,6 @@ pca_plots_enhanced <- function(pca_output = NULL,
         }
       }
     } else {
-      color_palette <- scientific_colors[1:min(n_colors, length(scientific_colors))]
-      names(color_palette) <- unique_color_vals
       if (verbose) message("Color mapping (", color_variable, "): ", paste(names(color_palette), collapse = ", "))
     }
   }
@@ -254,7 +261,16 @@ pca_plots_enhanced <- function(pca_output = NULL,
   if (!is.null(shape_variable)) {
     unique_shape_vals <- sort(unique(plot_data[[shape_variable]]))
     n_shapes <- length(unique_shape_vals)
-    shape_palette <- basic_shapes[1:min(n_shapes, length(basic_shapes))]
+    # Shapes cannot be interpolated the way colours can, so beyond the vocabulary
+    # they have to repeat. Say so: truncating produced a length mismatch, and a
+    # silently repeated shape is a legend that lies about which group is which.
+    if (n_shapes > length(basic_shapes)) {
+      warning("`", shape_variable, "` has ", n_shapes, " levels but only ",
+              length(basic_shapes), " distinct shapes are available, so shapes ",
+              "repeat and no longer identify a group uniquely. Map this variable ",
+              "to colour or a facet instead.")
+    }
+    shape_palette <- rep_len(basic_shapes, n_shapes)
     names(shape_palette) <- unique_shape_vals
     if (verbose) message("Shape mapping (", shape_variable, "): ", paste(names(shape_palette), "=", shape_palette, collapse = ", "))
   }
@@ -270,7 +286,9 @@ pca_plots_enhanced <- function(pca_output = NULL,
     plot_data$Timepoint <- factor(plot_data$Timepoint, levels = present_timepoints, ordered = TRUE)
     
     progressive_shapes <- c(16, 17, 15, 18, 19, 25, 8, 0, 1, 2, 5, 6)
-    timepoint_shape_palette <- progressive_shapes[1:length(present_timepoints)]
+    # rep_len, not [1:n]: indexing past the end yields NA shapes, which ggplot
+    # then drops without explanation.
+    timepoint_shape_palette <- rep_len(progressive_shapes, length(present_timepoints))
     names(timepoint_shape_palette) <- present_timepoints
     
     if (length(timepoint_shape_palette) > 1) {

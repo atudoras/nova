@@ -48,28 +48,47 @@ suppressPackageStartupMessages({
   df
 }
 
-#' Flag observations whose baseline is too close to zero to divide by
+#' Flag observations whose normalisation divisor is too close to zero
 #'
-#' Normalisation is a ratio, so a baseline near zero produces a fold-change of
-#' arbitrary size that reflects the divisor rather than any change in the well.
+#' Normalisation is a ratio, so a divisor near zero produces a fold-change of
+#' arbitrary size that reflects the divisor rather than anything about the well.
 #' Left in, these dominate an effect-size ranking with pure arithmetic artefacts.
-#' The threshold is scale-free -- relative to each metric's own typical baseline --
-#' because metrics here span spike counts and sub-hertz rates.
+#' The threshold is scale-free -- relative to each metric's own typical divisor --
+#' because metrics span spike counts and sub-hertz rates.
+#'
+#' **The divisor is not always the baseline timepoint.** Normalising each well to
+#' its own earliest timepoint makes the divisor that well's baseline `Value`;
+#' normalising to same-plate vehicle controls (the toxicology convention) makes it
+#' a separate control column. Guarding the wrong quantity is worse than not
+#' guarding, so the caller says which it is.
 #'
 #' @param d Processed data, long format.
-#' @param baseline_timepoint Label of the baseline timepoint.
-#' @param rel_floor Fraction of a metric's median baseline below which a well's
-#'   baseline is considered unusable (default 0.001).
+#' @param baseline_timepoint Label of the baseline timepoint. Used only when
+#'   `divisor_column` is NULL.
+#' @param divisor_column Name of a column holding the actual divisor (e.g.
+#'   `"Control_Value"`). When NULL, the divisor is taken to be each well's own
+#'   `Value` at `baseline_timepoint`.
+#' @param rel_floor Fraction of a metric's median divisor below which the divisor
+#'   is considered unusable (default 0.001).
 #' @return `d` with a logical `near_zero_baseline` column added.
-.dr_flag_near_zero_baseline <- function(d, baseline_timepoint, rel_floor = 0.001) {
-  key <- c("Experiment", "Well", "Variable")
-  key <- key[key %in% names(d)]
+.dr_flag_near_zero_baseline <- function(d, baseline_timepoint,
+                                        divisor_column = NULL, rel_floor = 0.001) {
 
-  base <- d[d$Timepoint == baseline_timepoint, c(key, "Value"), drop = FALSE]
-  names(base)[names(base) == "Value"] <- ".baseline_value"
-  base <- base[!duplicated(base[, key, drop = FALSE]), , drop = FALSE]
+  if (!is.null(divisor_column)) {
+    if (!divisor_column %in% names(d)) {
+      stop("`divisor_column` '", divisor_column, "' is not a column.", call. = FALSE)
+    }
+    d$.baseline_value <- d[[divisor_column]]
+  } else {
+    key <- c("Experiment", "Well", "Variable")
+    key <- key[key %in% names(d)]
 
-  d <- merge(d, base, by = key, all.x = TRUE, sort = FALSE)
+    base <- d[d$Timepoint == baseline_timepoint, c(key, "Value"), drop = FALSE]
+    names(base)[names(base) == "Value"] <- ".baseline_value"
+    base <- base[!duplicated(base[, key, drop = FALSE]), , drop = FALSE]
+
+    d <- merge(d, base, by = key, all.x = TRUE, sort = FALSE)
+  }
 
   scale_by_metric <- d %>%
     filter(!is.na(.data$.baseline_value), .data$.baseline_value > 0) %>%
@@ -88,14 +107,22 @@ suppressPackageStartupMessages({
 # Finding builders. Each returns a data frame with the shared findings columns.
 # ---------------------------------------------------------------------------
 
-.dr_findings_moves <- function(d, group_var, baseline_timepoint) {
+.dr_findings_moves <- function(d, group_var, baseline_timepoint,
+                               drop_baseline_timepoint = TRUE) {
   unit_key <- intersect(c("Experiment", "Well"), names(d))
 
   usable <- d %>%
-    filter(.data$Timepoint != baseline_timepoint,
-           !.data$near_zero_baseline,
+    filter(!.data$near_zero_baseline,
            is.finite(.data$Normalized_Value),
            .data$Normalized_Value > 0)
+
+  # When each well is normalised to its own baseline timepoint, that timepoint is
+  # 1.0 by construction and carries no information. When the divisor is something
+  # else -- vehicle controls, say -- every timepoint is a real measurement and
+  # dropping one would discard a third of the evidence.
+  if (isTRUE(drop_baseline_timepoint)) {
+    usable <- usable %>% filter(.data$Timepoint != baseline_timepoint)
+  }
 
   if (nrow(usable) == 0L) return(NULL)
 
@@ -218,6 +245,11 @@ suppressPackageStartupMessages({
 #' @param baseline_timepoint Baseline label. Inferred via `nova_order_timepoints()`
 #'   when NULL.
 #' @param value_column Value column for PCA. Inferred: prefers Normalized_Value.
+#' @param divisor_column Column holding the quantity `Normalized_Value` was divided
+#'   by, when that is not each well's own baseline timepoint — e.g.
+#'   `"Control_Value"` for normalisation against vehicle controls. Supplying it
+#'   makes the near-zero guard check the real divisor, and keeps every timepoint in
+#'   the move ranking (none of them is 1 by construction).
 #' @param top_metrics How many metrics get a per-metric plot (0 = all). Plotting
 #'   every metric x group is the slow step; what is skipped is logged, never
 #'   silently dropped.
@@ -228,6 +260,7 @@ discovery_run <- function(processed,
                           group_var = "Treatment",
                           baseline_timepoint = NULL,
                           value_column = NULL,
+                          divisor_column = NULL,
                           top_metrics = 0L,
                           verbose = TRUE) {
 
@@ -265,11 +298,13 @@ discovery_run <- function(processed,
   manifest <- character(0)
 
   # -- validity guard --------------------------------------------------------
-  d <- .dr_flag_near_zero_baseline(d, baseline_timepoint)
+  d <- .dr_flag_near_zero_baseline(d, baseline_timepoint, divisor_column = divisor_column)
   n_flagged <- sum(d$near_zero_baseline, na.rm = TRUE)
   if (n_flagged > 0 && verbose) {
     .dr_msg(verbose, "excluded from ranking: ", n_flagged, " observation(s) of ",
-            nrow(d), " whose baseline is ~0 (fold-change undefined)")
+            nrow(d), " whose divisor (",
+            if (is.null(divisor_column)) paste0("own ", baseline_timepoint, " value") else divisor_column,
+            ") is ~0 -- fold-change undefined")
   }
 
   # -- PCA -------------------------------------------------------------------
@@ -342,7 +377,8 @@ discovery_run <- function(processed,
   # -- findings --------------------------------------------------------------
   .dr_msg(verbose, "ranking findings ...")
   parts <- list(
-    .dr_rank(.dr_findings_moves(d, group_var, baseline_timepoint)),
+    .dr_rank(.dr_findings_moves(d, group_var, baseline_timepoint,
+                                drop_baseline_timepoint = is.null(divisor_column))),
     .dr_rank(.dr_findings_loadings(pca)),
     .dr_rank(.dr_findings_trajectory(traj)),
     .dr_rank(.dr_findings_separation(pca, group_var))

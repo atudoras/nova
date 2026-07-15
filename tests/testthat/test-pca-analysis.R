@@ -129,6 +129,47 @@ test_that("combined averaged plot subtitle contains timepoints", {
 # opting out of an aesthetic crashed -- including the documented single-genotype
 # case where Genotype is deliberately absent.
 
+# ── palettes must scale to the data ───────────────────────────────────────────
+# Regression: the colour vector was truncated at 20 (`cols[1:min(n, 20)]`) while
+# the names vector kept every level, so >20 groups died on a length mismatch.
+# A compound x dose design passes 20 immediately.
+
+test_that("pca_plots_enhanced handles more groups than the built-in palette", {
+  n_groups <- 45
+  pd <- data.frame(
+    PC1 = rnorm(n_groups * 2), PC2 = rnorm(n_groups * 2),
+    Treatment = rep(paste0("cond", sprintf("%02d", seq_len(n_groups))), each = 2),
+    Timepoint = rep(c("DIV7", "DIV12"), n_groups),
+    stringsAsFactors = FALSE
+  )
+  pca <- list(plot_data = pd, pca_result = prcomp(matrix(rnorm(n_groups * 8), ncol = 4)))
+  expect_no_error(
+    res <- pca_plots_enhanced(pca_output = pca, grouping_variables = "Treatment",
+                              color_variable = "Treatment", shape_variable = NULL,
+                              save_plots = FALSE, verbose = FALSE)
+  )
+  expect_type(res, "list")
+})
+
+test_that("a shape variable with more levels than shapes warns rather than truncating", {
+  n <- 30  # more than the 25 available shapes
+  pd <- data.frame(
+    PC1 = rnorm(n), PC2 = rnorm(n),
+    Treatment = "A",
+    Genotype = paste0("g", sprintf("%02d", seq_len(n))),
+    Timepoint = "DIV7", stringsAsFactors = FALSE
+  )
+  pca <- list(plot_data = pd, pca_result = prcomp(matrix(rnorm(n * 4), ncol = 4)))
+  expect_warning(
+    pca_plots_enhanced(pca_output = pca,
+                       grouping_variables = c("Treatment", "Genotype"),
+                       color_variable = "Treatment", shape_variable = "Genotype",
+                       secondary_shape_variable = NULL,
+                       save_plots = FALSE, verbose = FALSE),
+    regexp = "shapes repeat"
+  )
+})
+
 test_that("pca_plots_enhanced accepts NULL shape variables", {
   pca <- make_mini_pca()
   pca$pca_result <- prcomp(matrix(rnorm(24), nrow = 6))
