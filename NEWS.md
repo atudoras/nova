@@ -51,6 +51,21 @@ changes what it returns.
   that a caller passing a data frame that already carried an `Experiment` column would
   previously have had *every* well on a plate collapsed into one trajectory.
 
+* **New: `nova_unit_cols()` / `nova_unit_id()`** — the columns that identify one
+  replicate well, and their collapsed label. Every bug in this release came from a
+  function deciding for itself what identified a well, and each decided differently;
+  these exist so callers can ask instead of re-deriving. `n_distinct(Well)` counts the
+  same well ID from six plates as one replicate — on a six-plate dataset that
+  understates replication roughly two-fold, and understated precision is the one error
+  that makes a result look *better* than it is.
+
+* **`pca_plots_enhanced()` failed with more than 20 groups.** The colour vector was
+  truncated at the length of the built-in palette while the names vector kept every
+  level, so the assignment died on a length mismatch — a compound × dose design reaches
+  20 immediately. Colours now interpolate past the palette. Shapes cannot be
+  interpolated, so beyond the 25 available they repeat and now warn, rather than
+  truncating or indexing into `NA` and silently dropping points.
+
 * **`create_mea_heatmaps_enhanced(split_by = "combination")` errored on normal data.**
   Rows were keyed on `Well` alone, so a well carrying different treatments on different
   plates produced duplicate row names and the call failed with

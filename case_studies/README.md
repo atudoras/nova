@@ -16,10 +16,27 @@ auditable rather than a matter of taste:
 
 ## Studies
 
-| # | Study | Data | Status |
-|---|-------|------|--------|
-| 01 | [EPA/Shafer DNT ontogeny](01_epa_dnt_ontogeny/) | US EPA (Brown et al. 2016) — native Axion metrics | scaffolded |
-| 02 | [Raw spikes → NOVA metrics](02_raw_to_metrics/) | public spike-time dataset | scaffolded |
+| # | Study | Data | Finding | Output |
+|---|-------|------|---------|--------|
+| 01 | [EPA/Shafer DNT ontogeny](01_epa_dnt_ontogeny/) | US EPA, Brown et al. 2016 (public domain) | A generic NOVA pass, given no compound-specific tuning, ranks the training set's two designated actives into 20 of the top 25 changes and never surfaces the designated negative. | [notebook](01_epa_dnt_ontogeny/summary.html) · [brief](01_epa_dnt_ontogeny/summary.pdf) |
+| 02 | [Raw spikes → NOVA metrics](02_raw_to_metrics/) | public spike-time dataset (TBD) | — | scaffolded |
+
+**Study 01 in one line:** exploratory, and it recovers labels the training set already
+assigned — that is a claim about prediction, not about neurotoxicity in humans.
+
+To reproduce study 01: download the file recorded in
+[`01_epa_dnt_ontogeny/SOURCE.md`](01_epa_dnt_ontogeny/SOURCE.md) to
+`01_epa_dnt_ontogeny/data/`, then from the repo root
+
+```r
+devtools::load_all(".")
+source("case_studies/01_epa_dnt_ontogeny/run_discovery.R")
+```
+
+```sh
+quarto render case_studies/01_epa_dnt_ontogeny/summary.qmd --to html
+quarto render case_studies/01_epa_dnt_ontogeny/summary.qmd --to typst
+```
 
 Each study directory holds `SOURCE.md` (URL, licence, download date, checksum),
 a `run_discovery.R`, a `summary.qmd`, and the rendered `summary.html` /

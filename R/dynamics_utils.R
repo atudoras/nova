@@ -134,28 +134,60 @@ nova_order_timepoints <- function(timepoints, baseline_first = TRUE) {
 }
 
 # ---------------------------------------------------------------------------
-# Internal: what identifies one replicate well.
-#
-# Plates reuse well IDs -- "A1" exists on every one -- so a well is only
-# identified once its Experiment is known. Deriving this ad hoc in each caller
-# is how the same well on two plates ends up merged into one replicate, so every
-# caller that needs a replicate unit should ask here instead.
-#
-# Returns the identity columns present in `data`, most significant first, or
-# character(0) when none are.
+# Well identity
 # ---------------------------------------------------------------------------
-.nova_unit_cols <- function(data) {
+
+#' Which columns identify one replicate well
+#'
+#' Plates reuse well IDs — `"A1"` exists on every plate — so a well is only
+#' identified once its `Experiment` is known. Counting or grouping on `Well`
+#' alone silently merges the same well ID from different plates into one
+#' replicate, which understates replication and inflates precision.
+#'
+#' Ask this rather than re-deriving it. Every version of this bug in NOVA's
+#' history came from a function deciding for itself what identified a well, and
+#' each one decided differently.
+#'
+#' @param data A data frame carrying MEA data.
+#' @return The identity columns present in `data`, most significant first;
+#'   `character(0)` if none are.
+#' @seealso [nova_unit_id()] for the collapsed label.
+#' @examples
+#' d <- data.frame(Experiment = c("MEA1", "MEA2"), Well = c("A1", "A1"))
+#' nova_unit_cols(d)
+#' # Well alone would count these two distinct wells as one:
+#' length(unique(d$Well))
+#' length(unique(nova_unit_id(d)))
+#' @export
+nova_unit_cols <- function(data) {
   intersect(c("Experiment", "Well"), names(data))
 }
 
-# Internal: collapse the identity columns into one label. Use for display and
-# row names; group on the columns themselves (via .nova_unit_cols) wherever the
-# grouping has to be exact.
-.nova_unit_id <- function(data, cols = NULL) {
-  if (is.null(cols)) cols <- .nova_unit_cols(data)
+#' Collapse well identity into a single label
+#'
+#' Use for display, row names and counting. Where a grouping has to be exact,
+#' group on the columns themselves ([nova_unit_cols()]) rather than on this
+#' string: two identity columns pasted together can in principle collide if the
+#' values contain the separator.
+#'
+#' @param data A data frame carrying MEA data.
+#' @param cols Identity columns; defaults to [nova_unit_cols()].
+#' @return Character vector of one label per row, or `NULL` if `data` carries no
+#'   identity columns.
+#' @seealso [nova_unit_cols()]
+#' @examples
+#' d <- data.frame(Experiment = c("MEA1", "MEA2"), Well = c("A1", "A1"))
+#' nova_unit_id(d)
+#' @export
+nova_unit_id <- function(data, cols = NULL) {
+  if (is.null(cols)) cols <- nova_unit_cols(data)
   if (length(cols) == 0L) return(NULL)
   do.call(paste, c(as.list(as.data.frame(data)[cols]), sep = "_"))
 }
+
+# Back-compat aliases for internal call sites.
+.nova_unit_cols <- nova_unit_cols
+.nova_unit_id   <- nova_unit_id
 
 # Internal: axis label with variance-explained, when available.
 .nova_axis_label <- function(dim, var_exp) {

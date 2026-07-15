@@ -214,6 +214,23 @@ test_that("plot_pca_trajectories_general keys wells by Well, not by plate", {
   expect_equal(max(tr$individual_trajectories$n_obs), 1L)
 })
 
+# ---- well identity ---------------------------------------------------------
+test_that("nova_unit_cols/nova_unit_id keep same-ID wells on different plates apart", {
+  d <- data.frame(Experiment = c("MEA1", "MEA2", "MEA1"),
+                  Well = c("A1", "A1", "A2"), stringsAsFactors = FALSE)
+  expect_equal(nova_unit_cols(d), c("Experiment", "Well"))
+  expect_equal(nova_unit_id(d), c("MEA1_A1", "MEA2_A1", "MEA1_A2"))
+  # The whole point: counting on Well alone loses a replicate.
+  expect_equal(length(unique(d$Well)), 2L)
+  expect_equal(length(unique(nova_unit_id(d))), 3L)
+})
+
+test_that("nova_unit_cols degrades honestly when identity columns are absent", {
+  expect_equal(nova_unit_cols(data.frame(Well = "A1")), "Well")
+  expect_equal(nova_unit_cols(data.frame(x = 1)), character(0))
+  expect_null(nova_unit_id(data.frame(x = 1)))
+})
+
 # ---- backward compatibility ------------------------------------------------
 test_that("existing exported functions are untouched and still present", {
   for (fn in c("pca_analysis_enhanced", "plot_pca_trajectories_general",

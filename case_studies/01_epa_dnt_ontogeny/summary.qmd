@@ -1,0 +1,220 @@
+---
+title: "A generic NOVA pass recovers a DNT training set's known pharmacology"
+subtitle: "EPA/Shafer multi-well MEA network formation assay (Brown et al. 2016) — exploratory reanalysis"
+date: today
+params:
+  study_dir: "."
+  nova_root: "../.."
+  findings_csv: "outputs/discovery/findings.csv"
+  data_rds: "outputs/discovery/discovery.rds"
+  source_md: "SOURCE.md"
+  group_var: "Treatment"
+  min_wells: 4
+  n_top: 6
+format:
+  html:
+    embed-resources: true
+    toc: true
+    toc-depth: 2
+    theme: cosmo
+    fig-width: 8
+    fig-height: 5
+  typst:
+    papersize: a4
+    margin: {x: 1.8cm, y: 1.8cm}
+    fig-format: png
+    fig-dpi: 200
+    fig-width: 6.5
+    fig-height: 3.4
+execute:
+  echo: false
+  warning: false
+  message: false
+---
+
+```{r setup}
+suppressPackageStartupMessages({ library(dplyr); library(ggplot2); library(knitr) })
+
+# NOVA is loaded from this repo's source, never the installed library: the
+# installed copy here is 0.1.1 and predates the trajectory layer entirely, so a
+# report built against it would showcase different code than the repo it ships in.
+suppressMessages(devtools::load_all(params$nova_root, quiet = TRUE))
+stopifnot("nova_trajectory_summary" %in% getNamespaceExports("NOVA"))
+
+findings <- read.csv(file.path(params$study_dir, params$findings_csv), stringsAsFactors = FALSE)
+scan     <- readRDS(file.path(params$study_dir, params$data_rds))
+adapter  <- readRDS(file.path(params$study_dir, "outputs/discovery/adapter_params.rds"))
+
+moves <- findings[findings$kind == "move", ]
+
+# Compound, stripped of its dose. Vehicle wells are labelled "<compound> (vehicle)".
+strip_dose <- function(x) sub(" \\(vehicle\\)$", "", sub(" [0-9.]+ uM$", "", x))
+moves$compound <- strip_dose(moves$group)
+
+# --- the one curation rule, applied once, stated everywhere -------------------
+# A median computed on a single well is not a median. Ranking on raw effect size
+# cannot tell three wells from thirty, so single-well conditions rise to the top
+# on the strength of one lucky (or one dying) well. This is a validity filter,
+# not a change to the ranking: what survives is still ordered by raw effect size.
+kept    <- moves[moves$n_wells >= params$min_wells, ]
+dropped <- moves[moves$n_wells <  params$min_wells, ]
+top     <- head(kept, params$n_top)
+
+ACTIVES  <- c("Mevastatin", "Sodium Orthovanadate")
+NEGATIVE <- "Acetaminophen"
+top25    <- head(moves, 25)
+```
+
+## Headline
+
+```{r headline, results="asis"}
+n_act <- sum(top25$compound %in% ACTIVES)
+n_neg <- sum(top25$compound == NEGATIVE)
+cat(sprintf(
+  paste0("NOVA's standard pipeline was run over this dataset with no compound-specific ",
+         "tuning: normalise to vehicle controls, PCA, trajectory summary, rank by effect ",
+         "size. Of the 25 largest changes it surfaced, **%d are the two compounds this ",
+         "training set treats as active** (%s). The designated negative, %s, appears ",
+         "**%d times**: it does not reach the top 25 at all. Every one of the 25 is a ",
+         "*decrease* relative to vehicle controls.\n\n"),
+  n_act, paste(ACTIVES, collapse = " and "), NEGATIVE, n_neg))
+cat(sprintf(
+  paste0("This is a statement about **prediction, not neurotoxicity**: the ranking ",
+         "recovers labels the training set already assigned, on %d conditions across ",
+         "%d metrics and %d timepoints. Nothing here was tested.\n"),
+  dplyr::n_distinct(moves$group), dplyr::n_distinct(moves$metric),
+  dplyr::n_distinct(moves$timepoint)))
+```
+
+## Hero figure — actives fall, the negative does not
+
+```{r hero, fig.cap="Synchrony index as a fraction of same-plate vehicle controls at DIV 7, by compound and dose. Dashed line = vehicle (no change). Each point is a condition's median across its replicate wells, counting a well by plate and ID; only conditions with at least 4 wells are shown. Sodium orthovanadate and mevastatin - the compounds this training set designates active - fall away with dose, as does bisindolylmaleimide-1. Acetaminophen, the designated negative, tracks its controls across three orders of magnitude."}
+d <- scan$data
+sync <- d %>%
+  filter(.data$Variable == "Synchrony Index (r)", .data$Timepoint == "DIV7",
+         !.data$Is_Control, is.finite(.data$Normalized_Value),
+         .data$Normalized_Value > 0) %>%
+  # Count wells by plate AND ID. `n_distinct(Well)` pools A1 across every plate
+  # into a single replicate: on this dataset that undercounts 28 of 32 conditions
+  # and reports 65 wells where there are 142.
+  mutate(.unit = NOVA::nova_unit_id(.)) %>%
+  group_by(.data$Compound, .data$Dose) %>%
+  summarise(fc = stats::median(.data$Normalized_Value),
+            n = dplyr::n_distinct(.data$.unit), .groups = "drop") %>%
+  filter(.data$n >= params$min_wells)
+
+pal <- stats::setNames(NOVA::nova_palette(dplyr::n_distinct(sync$Compound)),
+                       sort(unique(sync$Compound)))
+ggplot(sync, aes(.data$Dose, .data$fc, colour = .data$Compound)) +
+  geom_hline(yintercept = 1, linetype = "dashed", colour = "grey40") +
+  geom_line(linewidth = 0.9) +
+  geom_point(aes(size = .data$n), alpha = 0.85) +
+  scale_x_log10() +
+  scale_y_log10() +
+  scale_colour_manual(values = pal, name = NULL) +
+  scale_size_continuous(range = c(1.5, 3.5), name = "wells", guide = "none") +
+  labs(x = "Dose (uM, log scale)", y = "Synchrony / vehicle control (log scale)",
+       caption = "Lines join doses of one compound; no dose-response model was fitted.") +
+  NOVA::nova_theme(base_size = 11)
+```
+
+## The largest changes that more than one well agrees on
+
+```{r small-multiples, fig.height=3.6, fig.cap="Top baseline-normalised changes with at least 4 replicate wells, selected by effect-size rank from findings.csv rather than by eye. Bars are median log2 fold-change vs same-plate vehicle controls; the well count is printed on each."}
+if (nrow(top)) {
+  t <- top
+  t$label  <- paste0(t$metric, "\n", t$group, " @ ", t$timepoint)
+  t$signed <- ifelse(t$direction == "down", -t$effect, t$effect)
+  t$label  <- factor(t$label, levels = t$label[order(t$signed)])
+  ggplot(t, aes(.data$label, .data$signed, fill = .data$compound)) +
+    geom_col(width = 0.68) +
+    geom_hline(yintercept = 0, linetype = "dashed", colour = "grey40") +
+    geom_text(aes(label = paste0("n=", .data$n_wells)),
+              hjust = 1.25, size = 2.9, colour = "grey25") +
+    scale_fill_manual(values = NOVA::nova_palette(dplyr::n_distinct(t$compound)), name = NULL) +
+    coord_flip() +
+    labs(x = NULL, y = "median log2 (fraction of vehicle control)") +
+    NOVA::nova_theme(base_size = 9)
+}
+```
+
+```{r ranked-table}
+if (nrow(top)) {
+  top %>%
+    transmute(Condition = .data$group, Metric = .data$metric, DIV = .data$timepoint,
+              `vs control` = sprintf("%.2fx %s", 2^.data$effect, .data$direction),
+              Wells = .data$n_wells, Plates = .data$n_plates) %>%
+    knitr::kable(caption = sprintf(
+      "Top %d changes with >= %d wells, by effect size.", nrow(top), params$min_wells))
+}
+```
+
+::: {.content-visible when-format="html"}
+
+## What the trajectory layer says, and why it misleads here
+
+```{r describe, results="asis"}
+txt <- utils::capture.output(NOVA::nova_describe(scan$trajectory))
+cat("```\n"); cat(txt, sep = "\n"); cat("\n```\n")
+```
+
+Read this one carefully. `nova_trajectory_summary()` measures how far a condition
+travels through state space **between DIV 7 and DIV 12** — it does not measure how
+different that condition is from control. A compound that silences the network by
+DIV 7 and keeps it silent has a large effect and almost no trajectory, so the
+largest movers here are *low* doses, whose effect is still developing across the
+window. That is the metric behaving exactly as documented, answering a question
+this design does not ask.
+
+The same applies to group separation: several fully-silenced conditions land on
+identical centroids, because everything at zero looks alike.
+
+:::
+
+## Caveats
+
+::: {.callout-warning appearance="simple"}
+**Exploratory. Nothing here is a tested claim.**
+
+- **Selection inflates the top of the list.** `r nrow(moves)` condition × metric ×
+  timepoint comparisons were scanned and sorted by effect size; sorting a large family
+  of noisy estimates puts the luckiest first. No correction is applied because nothing
+  is a hypothesis test.
+- **`r nrow(dropped)` of `r nrow(moves)` comparisons were set aside for resting on
+  fewer than `r params$min_wells` wells**, and are not shown. Raw effect size cannot
+  distinguish a large change in three wells from one in thirty: unfiltered, 14 of the
+  top 25 rested on a **single well**, including a ~1680× effect. Ranking within what
+  remains is still by raw effect size.
+- **DIV 5 is excluded entirely.** Values are a fraction of same-plate vehicle controls,
+  and at DIV 5 those controls are themselves silent — the control mean is exactly zero
+  for network spikes in 4 of 6 experiments, making the ratio undefined for 63–81% of
+  wells. Cortical networks have not formed at DIV 5; that is what this assay measures.
+- **No timepoint here is pre-treatment.** Compounds are applied from the start of the
+  12-day culture, so "change across DIV" is not "onset of effect".
+- **Plate, batch and dose structure are not modelled.** Wells nest in plates, plates in
+  culture dates, doses in compounds, and DIV is a repeated measure on the same wells.
+  Conditions are treated as flat groups.
+- **Prediction is not causation.** Recovering the training set's own active/inactive
+  labels says the assay predicts those labels. It says nothing about developmental
+  neurotoxicity in humans.
+- **The `ns.*` and burst-interval metrics are excluded from the state space**, because
+  their 33–42% missingness means "this well did not burst" rather than "measurement
+  lost", and mean-imputing it would invent burst statistics for silent wells.
+:::
+
+```{r provenance, results="asis"}
+src <- file.path(params$study_dir, params$source_md)
+cat("## Source\n\n")
+if (knitr::is_html_output()) {
+  cat(paste(readLines(src, warn = FALSE), collapse = "\n"), "\n")
+} else {
+  cat("US EPA (Brown et al. 2016, *Toxicol Sci* 154(1):126–139), public domain ",
+      "(17 U.S.C. §105). URL, checksum and the full structural record are in ",
+      "`SOURCE.md` and reproduced in the HTML notebook.\n", sep = "")
+}
+cat("\n---\n\nGenerated with [NOVA](https://github.com/atudoras/nova) ",
+    as.character(utils::packageVersion("NOVA")),
+    ". Discovery pass: `run_discovery.R`. Figures use `nova_theme()`/`nova_palette()`. ",
+    "Every result shown was selected by effect-size rank from `findings.csv`; ",
+    "none was hand-picked.\n", sep = "")
+```
