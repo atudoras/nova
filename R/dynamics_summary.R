@@ -99,8 +99,12 @@ nova_trajectory_summary <- function(x,
     tru <- tryCatch(
       nova_extract_trajectories(x, dims = dims, group_var = group_var, unit_var = unit_var,
                                 timepoint_var = timepoint_var, timepoint_order = timepoint_order),
-      # Never fail silently here: a swallowed error looks identical to "no
-      # replicate column", so the bands vanish with no way to tell why.
+      # Defensive, and currently unreachable: every stop() in
+      # nova_extract_trajectories() depends on arguments this call shares with the
+      # unwrapped group-mean call above, which would already have failed, and the
+      # unit_var-specific branch warns rather than stops. It stays because a
+      # swallowed error here is indistinguishable from "no replicate column
+      # found" -- which is exactly how the multi-column failure hid.
       error = function(e) {
         warning("Could not build per-replicate trajectories from unit_var '",
                 paste(unit_var, collapse = ", "), "': ", conditionMessage(e),

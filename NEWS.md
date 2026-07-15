@@ -37,26 +37,41 @@ changes what it returns.
   `c("Experiment", "Well")` when both are present. `"Well"` alone merges the same well
   from different plates into one replicate, which understates the spread: on the bundled
   example, `pbs` at `2h` moves from 0.550 ± 0.071 (n = 4) to 0.941 ± 0.323 (n = 5).
-  Passing several columns previously raised an error that was swallowed by an internal
-  `tryCatch`, so the bands vanished and the function reported "no replicate column
-  found". Extraction errors are now re-emitted as warnings, and `params$unit_var` reports
-  the columns actually used rather than the ones requested.
+  Passing several columns previously raised a length-2 condition error that an internal
+  `tryCatch` swallowed, so the bands vanished while the function reported "no replicate
+  column found" and `params$unit_var` still listed the requested columns. Missing columns
+  are now reported and dropped, and `params$unit_var` names the columns actually used.
 
-* **`plot_pca_trajectories_general()` grouped by plate instead of by well.** `well_id`
-  was derived by string-splitting `individual_var` on `_`, which assumed that column held
-  a composite `Sample` ID. It now uses the real `Well` column, qualified by `Experiment`.
-  On the bundled example this returns 23 well trajectories where it previously returned
-  16 — the old count silently pooled wells that shared an ID across plates. **On
-  single-plate data the previous behaviour collapsed all wells into one trajectory**, so
-  this changes single-plate results too. `n_wells` counts wells rather than plates.
+* **`plot_pca_trajectories_general()` pooled wells that share an ID across plates.**
+  `well_id` was derived by string-splitting `individual_var` on `_`, which assumed that
+  column held a composite `Sample` ID. It now uses the real `Well` column, qualified by
+  `Experiment`. On the bundled example this returns 23 well trajectories where it
+  previously returned 16: the old count merged `A1` on one plate with `A1` on another.
+  `n_wells` counts wells rather than plates. Single-plate results are unchanged, but note
+  that a caller passing a data frame that already carried an `Experiment` column would
+  previously have had *every* well on a plate collapsed into one trajectory.
 
-* **`find_mea_metadata_row()` found only one of the four metadata rows.** Matching was
-  exact, but Axion writes qualified labels — `Well Averages`, `Treatment/ID`,
-  `Exclude/Include` — so only `Genotype` was ever located and the rest fell back to
-  hardcoded row numbers. This was latent (the constants match the current layout) but it
-  meant the row-search was inert: a genuinely shifted export would have been misread
-  silently. Matching is now anchored at a word boundary, so `Well` matches
-  `Well Averages` but not `Wellington`, and the fallback is unchanged.
+* **`create_mea_heatmaps_enhanced(split_by = "combination")` errored on normal data.**
+  Rows were keyed on `Well` alone, so a well carrying different treatments on different
+  plates produced duplicate row names and the call failed with
+  `duplicate 'row.names' are not allowed`; where treatments happened to agree it instead
+  pooled both plates' wells into one row without saying so. Rows are now keyed on the
+  well's full identity.
+
+* **`sample_id_columns` now does something.** It was documented as identifying individual
+  samples but keyed no aggregation anywhere. It now keys the rows of the
+  `split_by = "combination"` heatmap, and defaults to `c("Experiment", "Well")` rather
+  than `c("Well")`. The main per-group heatmaps pool replicate wells by design and are
+  unaffected.
+
+* **`find_mea_metadata_row()` located only one of the three labels it searches.** Matching
+  was exact, but Axion writes qualified labels — `Treatment/ID` and `Exclude/Include`, and
+  `Well Averages` for the wells row — so only `Genotype` was ever found and the rest fell
+  back to hardcoded row numbers. This was latent, since the constants match the current
+  layout, but it meant the row search was inert: a genuinely shifted export would have
+  been misread silently. Matching is now anchored at a word boundary, so `Well` matches
+  `Well Averages` but not `Wellington`, and the fallback is unchanged. (The wells row is
+  derived as `Treatment` − 1 rather than searched, so it was never affected in practice.)
 
 * **`pca_analysis_enhanced()` silently merged samples across plates.**
   `sample_id_components` now defaults to

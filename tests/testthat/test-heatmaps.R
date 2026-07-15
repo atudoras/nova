@@ -14,6 +14,56 @@ make_raw_data <- function() {
   )
 }
 
+# Two plates that reuse well IDs. The combination heatmap keys its rows on the
+# well, so this is where a Well-only key either merges two plates' wells or --
+# when the plates disagree about the well's treatment -- fails outright.
+make_two_plate_raw <- function(same_treatment = TRUE) {
+  d <- expand.grid(Timepoint  = c("baseline", "1h"),
+                   Well       = c("A1", "A2"),
+                   Experiment = c("MEA001", "MEA002"),
+                   Variable   = c("Mean Firing Rate (Hz)", "Burst Rate (Hz)",
+                                  "Number of Spikes", "Synchrony Index"),
+                   stringsAsFactors = FALSE)
+  d$Treatment <- if (same_treatment) "Drug" else
+    ifelse(d$Experiment == "MEA001", "Drug", "Control")
+  d$Genotype <- "WT"
+  d$Normalized_Value <- seq_len(nrow(d)) / 10
+  d
+}
+
+test_that("combination heatmap keys rows on the well's plate-qualified identity", {
+  # Regression: rows keyed on Well alone silently averaged MEA001_A1 with
+  # MEA002_A1 into a single row.
+  res <- create_mea_heatmaps_enhanced(
+    data = make_two_plate_raw(), grouping_columns = c("Treatment", "Genotype"),
+    split_by = "combination", save_plots = FALSE, verbose = FALSE)
+  rn <- rownames(res$combination_result$data)
+  expect_equal(length(rn), 4L)   # 2 plates x 2 wells, not 2 pooled wells
+  expect_setequal(rn, c("MEA001_A1", "MEA001_A2", "MEA002_A1", "MEA002_A2"))
+})
+
+test_that("combination heatmap survives a well whose treatment differs by plate", {
+  # Regression: this errored with "duplicate 'row.names' are not allowed",
+  # because distinct(Well, Treatment, Genotype) produced two rows for A1.
+  expect_no_error(
+    res <- create_mea_heatmaps_enhanced(
+      data = make_two_plate_raw(same_treatment = FALSE),
+      grouping_columns = c("Treatment", "Genotype"),
+      split_by = "combination", save_plots = FALSE, verbose = FALSE)
+  )
+  expect_equal(nrow(res$combination_result$annotation), 4L)
+})
+
+test_that("sample_id_columns actually keys the combination heatmap", {
+  # It was documented as identifying samples while keying nothing. Dropping
+  # Experiment must visibly pool the plates back together.
+  res <- create_mea_heatmaps_enhanced(
+    data = make_two_plate_raw(), grouping_columns = c("Treatment", "Genotype"),
+    sample_id_columns = "Well",
+    split_by = "combination", save_plots = FALSE, verbose = FALSE)
+  expect_setequal(rownames(res$combination_result$data), c("A1", "A2"))
+})
+
 test_that("create_mea_heatmaps_enhanced accepts raw data frame with Value column", {
   df <- make_raw_data()
   expect_no_error(
