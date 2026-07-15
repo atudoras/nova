@@ -1,0 +1,215 @@
+---
+title: "`r params$title`"
+subtitle: "`r params$subtitle`"
+date: today
+params:
+  title: "NOVA case study"
+  subtitle: "Exploratory reanalysis of a public MEA dataset"
+  study_dir: "."
+  nova_root: ".."
+  findings_csv: "outputs/discovery/findings.csv"
+  data_rds: "outputs/discovery/discovery.rds"
+  source_md: "SOURCE.md"
+  group_var: "Treatment"
+  n_top: 6
+format:
+  html:
+    embed-resources: true
+    toc: true
+    toc-depth: 2
+    theme: cosmo
+    fig-width: 8
+    fig-height: 5
+  typst:
+    papersize: a4
+    margin: {x: 2cm, y: 2cm}
+    fig-format: png
+    fig-dpi: 200
+    fig-width: 6.5
+    fig-height: 3.6
+execute:
+  echo: false
+  warning: false
+  message: false
+---
+
+```{r setup}
+# Stage 2: the curated, portfolio-facing summary.
+#
+# It selects nothing by hand. Everything below is chosen by effect-size rank from
+# the stage-1 findings table, so what is shown is traceable to `findings.csv`
+# rather than to anyone's eye for a nice result.
+suppressPackageStartupMessages({
+  library(dplyr); library(ggplot2); library(knitr)
+})
+
+# Load NOVA from this repo's source, never from the installed library. The case
+# studies live inside the package repo and exist to exercise its current code;
+# an installed copy can silently be an older version with different behaviour
+# (and different numbers), which is exactly what a portfolio must not do.
+if (!requireNamespace("devtools", quietly = TRUE)) {
+  stop("devtools is required to load NOVA from source for this report.")
+}
+suppressMessages(devtools::load_all(params$nova_root, quiet = TRUE))
+stopifnot("nova_trajectory_summary" %in% getNamespaceExports("NOVA"))
+
+findings <- read.csv(file.path(params$study_dir, params$findings_csv),
+                     stringsAsFactors = FALSE)
+scan <- if (file.exists(file.path(params$study_dir, params$data_rds))) {
+  readRDS(file.path(params$study_dir, params$data_rds))
+} else NULL
+
+moves <- findings[findings$kind == "move", ]
+traj  <- findings[findings$kind == "trajectory_distance", ]
+sep   <- findings[findings$kind == "group_separation", ]
+load  <- findings[findings$kind == "loading", ]
+
+top_moves <- head(moves, params$n_top)
+n_scanned <- nrow(moves)
+```
+
+## Headline
+
+```{r headline, results="asis"}
+if (nrow(traj)) {
+  far <- traj[which.max(traj$effect), ]
+  near <- traj[which.min(traj$effect), ]
+  cat(sprintf(
+    paste("Across %d conditions, **%s** moved farthest from baseline in state space",
+          "(%.2f PC units) and **%s** moved least (%.2f).",
+          "The largest single baseline-normalised change was **%s** in **%s** at **%s**",
+          "(%.1f-fold %s).\n"),
+    nrow(traj), far$group, far$effect, near$group, near$effect,
+    if (nrow(top_moves)) top_moves$metric[1] else "n/a",
+    if (nrow(top_moves)) top_moves$group[1] else "n/a",
+    if (nrow(top_moves)) top_moves$timepoint[1] else "n/a",
+    if (nrow(top_moves)) 2^top_moves$effect[1] else NA_real_,
+    if (nrow(top_moves)) top_moves$direction[1] else ""))
+}
+```
+
+## Hero figure — distance from baseline
+
+```{r hero, fig.cap="Distance from baseline in PC space, mean +/- SEM across replicate wells. Each well is identified by plate and well ID, so the same well ID on two plates counts as two replicates."}
+if (!is.null(scan$trajectory)) {
+  scan$trajectory$plots$displacement
+} else {
+  cat("Discovery result not found; rerun the discovery pass.")
+}
+```
+
+::: {.content-visible when-format="html"}
+
+## Where the variance sits
+
+```{r pca, fig.cap="PC1/PC2 scores coloured by condition. PCA is on baseline-normalised values, scaled and centred; scaling makes metrics on different units comparable but also lets low-variance metrics contribute equally."}
+if (!is.null(scan$pca)) {
+  pd <- scan$pca$plot_data
+  gv <- params$group_var
+  ve <- scan$pca$variance_explained
+  ggplot(pd, aes(.data[["PC1"]], .data[["PC2"]], colour = .data[[gv]])) +
+    stat_ellipse(type = "norm", level = 0.95, linewidth = 0.7, alpha = 0.6) +
+    geom_point(size = 2, alpha = 0.55) +
+    scale_colour_manual(values = NOVA::nova_palette(dplyr::n_distinct(pd[[gv]])),
+                        name = gv) +
+    labs(x = sprintf("PC1 (%.1f%%)", ve[["PC1"]]),
+         y = sprintf("PC2 (%.1f%%)", ve[["PC2"]]),
+         caption = "95% confidence ellipses") +
+    NOVA::nova_theme()
+}
+```
+
+:::
+
+## Small multiples — the largest moves
+
+```{r small-multiples, fig.height=5, fig.cap="The top-ranked baseline-normalised changes, selected by effect size from findings.csv. Dashed line = baseline (no change). Bars are median log2 fold-change; the well count for each is printed, because a large effect measured on few wells is not the same result as a large effect measured on many."}
+if (nrow(top_moves)) {
+  d <- top_moves
+  d$label <- paste0(d$metric, "\n", d$group, " @ ", d$timepoint)
+  d$signed <- ifelse(d$direction == "down", -d$effect, d$effect)
+  d$label <- factor(d$label, levels = d$label[order(d$signed)])
+  ggplot(d, aes(x = .data$label, y = .data$signed, fill = .data$group)) +
+    geom_col(width = 0.7) +
+    geom_hline(yintercept = 0, linetype = "dashed", colour = "grey40") +
+    geom_text(aes(label = paste0("n=", .data$n_wells)),
+              hjust = ifelse(d$signed >= 0, -0.2, 1.2), size = 3, colour = "grey30") +
+    scale_fill_manual(values = NOVA::nova_palette(dplyr::n_distinct(d$group)),
+                      name = params$group_var) +
+    coord_flip() +
+    labs(x = NULL, y = "median log2 fold-change vs baseline") +
+    NOVA::nova_theme(base_size = 10)
+}
+```
+
+## In plain language
+
+```{r describe, results="asis"}
+# nova_describe() is rule-based, not generative: it restates the trajectory
+# metrics without inferring mechanism.
+if (!is.null(scan$trajectory)) {
+  txt <- utils::capture.output(NOVA::nova_describe(scan$trajectory))
+  cat("```\n"); cat(txt, sep = "\n"); cat("\n```\n")
+}
+```
+
+::: {.content-visible when-format="html"}
+
+```{r ranked-table}
+if (nrow(top_moves)) {
+  top_moves %>%
+    transmute(Condition = .data$group, Metric = .data$metric,
+              Timepoint = .data$timepoint,
+              `Fold-change` = sprintf("%.2fx %s", 2^.data$effect, .data$direction),
+              Wells = .data$n_wells, Plates = .data$n_plates) %>%
+    knitr::kable(caption = "Top baseline-normalised moves, by effect size.")
+}
+```
+
+:::
+
+## Caveats
+
+::: {.callout-warning appearance="simple"}
+**These findings are exploratory. None of them is a tested claim.**
+
+- **Selection inflates the top of the list.** `r n_scanned` condition x metric x
+  timepoint comparisons were scanned and sorted by effect size. Sorting a large
+  family of noisy estimates puts the luckiest at the top, so the effects shown here
+  are biased upward and would be expected to shrink on replication. No multiple-
+  comparison correction is applied, because nothing here is a hypothesis test.
+- **Ranking is by effect size, not by evidence.** A large fold-change measured on
+  three wells outranks a smaller one measured on thirty. The well and plate counts
+  are printed for exactly this reason — read them.
+- **Fold-changes are ratios**, so they are asymmetric and undefined against a zero
+  baseline. Wells whose baseline is near zero are excluded from the ranking rather
+  than allowed to produce enormous artefactual effects.
+- **Plate and batch structure is not modelled.** Wells are nested in plates and
+  timepoints are repeated measures on the same wells; both violate the independence
+  a naive test would assume.
+- **Prediction is not causation.** That a metric separates conditions does not mean
+  it drives the biology, and a condition moving in state space describes what was
+  measured, not a mechanism.
+- **PCA choices are consequential**: values are scaled and centred, so every metric
+  contributes equally regardless of how much it actually varies.
+:::
+
+```{r provenance, results="asis"}
+# The PDF brief carries a pointer; the HTML notebook carries the full record.
+src <- file.path(params$study_dir, params$source_md)
+cat("## Source\n\n")
+if (!file.exists(src)) {
+  cat("_No SOURCE.md recorded for this dataset._\n")
+} else if (knitr::is_html_output()) {
+  cat(paste(readLines(src, warn = FALSE), collapse = "\n"), "\n")
+} else {
+  cat("Full provenance — URL, licence, download date and checksum — is recorded in ",
+      "`", params$source_md, "` alongside this study, and reproduced in the HTML ",
+      "notebook.\n", sep = "")
+}
+cat("\n\n---\n\nGenerated with [NOVA](https://github.com/atudoras/nova) ",
+    as.character(utils::packageVersion("NOVA")),
+    ". Figures use `nova_theme()` / `nova_palette()`. ",
+    "Curated automatically by effect-size rank from `findings.csv` — ",
+    "no result was hand-picked.\n", sep = "")
+```
