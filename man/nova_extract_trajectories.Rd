@@ -23,9 +23,12 @@ nova_extract_trajectories(
 \item{group_var}{Grouping column defining distinct trajectories
 (e.g. \code{"Treatment"}). Auto-detected if \code{NULL}.}
 
-\item{unit_var}{Optional replicate-unit column (e.g. \code{"Well"} or
-\code{"Experiment"}). If \code{NULL}, one mean trajectory per group is
-returned; if supplied, one trajectory per (group, unit).}
+\item{unit_var}{Optional replicate-unit column(s) (e.g. \code{"Well"}, or
+\code{c("Experiment", "Well")}). If \code{NULL}, one mean trajectory per
+group is returned; if supplied, one trajectory per (group, unit). Pass every
+column needed to identify a unit: well IDs repeat across plates, so
+\code{"Well"} alone merges the same well from different experiments into one
+replicate.}
 
 \item{timepoint_var}{Timepoint column (auto-detected among common names).}
 

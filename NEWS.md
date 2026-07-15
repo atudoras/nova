@@ -1,3 +1,101 @@
+# NOVA 0.4.0
+
+## Bug fixes: plate identity
+
+Wells are named identically on every plate (`A1` exists everywhere), so `Experiment` is
+what tells two of them apart. Several places did not use it, and the result was wrong
+numbers rather than an error.
+
+**Results will change.** Multi-plate analyses change the most — values normalised against
+the wrong plate are corrected, and wells previously pooled across plates are now separate
+replicates, which generally *widens* error bands that were too narrow. Single-plate
+datasets are mostly unaffected, with one exception: `plot_pca_trajectories_general()`
+previously collapsed every well on a plate into a single trajectory (see below).
+
+This is a minor-version bump rather than a patch because a documented default changes
+(`sample_id_components`), numeric results change, and `plot_pca_trajectories_general()`
+changes what it returns.
+
+* **`process_mea_flexible()` normalised wells to other plates' baselines.** The baseline
+  lookup was keyed on `Well` + `Variable` + grouping variables but not `Experiment`, so
+  every plate's baseline matched every plate's wells. The join fanned out — 5270 rows
+  became 5766 on the bundled example — and emitted values normalised against the wrong
+  plate alongside the correct ones. `Experiment` is now part of the baseline key, and
+  both a non-unique baseline key and any row inflation now warn rather than passing
+  silently downstream.
+
+* **`nova_trajectory_summary()` could draw a flat line at zero.** `plot_data` folded
+  `Well` into the `Sample` string and dropped it, so replicate auto-detection fell
+  through to `Sample` — an ID that embeds the timepoint. Each "replicate" then spanned a
+  single timepoint, making every distance-from-baseline exactly 0, and the
+  distance-from-baseline figure rendered as a flat zero line with no warning. `Sample`
+  is no longer a candidate replicate column, and a `unit_var` yielding one timepoint per
+  unit now warns and falls back to the group-mean trajectory. The `metrics` table was
+  never affected.
+
+* **`unit_var` now accepts multiple columns**, and auto-detects as
+  `c("Experiment", "Well")` when both are present. `"Well"` alone merges the same well
+  from different plates into one replicate, which understates the spread: on the bundled
+  example, `pbs` at `2h` moves from 0.550 ± 0.071 (n = 4) to 0.941 ± 0.323 (n = 5).
+  Passing several columns previously raised a length-2 condition error that an internal
+  `tryCatch` swallowed, so the bands vanished while the function reported "no replicate
+  column found" and `params$unit_var` still listed the requested columns. Missing columns
+  are now reported and dropped, and `params$unit_var` names the columns actually used.
+
+* **`plot_pca_trajectories_general()` pooled wells that share an ID across plates.**
+  `well_id` was derived by string-splitting `individual_var` on `_`, which assumed that
+  column held a composite `Sample` ID. It now uses the real `Well` column, qualified by
+  `Experiment`. On the bundled example this returns 23 well trajectories where it
+  previously returned 16: the old count merged `A1` on one plate with `A1` on another.
+  `n_wells` counts wells rather than plates. Single-plate results are unchanged, but note
+  that a caller passing a data frame that already carried an `Experiment` column would
+  previously have had *every* well on a plate collapsed into one trajectory.
+
+* **`create_mea_heatmaps_enhanced(split_by = "combination")` errored on normal data.**
+  Rows were keyed on `Well` alone, so a well carrying different treatments on different
+  plates produced duplicate row names and the call failed with
+  `duplicate 'row.names' are not allowed`; where treatments happened to agree it instead
+  pooled both plates' wells into one row without saying so. Rows are now keyed on the
+  well's full identity.
+
+* **`sample_id_columns` now does something.** It was documented as identifying individual
+  samples but keyed no aggregation anywhere. It now keys the rows of the
+  `split_by = "combination"` heatmap, and defaults to `c("Experiment", "Well")` rather
+  than `c("Well")`. The main per-group heatmaps pool replicate wells by design and are
+  unaffected.
+
+* **`find_mea_metadata_row()` located only one of the three labels it searches.** Matching
+  was exact, but Axion writes qualified labels — `Treatment/ID` and `Exclude/Include`, and
+  `Well Averages` for the wells row — so only `Genotype` was ever found and the rest fell
+  back to hardcoded row numbers. This was latent, since the constants match the current
+  layout, but it meant the row search was inert: a genuinely shifted export would have
+  been misread silently. Matching is now anchored at a word boundary, so `Well` matches
+  `Well Averages` but not `Wellington`, and the fallback is unchanged. (The wells row is
+  derived as `Treatment` − 1 rather than searched, so it was never affected in practice.)
+
+* **`pca_analysis_enhanced()` silently merged samples across plates.**
+  `sample_id_components` now defaults to
+  `c("Experiment", "Well", "Timepoint", "Treatment", "Genotype")`, and components present
+  in the data are carried through to `plot_data` instead of being dissolved into
+  `Sample`. Observations sharing a `Sample` are still averaged, but that now warns.
+  Sample ID strings gain an `Experiment` prefix.
+
+* **`discover_mea_structure()` reported `30min` as a candidate baseline.** Detection used
+  an unanchored pattern, and `"30min"` contains `"0min"`. It now uses the package's own
+  baseline vocabulary plus a parsed time of zero, and returns candidates best-first.
+
+* **`pca_plots_enhanced()` errored on `shape_variable = NULL`.** Opting out of an
+  aesthetic hit `if (logical(0))`. `NULL` is now honoured as "do not map this aesthetic",
+  including the single-genotype case the quickstart documents.
+
+* **`Example/nova_quickstart.R` did not run.** It passed a `timepoints_order` argument
+  that `process_mea_flexible()` does not accept, and called `create_mea_trajectories()`,
+  which does not exist — the current function is `nova_trajectory_summary()`. It also
+  read `pca_results$plots$scatter` and `$plots$elbow` (there is no `$plots` element; the
+  elbow is `$elbow_plot`) and looked for `pheatmap` objects one level above where they
+  live, so the scatter, scree, and heatmap panels were silently never written. It now
+  runs end-to-end and picks the baseline by dynamical order.
+
 # NOVA 0.3.0
 
 ## A simpler, honest trajectory layer

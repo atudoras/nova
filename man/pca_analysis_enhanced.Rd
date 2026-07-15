@@ -44,7 +44,11 @@ pca_analysis_enhanced(
 
 \item{grouping_variables}{Character vector. Variables for sample grouping (default: c("Treatment", "Genotype"))}
 
-\item{sample_id_components}{Character vector. Variables to create unique sample IDs (default: c("Well", "Timepoint", "Treatment", "Genotype"))}
+\item{sample_id_components}{Character vector. Variables to create unique sample IDs
+(default: c("Experiment", "Well", "Timepoint", "Treatment", "Genotype")). These must jointly
+identify one observation: a column that varies within a Sample but is missing here causes
+distinct observations to be silently averaged together. Components present in the data are
+also carried through to \code{plot_data}, keeping replicate structure available downstream.}
 
 \item{value_column}{Character. Name of column containing values for PCA (default: "Normalized_Value")}
 

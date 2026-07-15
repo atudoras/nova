@@ -62,10 +62,14 @@ discovery <- discover_mea_structure(DATA_DIR)
 cat("Found", discovery$experiment_count, "experiment(s)\n")
 cat("Timepoints:", paste(discovery$all_timepoints, collapse=", "), "\n")
 
-# Infer baseline: first timepoint containing 'baseline' or '0' or 'pre'
-baseline_guess <- discovery$potential_baselines[1]
-if (is.na(baseline_guess)) {
-  cat("No clear baseline found -- using raw (un-normalized) data.\n")
+# Infer baseline: the earliest timepoint in dynamical order (baseline-like
+# labels sort first, then real elapsed time), so normalization uses the start of
+# the timecourse rather than whichever label happens to match a pattern first.
+baseline_guess <- nova_order_timepoints(discovery$all_timepoints)[1]
+if (length(discovery$potential_baselines) == 0) {
+  cat("No baseline-like label found -- normalizing to earliest timepoint:", baseline_guess, "\n")
+} else {
+  cat("Using baseline:", baseline_guess, "\n")
 }
 
 # Build grouping columns from what's available
@@ -76,13 +80,12 @@ message("\n=== Step 2/4: Processing data ===")
 processed <- process_mea_flexible(
   main_dir             = DATA_DIR,
   grouping_variables   = grouping_cols,
-  timepoints_order     = discovery$all_timepoints,
   baseline_timepoint   = baseline_guess,
   verbose              = TRUE
 )
 
 message("\n=== Step 3/4: Computing PCA, trajectories, heatmaps ===")
-use_norm <- !is.na(baseline_guess) && !is.null(processed$normalized_data)
+use_norm <- !is.null(baseline_guess) && !is.null(processed$normalized_data)
 data_for_analysis <- if (use_norm) processed$normalized_data else processed$raw_data
 val_col           <- if (use_norm) "Normalized_Value" else "Value"
 
@@ -91,10 +94,9 @@ pca_results  <- pca_analysis_enhanced(data_for_analysis,
                                        value_column       = val_col,
                                        verbose            = FALSE)
 
-trajectories <- create_mea_trajectories(data_for_analysis,
-                                         grouping_cols    = grouping_cols,
-                                         value_column     = val_col,
-                                         verbose          = FALSE)
+# Describes how far each condition moved from baseline, how directly, and when.
+# Well is picked up automatically as the replicate unit for the error bands.
+trajectories <- nova_trajectory_summary(pca_results, verbose = FALSE)
 
 heatmaps     <- create_mea_heatmaps_enhanced(
                   processing_result  = processed,
@@ -112,9 +114,17 @@ save_plot <- function(p, path, w = FIGURE_WIDTH, h = FIGURE_HEIGHT) {
   invisible(p)
 }
 
-# PCA scatter
-if (!is.null(pca_results$plots$scatter)) {
-  save_plot(pca_results$plots$scatter, file.path(OUT_DIR, "pca", "pca_scatter.pdf"))
+# PCA scatter plots (pca_analysis_enhanced computes the PCA; pca_plots_enhanced draws it)
+pca_plots <- pca_plots_enhanced(
+  pca_output         = pca_results,
+  grouping_variables = grouping_cols,
+  color_variable     = TREATMENT_COLUMN,
+  shape_variable     = GENOTYPE_COLUMN,
+  save_plots         = FALSE,
+  verbose            = FALSE
+)
+for (nm in names(pca_plots$plots)) {
+  save_plot(pca_plots$plots[[nm]], file.path(OUT_DIR, "pca", paste0("pca_", nm, ".pdf")))
 }
 
 # PCA with 95% confidence ellipses
@@ -140,8 +150,9 @@ if (SHOW_ELLIPSES && !is.null(pca_results$plot_data)) {
   save_plot(p_ell, file.path(OUT_DIR, "pca", "pca_ellipses.pdf"))
 }
 
-if (!is.null(pca_results$plots$elbow)) {
-  save_plot(pca_results$plots$elbow, file.path(OUT_DIR, "pca", "pca_elbow.pdf"))
+# Scree / elbow: how many components actually carry the variance
+if (!is.null(pca_results$elbow_plot)) {
+  save_plot(pca_results$elbow_plot, file.path(OUT_DIR, "pca", "pca_elbow.pdf"))
 }
 
 # Trajectories
@@ -149,15 +160,21 @@ for (nm in names(trajectories$plots)) {
   save_plot(trajectories$plots[[nm]], file.path(OUT_DIR, "trajectories", paste0(nm, ".pdf")))
 }
 
-# Heatmaps
+# Heatmaps: each entry is a list carrying the pheatmap object alongside its data
 if (!is.null(heatmaps) && is.list(heatmaps)) {
-  hm_plots <- heatmaps[sapply(heatmaps, inherits, what = "pheatmap")]
-  for (nm in names(hm_plots)) {
+  for (nm in setdiff(names(heatmaps), "metadata")) {
+    hm <- heatmaps[[nm]]$heatmap
+    if (is.null(hm) || !inherits(hm, "pheatmap")) next
     pdf(file.path(OUT_DIR, "heatmaps", paste0(nm, ".pdf")),
         width = FIGURE_WIDTH, height = FIGURE_HEIGHT)
-    print(hm_plots[[nm]])
+    print(hm)
     dev.off()
   }
 }
+
+# Plain-language read-out of the trajectory metrics
+message("\n=== Trajectory summary ===")
+print(trajectories$metrics)
+nova_describe(trajectories)
 
 message("\nDone! All figures saved to: ", OUT_DIR)

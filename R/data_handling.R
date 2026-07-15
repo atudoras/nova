@@ -11,11 +11,22 @@ MEA_ROW_VARS_END   <- 168L  # Last measured variable row
 MEA_MIN_ROWS       <- 124L  # Minimum rows required in a valid CSV
 
 # ---------------------------------------------------------------------------
-# Internal helper: find a metadata row by scanning column 1 for a label
+# Internal helper: find a metadata row by scanning column 1 for a label.
+#
+# Axion qualifies these labels rather than writing them bare -- the real exports
+# say "Well Averages", "Treatment/ID" and "Exclude/Include", so an equality test
+# finds only "Genotype" and everything else silently falls back to a hardcoded
+# row. The match is therefore anchored at the start and closed at a word
+# boundary: "Well" matches "Well Averages" but not "Wellington", and a label that
+# is still not found falls back exactly as before.
 # ---------------------------------------------------------------------------
 find_mea_metadata_row <- function(raw, label, search_from = 100L, fallback = NULL) {
-  col1 <- trimws(as.character(unlist(raw[seq(search_from, nrow(raw)), 1])))
-  hit  <- which(tolower(col1) == tolower(label))
+  col1  <- tolower(trimws(as.character(unlist(raw[seq(search_from, nrow(raw)), 1]))))
+  lab   <- tolower(label)
+  # Starts with the label, and either stops there ("Genotype") or continues with
+  # a separator ("Well Averages", "Treatment/ID") -- never mid-word.
+  after <- substr(col1, nchar(lab) + 1L, nchar(lab) + 1L)
+  hit   <- which(startsWith(col1, lab) & !grepl("^[a-z0-9_]$", after))
   if (length(hit) > 0L) return(as.integer(search_from + hit[1L] - 1L))
   fallback
 }
@@ -211,9 +222,14 @@ discover_mea_structure <- function(main_dir,
   unique_timepoints <- unique(all_timepoints)
   unique_variables <- unique(all_variables)
   
-  # Detect potential baseline timepoints
-  potential_baselines <- unique_timepoints[grepl("baseline|base|0min|0h|pre|control", 
-                                                 unique_timepoints, ignore.case = TRUE)]
+  # Detect potential baseline timepoints: labels naming a baseline explicitly, or
+  # any label parsing to time zero. Uses the package's canonical vocabulary rather
+  # than a substring match -- "30min" contains "0min", so a regex reports it as a
+  # candidate baseline. Ordered so the first element is the best candidate.
+  is_base <- .nova_is_baseline(unique_timepoints)
+  tp_minutes <- nova_time_to_minutes(unique_timepoints)
+  potential_baselines <- unique_timepoints[is_base | (!is.na(tp_minutes) & tp_minutes == 0)]
+  potential_baselines <- nova_order_timepoints(potential_baselines)
   
   # Create final structure summary
   structure_summary <- list(
@@ -251,7 +267,10 @@ discover_mea_structure <- function(main_dir,
 #' @param selected_timepoints Character vector. Timepoints to include (default: NULL = all)  
 #' @param grouping_variables Character vector. Metadata columns to include ("Treatment", "Genotype")
 #' @param baseline_timepoint Character. Timepoint to use for normalization (default: NULL = no normalization)
-#' @param unique_id_vars Character vector. Variables that uniquely identify observations for normalization
+#' @param unique_id_vars Character vector. Variables that uniquely identify observations for
+#'   normalization. \code{grouping_variables} and \code{Experiment} are added automatically, so
+#'   the default is correct for multi-plate datasets; supply extra columns only if a single
+#'   plate still contains more than one baseline per well/variable.
 #' @param exclude_std_variables Logical. Whether to automatically exclude standard deviation variables (default: TRUE)
 #' @param experiment_pattern Character. Regex pattern for experiment directories (default: "MEA\\d+")
 #' @param timepoint_fusions Timepoint fusions to generate
@@ -272,6 +291,12 @@ discover_mea_structure <- function(main_dir,
 #' 
 #' By default, no files are written. To save output, provide an explicit output_path parameter.
 #' Normalization creates fold-change values relative to baseline timepoint.
+#'
+#' Baseline matching is keyed on \code{unique_id_vars} plus \code{grouping_variables} plus
+#' \code{Experiment}, so each well is normalised to the baseline of its own plate. The key must
+#' identify exactly one baseline row; if it does not, the function warns rather than silently
+#' duplicating rows. Fold-changes are ratios, so they are asymmetric (halving = 0.5, doubling =
+#' 2.0) and undefined against a zero baseline, which yields \code{NA}.
 #'
 #' Process data without saving (returns data frames only)
 #' Save output by providing explicit path
@@ -622,25 +647,53 @@ process_mea_flexible <- function(main_dir,
           baseline_vars <- c(baseline_vars, var)
         }
       }
-      
+
+      # Experiment identifies the plate/run. Without it, wells that share an ID
+      # across plates (A1 exists on every plate) match every plate's baseline
+      # row, so the join below fans out and each well is also normalised to
+      # other plates' baselines.
+      if ("Experiment" %in% colnames(final_data) && !"Experiment" %in% baseline_vars) {
+        baseline_vars <- c(baseline_vars, "Experiment")
+      }
+
       # Create baseline reference data
       baseline_df <- final_data %>%
         dplyr::filter(Timepoint == baseline_timepoint) %>%
         dplyr::select(!!!rlang::syms(baseline_vars), Baseline_Value = Value)
-      
+
+      # One baseline per key is what makes the join a lookup rather than a
+      # fan-out. Duplicates here mean the key set cannot tell two baseline
+      # measurements apart, so the normalisation would be ambiguous.
+      dup_keys <- sum(duplicated(baseline_df[, baseline_vars, drop = FALSE]))
+      if (dup_keys > 0) {
+        warning("Baseline is ambiguous: ", dup_keys, " duplicate key(s) across (",
+                paste(baseline_vars, collapse = ", "), "). Values normalised to these ",
+                "keys are unreliable. Add a column that separates them via ",
+                "`unique_id_vars` or `grouping_variables`.")
+      }
+
       # Join with baseline and calculate normalized values
+      n_before <- nrow(final_data)
       normalized_data <- final_data %>%
         dplyr::left_join(baseline_df, by = baseline_vars) %>%
         dplyr::mutate(
-          Normalized_Value = ifelse(is.na(Baseline_Value) | Baseline_Value == 0, 
-                                    NA, 
+          Normalized_Value = ifelse(is.na(Baseline_Value) | Baseline_Value == 0,
+                                    NA,
                                     Value / Baseline_Value)
         ) %>%
         dplyr::select(-Baseline_Value)
-      
+
+      if (nrow(normalized_data) > n_before) {
+        warning("Baseline join produced ", nrow(normalized_data) - n_before,
+                " extra row(s) (", n_before, " -> ", nrow(normalized_data),
+                "). Normalised values are duplicated and downstream analyses ",
+                "will be wrong. This indicates a non-unique baseline key.")
+      }
+
       if (verbose) {
         n_normalized <- sum(!is.na(normalized_data$Normalized_Value))
         message("Successfully normalized ", n_normalized, " observations")
+        message("Baseline matched on: ", paste(baseline_vars, collapse = ", "))
       }
     }
   }

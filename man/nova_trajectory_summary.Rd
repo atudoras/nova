@@ -23,8 +23,9 @@ are plotted, all are used for distances.}
 
 \item{group_var}{Grouping column (auto-detected if \code{NULL}).}
 
-\item{unit_var}{Replicate column for the error bands (auto-detected, e.g.
-\code{"Well"}; set \code{NULL} to disable).}
+\item{unit_var}{Replicate column(s) for the error bands. Auto-detected as
+\code{c("Experiment", "Well")} when both are present, since well IDs repeat
+across plates; set \code{NULL} to disable the bands.}
 
 \item{timepoint_var, timepoint_order}{Timepoint column / explicit order
 (otherwise \code{nova_order_timepoints()}, baseline first).}

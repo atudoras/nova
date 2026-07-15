@@ -133,6 +133,30 @@ nova_order_timepoints <- function(timepoints, baseline_first = TRUE) {
   hit[1]
 }
 
+# ---------------------------------------------------------------------------
+# Internal: what identifies one replicate well.
+#
+# Plates reuse well IDs -- "A1" exists on every one -- so a well is only
+# identified once its Experiment is known. Deriving this ad hoc in each caller
+# is how the same well on two plates ends up merged into one replicate, so every
+# caller that needs a replicate unit should ask here instead.
+#
+# Returns the identity columns present in `data`, most significant first, or
+# character(0) when none are.
+# ---------------------------------------------------------------------------
+.nova_unit_cols <- function(data) {
+  intersect(c("Experiment", "Well"), names(data))
+}
+
+# Internal: collapse the identity columns into one label. Use for display and
+# row names; group on the columns themselves (via .nova_unit_cols) wherever the
+# grouping has to be exact.
+.nova_unit_id <- function(data, cols = NULL) {
+  if (is.null(cols)) cols <- .nova_unit_cols(data)
+  if (length(cols) == 0L) return(NULL)
+  do.call(paste, c(as.list(as.data.frame(data)[cols]), sep = "_"))
+}
+
 # Internal: axis label with variance-explained, when available.
 .nova_axis_label <- function(dim, var_exp) {
   if (!is.null(var_exp) && dim %in% names(var_exp)) {
@@ -155,9 +179,12 @@ nova_order_timepoints <- function(timepoints, baseline_first = TRUE) {
 #'   (default \code{c("PC1","PC2")}). Length >= 2.
 #' @param group_var Grouping column defining distinct trajectories
 #'   (e.g. \code{"Treatment"}). Auto-detected if \code{NULL}.
-#' @param unit_var Optional replicate-unit column (e.g. \code{"Well"} or
-#'   \code{"Experiment"}). If \code{NULL}, one mean trajectory per group is
-#'   returned; if supplied, one trajectory per (group, unit).
+#' @param unit_var Optional replicate-unit column(s) (e.g. \code{"Well"}, or
+#'   \code{c("Experiment", "Well")}). If \code{NULL}, one mean trajectory per
+#'   group is returned; if supplied, one trajectory per (group, unit). Pass every
+#'   column needed to identify a unit: well IDs repeat across plates, so
+#'   \code{"Well"} alone merges the same well from different experiments into one
+#'   replicate.
 #' @param timepoint_var Timepoint column (auto-detected among common names).
 #' @param timepoint_order Optional explicit ordering; otherwise computed by
 #'   \code{nova_order_timepoints()}.
@@ -212,9 +239,17 @@ nova_extract_trajectories <- function(pca_results,
     stop("`group_var` '", group_var, "' not found in the data.")
   }
 
-  if (!is.null(unit_var) && !unit_var %in% names(pd)) {
-    warning("`unit_var` '", unit_var, "' not found; collapsing to one trajectory per group.")
-    unit_var <- NULL
+  if (!is.null(unit_var)) {
+    missing_units <- setdiff(unit_var, names(pd))
+    if (length(missing_units) > 0L) {
+      warning("`unit_var` column(s) not found: ", paste(missing_units, collapse = ", "),
+              ". Using: ",
+              if (length(setdiff(unit_var, missing_units))) {
+                paste(setdiff(unit_var, missing_units), collapse = ", ")
+              } else "one trajectory per group.")
+      unit_var <- setdiff(unit_var, missing_units)
+      if (length(unit_var) == 0L) unit_var <- NULL
+    }
   }
 
   # --- time ordering ----------------------------------------------------------
@@ -255,7 +290,9 @@ nova_extract_trajectories <- function(pca_results,
   # --- assemble tidy trajectory table ----------------------------------------
   agg$group <- as.character(agg[[group_var]])
   if (!is.null(unit_var)) {
-    agg$unit <- as.character(agg[[unit_var]])
+    # A unit may need more than one column to be identified -- a well is only
+    # unique once you also know its plate.
+    agg$unit <- do.call(paste, c(agg[unit_var], sep = "_"))
     agg$traj_id <- paste(agg$group, agg$unit, sep = " | ")
     keep <- c("traj_id", "group", "unit", "time_label", "time_rank", "time_numeric", dims, "n_obs")
   } else {

@@ -1,7 +1,7 @@
 Package: NOVA
 Type: Package
 Title: Neural Output Visualization and Analysis
-Version: 0.3.0
+Version: 0.4.0
 Description: A toolkit for analyzing and visualizing Multi-Electrode Array (MEA)
     neural recordings, from raw CSV discovery through Principal Component
     Analysis (PCA), heatmaps, per-metric plots, and trajectory visualization.

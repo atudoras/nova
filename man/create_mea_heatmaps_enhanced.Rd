@@ -11,7 +11,7 @@ create_mea_heatmaps_enhanced(
   value_column = "Normalized_Value",
   variable_column = "Variable",
   grouping_columns = c("Treatment", "Genotype"),
-  sample_id_columns = c("Well"),
+  sample_id_columns = c("Experiment", "Well"),
   timepoint_column = "Timepoint",
   scale_method = "z_score",
   aggregation_method = "mean",
@@ -59,7 +59,11 @@ will attempt to use config from processing_result$config_used.}
 \item{grouping_columns}{Character vector of column names to use for grouping (default: c("Treatment", "Genotype")).
 Function will auto-detect which columns are available.}
 
-\item{sample_id_columns}{Character vector of columns identifying individual samples (default: c("Well")).}
+\item{sample_id_columns}{Character vector of columns jointly identifying one sample
+(default: \code{c("Experiment", "Well")}). Used to key the rows of the
+\code{split_by = "combination"} heatmap. Well IDs repeat across plates, so dropping
+\code{"Experiment"} pools the same well from different experiments into a single row.
+The main per-group heatmaps deliberately pool replicate wells and are unaffected.}
 
 \item{timepoint_column}{Character string specifying the timepoint column (default: "Timepoint").}
 

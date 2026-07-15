@@ -84,6 +84,136 @@ test_that("nova_describe returns a non-empty narrative", {
   expect_true(any(grepl("Direct", txt)))
 })
 
+# ---- the real pca_analysis_enhanced() -> nova_trajectory_summary() path ------
+# Regression: this end-to-end path had no coverage. plot_data folded Well into
+# the Sample string and dropped it, so unit_var auto-detection landed on Sample
+# -- a per-observation ID containing the timepoint. Every "replicate" then
+# spanned one timepoint, making each displacement 0 by construction, and the
+# headline figure rendered as a flat line at zero with no error.
+
+# Long-format data in the shape process_mea_flexible() emits: two treatments,
+# three wells each, on TWO plates, moving apart over four timepoints.
+# Two plates is the point -- well IDs repeat across plates, so a single-plate
+# fixture cannot exercise any of the identity bugs this file guards.
+make_long_mea <- function() {
+  tps <- c("baseline", "30min", "1h", "2h")
+  grid <- expand.grid(Timepoint = tps, Well = c("A1", "A2", "A3"),
+                      Experiment = c("MEA001", "MEA002"),
+                      Treatment = c("drug", "vehicle"),
+                      Variable = paste0("V", 1:4),
+                      stringsAsFactors = FALSE)
+  step <- match(grid$Timepoint, tps) - 1L
+  # drug drifts with timepoint; vehicle stays put. Well adds a small offset so
+  # replicates are not identical (a zero-variance metric would be filtered out).
+  drift  <- ifelse(grid$Treatment == "drug", step * 1.5, 0)
+  offset <- match(grid$Well, c("A1", "A2", "A3")) * 0.1
+  # The plates sit at different levels, so merging a well across plates shows up
+  # as inflated spread rather than as plausible-looking numbers.
+  plate  <- ifelse(grid$Experiment == "MEA002", 2, 0)
+  grid$Value <- 10 + drift + offset + plate + match(grid$Variable, paste0("V", 1:4)) * 0.3
+  grid$Normalized_Value <- grid$Value / 10
+  grid
+}
+
+test_that("pca_analysis_enhanced carries Well and Experiment into plot_data", {
+  pca <- pca_analysis_enhanced(normalized_data = make_long_mea(),
+                               grouping_variables = "Treatment", verbose = FALSE)
+  expect_true(all(c("Well", "Experiment") %in% names(pca$plot_data)))
+})
+
+test_that("trajectory summary off a PCA result yields real displacement, not zeros", {
+  pca <- pca_analysis_enhanced(normalized_data = make_long_mea(),
+                               grouping_variables = "Treatment", verbose = FALSE)
+  s <- nova_trajectory_summary(pca, verbose = FALSE)
+
+  # The replicate unit is the well AND its plate -- never Sample, which cannot
+  # describe movement, and never Well alone, which merges plates.
+  expect_equal(s$params$unit_var, c("Experiment", "Well"))
+  expect_false(all(s$displacement$mean_disp == 0))
+  expect_true(any(s$displacement$sem_disp > 0, na.rm = TRUE))
+  # The condition that actually moved should out-displace the one that did not.
+  m <- s$metrics
+  expect_gt(m$net_displacement[m$group == "drug"],
+            m$net_displacement[m$group == "vehicle"])
+})
+
+test_that("the same well on two plates stays two replicates", {
+  pca <- pca_analysis_enhanced(normalized_data = make_long_mea(),
+                               grouping_variables = "Treatment", verbose = FALSE)
+  tr <- nova_extract_trajectories(pca, group_var = "Treatment",
+                                  unit_var = c("Experiment", "Well"))
+  # Every (unit, timepoint) holds exactly one observation: no plate merging.
+  expect_equal(max(tr$n_obs), 1L)
+  # 2 treatments x 2 plates x 3 wells = 12 trajectories.
+  expect_equal(length(unique(tr$traj_id)), 12L)
+})
+
+test_that("unit_var accepts multiple columns rather than failing silently", {
+  pca <- pca_analysis_enhanced(normalized_data = make_long_mea(),
+                               grouping_variables = "Treatment", verbose = FALSE)
+  s <- nova_trajectory_summary(pca, group_var = "Treatment",
+                               unit_var = c("Experiment", "Well"), verbose = FALSE)
+  expect_equal(s$params$unit_var, c("Experiment", "Well"))
+  expect_true(any(s$displacement$sem_disp > 0, na.rm = TRUE))
+})
+
+test_that("an unusable unit_var warns instead of silently dropping the bands", {
+  # Regression: the error was swallowed by tryCatch, so a bad unit_var was
+  # indistinguishable from "no replicate column found".
+  df <- make_df()
+  expect_warning(
+    s <- nova_trajectory_summary(df, group_var = "Treatment",
+                                 unit_var = c("Well", "NoSuchColumn"), verbose = FALSE),
+    regexp = "not found"
+  )
+  expect_equal(s$params$unit_var, "Well")
+})
+
+test_that("a unit_var with one timepoint per unit warns and drops the error bands", {
+  df <- make_df()
+  # Sample-style ID: unique per observation, so it cannot span timepoints.
+  df$RowID <- paste0("obs", seq_len(nrow(df)))
+  expect_warning(
+    s <- nova_trajectory_summary(df, group_var = "Treatment", unit_var = "RowID",
+                                 verbose = FALSE),
+    regexp = "one timepoint per unit"
+  )
+  # Falls back to the group-mean path: correct geometry, no bands, and honest
+  # about it rather than reporting a flat zero.
+  expect_null(s$params$unit_var)
+  expect_false(all(s$displacement$mean_disp == 0))
+  expect_true(all(is.na(s$displacement$sem_disp)))
+})
+
+test_that("Sample is not used as a replicate unit even when present", {
+  # Pins the candidate list specifically: Sample is the only column that could be
+  # chosen here, and it must not be. A per-row ID would give one timepoint per
+  # unit, which the degenerate guard would then also reject -- so this asserts on
+  # the absence of a warning too, or the guard would mask a regression here.
+  df <- make_df()
+  df$Well <- NULL
+  df$Sample <- paste0("s", seq_len(nrow(df)))
+  expect_no_warning(
+    s <- nova_trajectory_summary(df, group_var = "Treatment", verbose = FALSE)
+  )
+  expect_null(s$params$unit_var)
+})
+
+test_that("plot_pca_trajectories_general keys wells by Well, not by plate", {
+  # Regression: individual_var defaults to "Experiment", and well_id was derived
+  # by string-splitting it, so every well on a plate collapsed into one "well".
+  pca <- pca_analysis_enhanced(normalized_data = make_long_mea(),
+                               grouping_variables = "Treatment", verbose = FALSE)
+  tr <- plot_pca_trajectories_general(pca, trajectory_grouping = "Treatment",
+                                      save_plots = FALSE, verbose = FALSE)
+  wells <- unique(tr$individual_trajectories$well_id)
+  # 2 plates x 3 wells = 6 distinct replicate wells, not 2 plates.
+  expect_equal(length(wells), 6L)
+  expect_false(any(wells %in% c("MEA001", "MEA002")))
+  # Each (well, timepoint) is one observation: nothing silently averaged.
+  expect_equal(max(tr$individual_trajectories$n_obs), 1L)
+})
+
 # ---- backward compatibility ------------------------------------------------
 test_that("existing exported functions are untouched and still present", {
   for (fn in c("pca_analysis_enhanced", "plot_pca_trajectories_general",
